@@ -1,0 +1,27 @@
+{
+  "name": "minimongo",
+  "version": "0.1.0",
+  "description": "Client-side mongo database with server sync over http",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublish": "coffee -c -o lib src/*.coffee && cp src/*.js lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/grassick/minimongo.git"
+  },
+  "keywords": [
+    "mongodb",
+    "mongo"
+  ],
+  "author": "Clayton Grassick",
+  "license": "GPLv3",
+  "bugs": {
+    "url": "https://github.com/grassick/minimongo/issues"
+  },
+  "homepage": "https://github.com/grassick/minimongo",
+  "devDependencies": {
+    "coffee-script": "~1.6.3"
+  }
+}
