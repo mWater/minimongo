@@ -154,7 +154,7 @@ module.exports = ->
           $geometry: 
             type: 'Polygon'
             coordinates: [[
-              [-180, -90], [-180, 90], [180, 90], [180, -90], [-180, -90]
+              [0, -89], [0, 89], [179, 89], [179, -89], [0, -89]
             ]]
       @db.scratch.find(selector, {sort:['_id']}).fetch (results) =>
         assert.deepEqual _.pluck(results, '_id'), ["1", "2", "3", "4"]
