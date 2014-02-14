@@ -25,10 +25,12 @@
     "coffee-script": "~1.6.3",
     "lodash": "~2.4.1",
     "chai": "~1.9.0",
-    "testem": "~0.6.7"
+    "testem": "~0.6.7",
+    "sinon": "~1.8.2"
   },
   "dependencies": {
     "coffeeify": "~0.6.0",
-    "browserify": "~3.29.0"
+    "browserify": "~3.29.0",
+    "jquery": "~2.1.0"
   }
 }
