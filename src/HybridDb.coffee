@@ -5,6 +5,7 @@ ultimately from a RemoteDb
 
 ###
 
+_ = require 'lodash'
 processFind = require('./utils').processFind
 
 module.exports = class HybridDb
@@ -193,5 +194,21 @@ class HybridCollection
           error(err))
       else 
         success()
+
+    uploadRemoves = (removes, success, error) =>
+      remove = _.first(removes)
+      if remove
+        @remoteCol.remove(remove, () =>
+          @localCol.resolveRemove remove, =>
+            uploadRemoves(_.rest(removes), success, error)
+        , (err) =>
+          error(err))
+      else 
+        success()
+
+    # Get pending upserts
     @localCol.pendingUpserts (upserts) =>
-      uploadUpserts(upserts, success, error)
+      uploadUpserts upserts, =>
+        @localCol.pendingRemoves (removes) =>
+          uploadRemoves(removes, success, error)
+      , error

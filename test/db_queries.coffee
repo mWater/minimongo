@@ -1,7 +1,6 @@
 _ = require 'lodash'
+chai = require 'chai'
 assert = chai.assert
-
-GeoJSON = require '../app/js/GeoJSON'
 
 module.exports = ->
   context 'With sample rows', ->

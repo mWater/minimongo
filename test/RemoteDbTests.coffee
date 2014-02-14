@@ -1,3 +1,4 @@
+chai = require 'chai'
 assert = chai.assert
 RemoteDb = require "../lib/RemoteDb"
 db_queries = require "./db_queries"

@@ -1,8 +1,8 @@
 # Utilities for db handling
+_ = require 'lodash'
 
 compileDocumentSelector = require('./selector').compileDocumentSelector
 compileSort = require('./selector').compileSort
-GeoJSON = require './GeoJSON'
 
 
 exports.processFind = (items, selector, options) ->
@@ -73,6 +73,34 @@ processNearOperator = (selector, list) ->
       list = _.pluck distances, 'doc'
   return list
 
+pointInPolygon = (point, polygon) ->
+  # Check that first == last
+  if not _.isEqual(_.first(polygon.coordinates[0]), _.last(polygon.coordinates[0]))
+    throw new Error("First must equal last")
+
+  # Get bounds
+  bounds = new L.LatLngBounds(_.map(polygon.coordinates[0], (coord) -> new L.LatLng(coord[1], coord[0])))
+  return bounds.contains(new L.LatLng(point.coordinates[1], point.coordinates[0]))
+
+# # From http://www.movable-type.co.uk/scripts/latlong.html
+# function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
+#   var R = 6371; // Radius of the earth in km
+#   var dLat = deg2rad(lat2-lat1);  // deg2rad below
+#   var dLon = deg2rad(lon2-lon1); 
+#   var a = 
+#     Math.sin(dLat/2) * Math.sin(dLat/2) +
+#     Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+#     Math.sin(dLon/2) * Math.sin(dLon/2)
+#     ; 
+#   var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+#   var d = R * c; // Distance in km
+#   return d;
+# }
+
+# function deg2rad(deg) {
+#   return deg * (Math.PI/180)
+# }
+
 processGeoIntersectsOperator = (selector, list) ->
   for key, value of selector
     if value? and value['$geoIntersects']
@@ -87,6 +115,6 @@ processGeoIntersectsOperator = (selector, list) ->
           return false
 
         # Check polygon
-        return GeoJSON.pointInPolygon(doc[key], geo)
+        return pointInPolygon(doc[key], geo)
 
   return list

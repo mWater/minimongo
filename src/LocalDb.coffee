@@ -1,3 +1,4 @@
+_ = require 'lodash'
 createUid = require('./utils').createUid
 processFind = require('./utils').processFind
 compileSort = require('./selector').compileSort

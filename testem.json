@@ -1,0 +1,14 @@
+{
+    "framework": "mocha",
+    "serve_files": [ "test/browserified.js" ],
+    "src_files": [
+        "src/*.js",
+        "src/*.coffee",
+        "test/*Tests.js"
+    ],
+    "launchers": {
+    },
+    "before_tests": "coffee -c -o lib src/*.coffee && cp src/*.js lib && browserify -t coffeeify --extension=.coffee --debug test/*Tests.coffee -o test/browserified.js",
+    "on_exit": "rm test/browserified.js",
+    "launch_in_dev": [ "chrome" ]
+}

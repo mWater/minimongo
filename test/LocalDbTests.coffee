@@ -1,3 +1,4 @@
+chai = require 'chai'
 assert = chai.assert
 LocalDb = require "../lib/LocalDb"
 db_queries = require "./db_queries"

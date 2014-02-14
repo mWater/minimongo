@@ -1,3 +1,5 @@
+_ = require 'lodash'
+
 module.exports = class RemoteDb
   # Url must have trailing /
   constructor: (url, client) ->
@@ -36,7 +38,8 @@ class Collection
       params.selector = JSON.stringify(selector || {})
 
       # Add timestamp for Android 2.3.6 bug with caching
-      params._ = new Date().getTime()
+      if navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
+        params._ = new Date().getTime()
 
       req = $.getJSON(@url, params)
       req.done (data, textStatus, jqXHR) =>
@@ -59,7 +62,8 @@ class Collection
     params.selector = JSON.stringify(selector || {})
 
     # Add timestamp for Android 2.3.6 bug with caching
-    params._ = new Date().getTime()
+    if navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
+      params._ = new Date().getTime()
 
     req = $.getJSON(@url, params)
     req.done (data, textStatus, jqXHR) =>
@@ -76,7 +80,10 @@ class Collection
       doc._id = createUid()
 
     # Add timestamp for Android 2.3.6 bug with caching
-    url = @url + "?client=" + @client + "&_=" + new Date().getTime()
+    if navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
+      url = @url + "?client=" + @client + "&_=" + new Date().getTime()
+    else
+      url = @url + "?client=" + @client
 
     req = $.ajax(url, {
       data : JSON.stringify(doc),
@@ -96,7 +103,8 @@ class Collection
     req.done (data, textStatus, jqXHR) =>
       success()
     req.fail (jqXHR, textStatus, errorThrown) =>
-      if jqXHR.status == 404
+      # 410 means already deleted
+      if jqXHR.status == 410
         success()
       else if error
         error(errorThrown)
