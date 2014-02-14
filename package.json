@@ -1,10 +1,10 @@
 {
   "name": "minimongo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Client-side mongo database with server sync over http",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "testem ci",
     "prepublish": "coffee -c -o lib src/*.coffee && cp src/*.js lib"
   },
   "repository": {
@@ -24,7 +24,8 @@
   "devDependencies": {
     "coffee-script": "~1.6.3",
     "lodash": "~2.4.1",
-    "chai": "~1.9.0"
+    "chai": "~1.9.0",
+    "testem": "~0.6.7"
   },
   "dependencies": {
     "coffeeify": "~0.6.0",

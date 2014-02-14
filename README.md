@@ -4,7 +4,7 @@ A client-side MongoDB implementation which supports basic queries, including som
 
 ## Usage
 
-Minimongo is designed to be used with browserify (very useful!).
+Minimongo is designed to be used with browserify.
 
 ```javascript
 
@@ -31,3 +31,9 @@ db.animals.upsert(doc, function() {
 	});
 });
 ```
+
+### HybridDb
+
+Queries the local database first and then returns remote data if different than local version. 
+
+This approach allows fast responses but with 

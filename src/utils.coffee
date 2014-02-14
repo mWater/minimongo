@@ -1,9 +1,7 @@
 # Utilities for db handling
-_ = require 'lodash'
 
 compileDocumentSelector = require('./selector').compileDocumentSelector
 compileSort = require('./selector').compileSort
-
 
 exports.processFind = (items, selector, options) ->
   filtered = _.filter(_.values(items), compileDocumentSelector(selector))
@@ -45,15 +43,14 @@ processNearOperator = (selector, list) ->
       if geo.type != 'Point'
         break
 
-      near = new L.LatLng(geo.coordinates[1], geo.coordinates[0])
-
       list = _.filter list, (doc) ->
         return doc[key] and doc[key].type == 'Point'
 
       # Get distances
       distances = _.map list, (doc) ->
-        return { doc: doc, distance: 
-          near.distanceTo(new L.LatLng(doc[key].coordinates[1], doc[key].coordinates[0]))
+        return { doc: doc, distance: getDistanceFromLatLngInM(
+            geo.coordinates[1], geo.coordinates[0],
+            doc[key].coordinates[1], doc[key].coordinates[0])
         }
 
       # Filter non-points
@@ -73,33 +70,39 @@ processNearOperator = (selector, list) ->
       list = _.pluck distances, 'doc'
   return list
 
+# Very simple polygon check. Assumes that is a square
 pointInPolygon = (point, polygon) ->
   # Check that first == last
   if not _.isEqual(_.first(polygon.coordinates[0]), _.last(polygon.coordinates[0]))
     throw new Error("First must equal last")
 
-  # Get bounds
-  bounds = new L.LatLngBounds(_.map(polygon.coordinates[0], (coord) -> new L.LatLng(coord[1], coord[0])))
-  return bounds.contains(new L.LatLng(point.coordinates[1], point.coordinates[0]))
+  # Check bounds
+  if point.coordinates[0] < Math.min.apply(this, 
+      _.map(polygon.coordinates[0], (coord) -> coord[0]))
+    return false
+  if point.coordinates[1] < Math.min.apply(this, 
+      _.map(polygon.coordinates[0], (coord) -> coord[1]))
+    return false
+  if point.coordinates[0] > Math.max.apply(this, 
+      _.map(polygon.coordinates[0], (coord) -> coord[0]))
+    return false
+  if point.coordinates[1] > Math.max.apply(this, 
+      _.map(polygon.coordinates[0], (coord) -> coord[1]))
+    return false
+  return true
 
-# # From http://www.movable-type.co.uk/scripts/latlong.html
-# function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
-#   var R = 6371; // Radius of the earth in km
-#   var dLat = deg2rad(lat2-lat1);  // deg2rad below
-#   var dLon = deg2rad(lon2-lon1); 
-#   var a = 
-#     Math.sin(dLat/2) * Math.sin(dLat/2) +
-#     Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-#     Math.sin(dLon/2) * Math.sin(dLon/2)
-#     ; 
-#   var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-#   var d = R * c; // Distance in km
-#   return d;
-# }
+# From http://www.movable-type.co.uk/scripts/latlong.html
+getDistanceFromLatLngInM = (lat1, lng1, lat2, lng2) ->
+  R = 6371000 # Radius of the earth in m
+  dLat = deg2rad(lat2 - lat1) # deg2rad below
+  dLng = deg2rad(lng2 - lng1)
+  a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
+  c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  d = R * c # Distance in m
+  return d
 
-# function deg2rad(deg) {
-#   return deg * (Math.PI/180)
-# }
+deg2rad = (deg) ->
+  deg * (Math.PI / 180)
 
 processGeoIntersectsOperator = (selector, list) ->
   for key, value of selector
