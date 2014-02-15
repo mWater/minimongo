@@ -1,3 +1,5 @@
+var _ = require('lodash');
+
 EJSON = {}; // Global!
 var customTypes = {};
 // Add a custom type, using a method of your choice to get to and

@@ -1,4 +1,5 @@
 # Utilities for db handling
+_ = require 'lodash'
 
 compileDocumentSelector = require('./selector').compileDocumentSelector
 compileSort = require('./selector').compileSort

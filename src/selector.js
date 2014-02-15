@@ -22,7 +22,7 @@ licenses, included below:
 
 LocalCollection = {};
 EJSON = require("./EJSON");
-_ = require ('lodash');
+var _ = require('lodash');
 
 
 // Like _.isArray, but doesn't regard polyfilled Uint8Arrays on old browsers as
