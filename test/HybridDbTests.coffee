@@ -20,9 +20,8 @@ describe 'HybridDb', ->
     @rc = @remote.addCollection("scratch")
     @hc = @hybrid.addCollection("scratch")
 
-  # TODO For some reason, this blocks tests
-  #describe "passes queries", ->
-  #  db_queries.call(this)
+  describe "passes queries", ->
+    db_queries.call(this)
 
   context "hybrid mode", ->
     it "find gives only one result if data unchanged", (done) ->

@@ -72,10 +72,9 @@ module.exports = ->
         done()
 
     it 'fetches independent copies', (done) ->
-      @db.scratch.findOne { _id: "2" }, (result) =>
-        result.a = 'David'
-        @db.scratch.findOne { _id: "2" }, (result) =>
-          assert.equal 'Charlie', result.a
+      @db.scratch.findOne { _id: "2" }, (result1) =>
+        @db.scratch.findOne { _id: "2" }, (result2) =>
+          assert result1 != result2
           done()
 
   it 'adds _id to rows', (done) ->
