@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/grassick/minimongo.git"
+    "url": "https://github.com/mWater/minimongo.git"
   },
   "keywords": [
     "mongodb",
@@ -18,9 +18,9 @@
   "author": "Clayton Grassick",
   "license": "GPLv3",
   "bugs": {
-    "url": "https://github.com/grassick/minimongo/issues"
+    "url": "https://github.com/mWater/minimongo/issues"
   },
-  "homepage": "https://github.com/grassick/minimongo",
+  "homepage": "https://github.com/mWater/minimongo",
   "devDependencies": {
     "coffee-script": "~1.6.3",
     "lodash": "~2.4.1",
