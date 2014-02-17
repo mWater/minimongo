@@ -36,4 +36,4 @@ db.animals.upsert(doc, function() {
 
 Queries the local database first and then returns remote data if different than local version. 
 
-This approach allows fast responses but with 
+This approach allows fast responses but with subsequent correction if the server has differing information.
