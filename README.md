@@ -2,6 +2,8 @@
 
 A client-side MongoDB implementation which supports basic queries, including some geospatial ones.
 
+Uses code from Meteor.js minimongo package, reworked to support more geospatial queries and made npm+browserify friendly.
+
 ## Usage
 
 Minimongo is designed to be used with browserify.
