@@ -3,7 +3,7 @@ createUid = require('./utils').createUid
 processFind = require('./utils').processFind
 compileSort = require('./selector').compileSort
 
-class LocalDb
+module.exports = class LocalStorageDb
   constructor: (options) ->
     @collections = {}
 
@@ -177,5 +177,3 @@ class Collection
     if not _.has(@items, doc._id) and not _.has(@removes, doc._id)
       @_putItem(doc)
     if success? then success()
-
-module.exports = LocalDb

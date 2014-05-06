@@ -1,7 +1,7 @@
 _ = require 'lodash'
 chai = require 'chai'
 assert = chai.assert
-LocalDb = require "../lib/LocalDb"
+MemoryDb = require "../lib/MemoryDb"
 HybridDb = require "../lib/HybridDb"
 db_queries = require "./db_queries"
 
@@ -11,8 +11,8 @@ fail = ->
 
 describe 'HybridDb', ->
   beforeEach ->
-    @local = new LocalDb()
-    @remote = new LocalDb()
+    @local = new MemoryDb()
+    @remote = new MemoryDb()
     @hybrid = new HybridDb(@local, @remote)
     @db = @hybrid
 
