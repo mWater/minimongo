@@ -91,7 +91,7 @@ module.exports = ->
         @db.scratch.upsert { _id:"1", a:2, _rev: 1 }, (item) =>
           assert.equal item.a, 2
     
-          @db.scratch.find({}).fetch (results) =>
+          @db.scratch.find({ _id: "1" }).fetch (results) =>
             assert.equal 1, results.length, "Should be only one document"
             done()
 
