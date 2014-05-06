@@ -2,9 +2,12 @@ _ = require 'lodash'
 chai = require 'chai'
 assert = chai.assert
 
+# Runs queries on db which must be a property of this
 module.exports = ->
   context 'With sample rows', ->
     beforeEach (done) ->
+      @db.removeCollection('scratch')
+      @db.addCollection('scratch')
       @db.scratch.upsert { _id:"1", a:"Alice", b:1 }, =>
         @db.scratch.upsert { _id:"2", a:"Charlie", b:2 }, =>
           @db.scratch.upsert { _id:"3", a:"Bob", b:3 }, =>
@@ -77,20 +80,20 @@ module.exports = ->
           assert result1 != result2
           done()
 
-  it 'adds _id to rows', (done) ->
-    @db.scratch.upsert { a: 1 }, (item) =>
-      assert.property item, '_id'
-      assert.lengthOf item._id, 32
-      done()
+    it 'adds _id to rows', (done) ->
+      @db.scratch.upsert { a: 1 }, (item) =>
+        assert.property item, '_id'
+        assert.lengthOf item._id, 32
+        done()
 
-  it 'updates by id', (done) ->
-    @db.scratch.upsert { _id:"1", a:1 }, (item) =>
-      @db.scratch.upsert { _id:"1", a:2, _rev: 1 }, (item) =>
-        assert.equal item.a, 2
-  
-        @db.scratch.find({}).fetch (results) =>
-          assert.equal 1, results.length
-          done()
+    it 'updates by id', (done) ->
+      @db.scratch.upsert { _id:"1", a:1 }, (item) =>
+        @db.scratch.upsert { _id:"1", a:2, _rev: 1 }, (item) =>
+          assert.equal item.a, 2
+    
+          @db.scratch.find({}).fetch (results) =>
+            assert.equal 1, results.length, "Should be only one document"
+            done()
 
   geopoint = (lng, lat) ->
     return {
