@@ -16,9 +16,14 @@ describe 'HybridDb', ->
     @hybrid = new HybridDb(@local, @remote)
     @db = @hybrid
 
-    @lc = @local.addCollection("scratch")
-    @rc = @remote.addCollection("scratch")
-    @hc = @hybrid.addCollection("scratch")
+    @local.addCollection("scratch")
+    @lc = @local.scratch
+
+    @remote.addCollection("scratch")
+    @rc = @remote.scratch
+
+    @hybrid.addCollection("scratch")
+    @hc = @hybrid.scratch
 
   describe "passes queries", ->
     db_queries.call(this)

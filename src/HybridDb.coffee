@@ -14,14 +14,16 @@ module.exports = class HybridDb
     @remoteDb = remoteDb
     @collections = {}
 
-  addCollection: (name) ->
+  addCollection: (name, success, error) ->
     collection = new HybridCollection(name, @localDb[name], @remoteDb[name])
     @[name] = collection
     @collections[name] = collection
+    if success? then success()
 
-  removeCollection: (name) ->
+  removeCollection: (name, success, error) ->
     delete @[name]
     delete @collections[name]
+    if success? then success()
   
   upload: (success, error) ->
     cols = _.values(@collections)

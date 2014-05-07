@@ -4,7 +4,7 @@
     "src_files": [
         "src/*.js",
         "src/*.coffee",
-        "test/*Tests.js"
+        "test/*.coffee"
     ],
     "launchers": {
     },

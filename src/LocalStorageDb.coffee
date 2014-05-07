@@ -10,15 +10,16 @@ module.exports = class LocalStorageDb
     if options and options.namespace and window.localStorage
       @namespace = options.namespace
 
-  addCollection: (name) ->
+  addCollection: (name, success, error) ->
     # Set namespace for collection
     namespace = @namespace+"."+name if @namespace
 
     collection = new Collection(name, namespace)
     @[name] = collection
     @collections[name] = collection
+    if success? then success()
 
-  removeCollection: (name) ->
+  removeCollection: (name, success, error) ->
     if @namespace and window.localStorage
       keys = []
       for i in [0...window.localStorage.length]
@@ -30,6 +31,7 @@ module.exports = class LocalStorageDb
 
     delete @[name]
     delete @collections[name]
+    if success? then success()
 
 
 # Stores data in memory, optionally backed by local storage

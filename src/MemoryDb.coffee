@@ -7,14 +7,16 @@ module.exports = class MemoryDb
   constructor: (options) ->
     @collections = {}
 
-  addCollection: (name) ->
+  addCollection: (name, success, error) ->
     collection = new Collection(name)
     @[name] = collection
     @collections[name] = collection
+    if success? then success()
 
-  removeCollection: (name) ->
+  removeCollection: (name, success, error) ->
     delete @[name]
     delete @collections[name]
+    if success? then success()
 
 # Stores data in memory
 class Collection

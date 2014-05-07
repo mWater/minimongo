@@ -29,6 +29,7 @@
     "sinon": "~1.8.2"
   },
   "dependencies": {
+    "async": "^0.8.0",
     "browserify": "~3.29.0",
     "coffeeify": "~0.6.0",
     "idb-wrapper": "^1.4.1",

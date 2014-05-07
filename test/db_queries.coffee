@@ -6,16 +6,16 @@ assert = chai.assert
 module.exports = ->
   context 'With sample rows', ->
     beforeEach (done) ->
-      @db.removeCollection('scratch')
-      @db.addCollection('scratch')
-      @db.scratch.upsert { _id:"1", a:"Alice", b:1 }, =>
-        @db.scratch.upsert { _id:"2", a:"Charlie", b:2 }, =>
-          @db.scratch.upsert { _id:"3", a:"Bob", b:3 }, =>
-            done()
+      @db.removeCollection 'scratch', =>
+        @db.addCollection 'scratch', =>
+          @db.scratch.upsert { _id:"1", a:"Alice", b:1 }, =>
+            @db.scratch.upsert { _id:"2", a:"Charlie", b:2 }, =>
+              @db.scratch.upsert { _id:"3", a:"Bob", b:3 }, =>
+                done()
 
     it 'finds all rows', (done) ->
       @db.scratch.find({}).fetch (results) =>
-        assert.equal 3, results.length
+        assert.equal results.length, 3
         done()
 
     it 'finds all rows with options', (done) ->
@@ -93,6 +93,13 @@ module.exports = ->
     
           @db.scratch.find({ _id: "1" }).fetch (results) =>
             assert.equal 1, results.length, "Should be only one document"
+            done()
+
+    it 'removes rows when collection removed', (done) ->
+      @db.removeCollection 'scratch', =>
+        @db.addCollection 'scratch', =>
+          @db.scratch.find({}).fetch (results) =>
+            assert.equal 0, results.length
             done()
 
   geopoint = (lng, lat) ->

@@ -6,9 +6,9 @@ assert = chai.assert
 module.exports = ->
   describe "local database", ->
     beforeEach (done) ->
-      @db.removeCollection('scratch')
-      @db.addCollection('scratch')
-      done()
+      @db.removeCollection 'scratch', =>
+        @db.addCollection 'scratch', =>
+          done()
 
     it 'caches rows', (done) ->
       @db.scratch.cache [{ _id: 1, a: 'apple' }], {}, {}, =>
@@ -33,10 +33,10 @@ module.exports = ->
     it "cache doesn't overwrite remove", (done) ->
       @db.scratch.cache [{ _id: 1, a: 'delete' }], {}, {}, =>
         @db.scratch.remove 1, =>
-        @db.scratch.cache [{ _id: 1, a: 'banana' }], {}, {}, =>
-          @db.scratch.find({}).fetch (results) ->
-            assert.equal results.length, 0
-            done()
+          @db.scratch.cache [{ _id: 1, a: 'banana' }], {}, {}, =>
+            @db.scratch.find({}).fetch (results) ->
+              assert.equal results.length, 0
+              done()
 
     it "cache removes missing unsorted", (done) ->
       @db.scratch.cache [{ _id: 1, a: 'a' }, { _id: 2, a: 'b' }, { _id: 3, a: 'c' }], {}, {}, =>
@@ -145,4 +145,10 @@ module.exports = ->
               assert.equal results.length, 0
               done()
 
+    it "allows removing uncached rows", (done) ->
+      @db.scratch.remove 12345, =>
+        @db.scratch.pendingRemoves (results) =>
+          assert.equal results.length, 1
+          assert.equal results[0], 12345
+          done()
 
