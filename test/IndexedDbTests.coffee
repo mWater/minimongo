@@ -17,37 +17,35 @@ describe 'IndexedDb', ->
   describe "passes caching", ->
     db_caching.call(this)
 
-describe 'IndexedDbDb with local storage', ->
-  before ->
-    @db = new IndexedDb({ namespace: "db.scratch" })
-
+describe 'IndexedDb storage', ->
   beforeEach (done) ->
-    @db.removeCollection('scratch')
-    @db.addCollection('scratch')
-    done()
+    @db = new IndexedDb { namespace: "db.scratch" }, =>
+      @db.removeCollection 'scratch', =>
+        @db.addCollection 'scratch', =>
+          done()
 
   it "retains items", (done) ->
     @db.scratch.upsert { _id:1, a:"Alice" }, =>
-      db2 = new IndexedDb({ namespace: "db.scratch" })
-      db2.addCollection 'scratch'
-      db2.scratch.find({}).fetch (results) ->
-        assert.equal results[0].a, "Alice"
-        done()
+      db2 = new IndexedDb { namespace: "db.scratch" }, =>
+        db2.addCollection 'scratch', =>
+          db2.scratch.find({}).fetch (results) ->
+            assert.equal results[0].a, "Alice"
+            done()
 
   it "retains upserts", (done) ->
     @db.scratch.upsert { _id:1, a:"Alice" }, =>
-      db2 = new IndexedDb({ namespace: "db.scratch" })
-      db2.addCollection 'scratch'
-      db2.scratch.find({}).fetch (results) ->
-        db2.scratch.pendingUpserts (upserts) ->
-          assert.deepEqual results, upserts
-          done()
+      db2 = new IndexedDb { namespace: "db.scratch" }, =>
+        db2.addCollection 'scratch', =>
+          db2.scratch.find({}).fetch (results) ->
+            db2.scratch.pendingUpserts (upserts) ->
+              assert.deepEqual results, upserts
+              done()
 
   it "retains removes", (done) ->
     @db.scratch.seed { _id:1, a:"Alice" }, =>
       @db.scratch.remove 1, =>
-        db2 = new IndexedDb({ namespace: "db.scratch" })
-        db2.addCollection 'scratch'
-        db2.scratch.pendingRemoves (removes) ->
-          assert.deepEqual removes, [1]
-          done()
+        db2 = new IndexedDb { namespace: "db.scratch" }, =>
+          db2.addCollection 'scratch', =>
+            db2.scratch.pendingRemoves (removes) ->
+              assert.deepEqual removes, [1]
+              done()

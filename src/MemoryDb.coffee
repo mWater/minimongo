@@ -57,6 +57,8 @@ class Collection
       @removes[id] = @items[id]
       delete @items[id]
       delete @upserts[id]
+    else
+      @removes[id] = { _id: id }
 
     if success? then success()
 
@@ -92,11 +94,8 @@ class Collection
 
   resolveUpsert: (doc, success) ->
     if @upserts[doc._id]
-      # Only safely remove upsert if doc received back from 
-      # server is the same, excluding certain server-added fields (_rev, created, modified)
-      # or server-modified fields (user, org)
-      serverFields = ['_rev', 'created', 'modified', 'user', 'org']
-      if _.isEqual(_.omit(doc, serverFields), _.omit(@upserts[doc._id], serverFields))
+      # Only safely remove upsert if doc is unchanged
+      if _.isEqual(doc, @upserts[doc._id])
         delete @upserts[doc._id]
     if success? then success()
 

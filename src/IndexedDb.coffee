@@ -161,22 +161,36 @@ class Collection
       if success? then success(_.pluck(_.pluck(matches, "doc"), "_id"))
     , { index: "col-state", keyRange: @store.makeKeyRange(only: [@name, "removed"]), onError: error }
 
-  resolveUpsert: (doc, success) ->
-    if @upserts[doc._id]
-      # Only safely remove upsert if doc received back from 
-      # server is the same, excluding certain server-added fields (_rev, created, modified)
-      # or server-modified fields (user, org)
-      serverFields = ['_rev', 'created', 'modified', 'user', 'org']
-      if _.isEqual(_.omit(doc, serverFields), _.omit(@upserts[doc._id], serverFields))
-        @_deleteUpsert(doc._id)
-    if success? then success()
+  resolveUpsert: (doc, success, error) ->
+    @store.get [@name, doc._id], (record) =>
+      # Only safely remove upsert if doc is the same
+      if record.state == "upserted" and _.isEqual(record.doc, doc)
+        record.state = "cached"
+        @store.put record, => 
+          if success then success(doc)
+        , error
+      else
+        if success? then success()
 
-  resolveRemove: (id, success) ->
-    @_deleteRemove(id)
-    if success? then success()
+  resolveRemove: (id, success, error) ->
+    @store.get [@name, id], (record) =>
+      # Only remove if removed
+      if record.state == "removed"
+        @store.remove [@name, id], =>
+          if success? then success()
+        , error
 
   # Add but do not overwrite or record as upsert
-  seed: (doc, success) ->
-    if not _.has(@items, doc._id) and not _.has(@removes, doc._id)
-      @_putItem(doc)
-    if success? then success()
+  seed: (doc, success, error) ->
+    @store.get [@name, doc._id], (record) =>
+      if not record?
+        record = {
+          col: @name
+          state: "cached"
+          doc: doc
+        }
+        @store.put record, =>
+          if success? then success()
+        , error
+      else
+        if success? then success()

@@ -246,6 +246,27 @@ describe 'HybridDb', ->
           done()
     , fail)
 
+  it "does not resolve upsert if data changed", (done) ->
+    @lc.upsert(_id:"1", a:1)
+
+    # Override pending upserts to change doc right before returning
+    oldPendingUpserts = @lc.pendingUpserts
+    @lc.pendingUpserts = (success) =>
+      oldPendingUpserts.call @lc, (upserts) =>
+        # Alter row
+        @lc.upsert(_id:"1", a:2)
+        success(upserts)
+
+    @hybrid.upload(() =>
+      @lc.pendingUpserts (data) =>
+        assert.equal data.length, 1
+        assert.deepEqual data[0], { _id:"1", a:2 }
+
+        @rc.pendingUpserts (data) =>
+          assert.deepEqual data[0], { _id:"1", a:1 }
+          done()
+    , fail)
+
   it "upload applies pending removes", (done) ->
     @lc.seed(_id:"1", a:1)
     @rc.seed(_id:"1", a:1)

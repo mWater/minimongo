@@ -85,13 +85,6 @@ module.exports = ->
             assert.equal results.length, 0
             done()
 
-    it "resolves pending upserts with server-added fields", (done) ->
-      @db.scratch.upsert { _id: 2, a: 'banana' }, =>
-        @db.scratch.resolveUpsert { _id: 2, a: 'banana', _rev: 1, created: { on: "2013", by: "test" }, modified: { on: "2013", by: "test" } }, =>
-          @db.scratch.pendingUpserts (results) =>
-            assert.equal results.length, 0
-            done()
-
     it "retains changed pending upserts", (done) ->
       @db.scratch.upsert { _id: 2, a: 'banana' }, =>
         @db.scratch.upsert { _id: 2, a: 'banana2' }, =>
@@ -152,3 +145,30 @@ module.exports = ->
           assert.equal results[0], 12345
           done()
 
+    it 'seeds rows', (done) ->
+      @db.scratch.seed { _id: 1, a: 'apple' }, =>
+        @db.scratch.find({}).fetch (results) ->
+          assert.equal results[0].a, 'apple'
+          done()
+
+    it 'seed does not overwrite existing', (done) ->
+      @db.scratch.cache [{ _id: 1, a: 'apple' }], {}, {}, =>
+        @db.scratch.seed { _id: 1, a: 'banana' }, =>
+          @db.scratch.find({}).fetch (results) ->
+            assert.equal results[0].a, 'apple'
+            done()
+
+    it "seed doesn't overwrite upsert", (done) ->
+      @db.scratch.upsert { _id: 1, a: 'apple' }, =>
+        @db.scratch.seed { _id: 1, a: 'banana' }, =>
+          @db.scratch.find({}).fetch (results) ->
+            assert.equal results[0].a, 'apple'
+            done()
+
+    it "seed doesn't overwrite remove", (done) ->
+      @db.scratch.cache [{ _id: 1, a: 'delete' }], {}, {}, =>
+        @db.scratch.remove 1, =>
+          @db.scratch.seed { _id: 1, a: 'banana' }, =>
+            @db.scratch.find({}).fetch (results) ->
+              assert.equal results.length, 0
+              done()
