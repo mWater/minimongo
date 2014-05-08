@@ -1,11 +1,11 @@
 {
   "name": "minimongo",
-  "version": "0.2.4",
+  "version": "2.0.0",
   "description": "Client-side mongo database with server sync over http",
   "main": "index.js",
   "scripts": {
     "test": "testem ci",
-    "prepublish": "coffee -c -o lib src/*.coffee && cp src/*.js lib"
+    "prepublish": "gulp"
   },
   "repository": {
     "type": "git",
@@ -13,7 +13,11 @@
   },
   "keywords": [
     "mongodb",
-    "mongo"
+    "mongo",
+    "minimongo",
+    "IndexedDb", 
+    "WebSQL",
+    "storage"
   ],
   "author": "Clayton Grassick",
   "license": "GPLv3",
@@ -22,11 +26,14 @@
   },
   "homepage": "https://github.com/mWater/minimongo",
   "devDependencies": {
-    "coffee-script": "~1.6.3",
-    "lodash": "~2.4.1",
     "chai": "~1.9.0",
-    "testem": "~0.6.7",
-    "sinon": "~1.8.2"
+    "coffee-script": "~1.6.3",
+    "gulp": "^3.6.2",
+    "gulp-coffee": "^1.4.2",
+    "gulp-util": "^2.2.14",
+    "lodash": "~2.4.1",
+    "sinon": "~1.8.2",
+    "testem": "~0.6.7"
   },
   "dependencies": {
     "async": "^0.8.0",
