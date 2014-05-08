@@ -267,6 +267,22 @@ describe 'HybridDb', ->
           done()
     , fail)
 
+  it "caches new upserted value", (done) ->
+    @lc.upsert(_id:"1", a:1)
+
+    # Override remote upsert to change returned doc
+    @rc.upsert = (doc, success) =>
+      success(_id:"1", a:2)
+
+    @hybrid.upload(() =>
+      @lc.pendingUpserts (data) =>
+        assert.equal data.length, 0
+        
+        @lc.findOne {_id:"1"}, {}, (data) =>
+          assert.deepEqual data, { _id:"1", a:2 }
+          done()
+    , fail)
+
   it "upload applies pending removes", (done) ->
     @lc.seed(_id:"1", a:1)
     @rc.seed(_id:"1", a:1)

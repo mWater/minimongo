@@ -178,9 +178,12 @@ class HybridCollection
     uploadUpserts = (upserts, success, error) =>
       upsert = _.first(upserts)
       if upsert
-        @remoteCol.upsert(upsert, () =>
+        @remoteCol.upsert(upsert, (remoteDoc) =>
           @localCol.resolveUpsert upsert, =>
-            uploadUpserts(_.rest(upserts), success, error)
+            # Cache new value
+            @localCol.cacheOne remoteDoc, =>
+              uploadUpserts(_.rest(upserts), success, error)
+            , error
         , (err) =>
           error(err))
       else 
