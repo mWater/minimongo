@@ -1,6 +1,6 @@
 {
   "name": "minimongo",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Client-side mongo database with server sync over http",
   "main": "index.js",
   "scripts": {
@@ -15,7 +15,7 @@
     "mongodb",
     "mongo",
     "minimongo",
-    "IndexedDb", 
+    "IndexedDb",
     "WebSQL",
     "storage"
   ],
