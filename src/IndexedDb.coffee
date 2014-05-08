@@ -6,6 +6,7 @@ createUid = require('./utils').createUid
 processFind = require('./utils').processFind
 compileSort = require('./selector').compileSort
 
+# Create a database backed by IndexedDb. options must contain namespace: <string to uniquely identify database>
 module.exports = class IndexedDb
   constructor: (options, success, error) ->
     @collections = {}

@@ -38,6 +38,37 @@ db.animals.upsert(doc, function() {
 });
 ```
 
+### IndexedDb
+
+To make a database backed by IndexedDb:
+
+```javascript
+
+// Require minimongo
+var minimongo = require("minimongo");
+
+var IndexedDb = minimongo.IndexedDb;
+
+// Create IndexedDb
+db = new IndexedDb({namespace: "mydb"}, function() {
+	// Add a collection to the database
+	db.addCollection("animals", function() {
+		doc = { species: "dog", name: "Bingo" };
+
+		// Always use upsert for both inserts and modifies
+		db.animals.upsert(doc, function() {
+			// Success:
+
+			// Query dog (with no query options beyond a selector)
+			db.animals.findOne({ species:"dog" }, {}, function(res) {
+				console.log("Dog's name is: " + res.name);
+			});
+		});
+	});
+}, function() { alert("some error!"); });
+
+```
+
 ### HybridDb
 
 Queries the local database first and then returns remote data if different than local version. 
