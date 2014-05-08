@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Minimongo : Client-side MongoDB backed by IndexedDb, WebSQL or LocalStorage with server sync over HTTP" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Minimongo</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/mWater/minimongo">View on GitHub</a>
+
+          <h1 id="project_title">Minimongo</h1>
+          <h2 id="project_tagline">Client-side MongoDB backed by IndexedDb, WebSQL or LocalStorage with server sync over HTTP</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/mWater/minimongo/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/mWater/minimongo/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="minimongo" class="anchor" href="#minimongo"><span class="octicon octicon-link"></span></a>Minimongo</h1>
+
+<p>A client-side MongoDB implementation which supports basic queries, including some geospatial ones.</p>
+
+<p>Uses code from Meteor.js minimongo package, reworked to support more geospatial queries and made npm+browserify friendly.</p>
+
+<p>It is either IndexedDb backed (IndexedDb), WebSQL backed (WebSQLDb), Local storage backed (LocalStorageDb) or in memory only (MemoryDb).</p>
+
+<p>Autoselection is possible with utils.autoselectLocalDb(options, success, error)</p>
+
+<h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>Minimongo is designed to be used with browserify.</p>
+
+<div class="highlight highlight-javascript"><pre>
+<span class="c1">// Require minimongo</span>
+<span class="kd">var</span> <span class="nx">minimongo</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"minimongo"</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">LocalDb</span> <span class="o">=</span> <span class="nx">minimongo</span><span class="p">.</span><span class="nx">MemoryDb</span><span class="p">;</span>
+
+<span class="c1">// Create local db (in memory database with no backing)</span>
+<span class="nx">db</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">LocalDb</span><span class="p">();</span>
+
+<span class="c1">// Add a collection to the database</span>
+<span class="nx">db</span><span class="p">.</span><span class="nx">addCollection</span><span class="p">(</span><span class="s2">"animals"</span><span class="p">);</span>
+
+<span class="nx">doc</span> <span class="o">=</span> <span class="p">{</span> <span class="nx">species</span><span class="o">:</span> <span class="s2">"dog"</span><span class="p">,</span> <span class="nx">name</span><span class="o">:</span> <span class="s2">"Bingo"</span> <span class="p">};</span>
+
+<span class="c1">// Always use upsert for both inserts and modifies</span>
+<span class="nx">db</span><span class="p">.</span><span class="nx">animals</span><span class="p">.</span><span class="nx">upsert</span><span class="p">(</span><span class="nx">doc</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// Success:</span>
+
+    <span class="c1">// Query dog (with no query options beyond a selector)</span>
+    <span class="nx">db</span><span class="p">.</span><span class="nx">animals</span><span class="p">.</span><span class="nx">findOne</span><span class="p">({</span> <span class="nx">species</span><span class="o">:</span><span class="s2">"dog"</span> <span class="p">},</span> <span class="p">{},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Dog's name is: "</span> <span class="o">+</span> <span class="nx">res</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
+    <span class="p">});</span>
+<span class="p">});</span>
+</pre></div>
+
+<h3>
+<a name="indexeddb" class="anchor" href="#indexeddb"><span class="octicon octicon-link"></span></a>IndexedDb</h3>
+
+<p>To make a database backed by IndexedDb:</p>
+
+<div class="highlight highlight-javascript"><pre>
+<span class="c1">// Require minimongo</span>
+<span class="kd">var</span> <span class="nx">minimongo</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"minimongo"</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">IndexedDb</span> <span class="o">=</span> <span class="nx">minimongo</span><span class="p">.</span><span class="nx">IndexedDb</span><span class="p">;</span>
+
+<span class="c1">// Create IndexedDb</span>
+<span class="nx">db</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">IndexedDb</span><span class="p">({</span><span class="nx">namespace</span><span class="o">:</span> <span class="s2">"mydb"</span><span class="p">},</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// Add a collection to the database</span>
+    <span class="nx">db</span><span class="p">.</span><span class="nx">addCollection</span><span class="p">(</span><span class="s2">"animals"</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nx">doc</span> <span class="o">=</span> <span class="p">{</span> <span class="nx">species</span><span class="o">:</span> <span class="s2">"dog"</span><span class="p">,</span> <span class="nx">name</span><span class="o">:</span> <span class="s2">"Bingo"</span> <span class="p">};</span>
+
+        <span class="c1">// Always use upsert for both inserts and modifies</span>
+        <span class="nx">db</span><span class="p">.</span><span class="nx">animals</span><span class="p">.</span><span class="nx">upsert</span><span class="p">(</span><span class="nx">doc</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="c1">// Success:</span>
+
+            <span class="c1">// Query dog (with no query options beyond a selector)</span>
+            <span class="nx">db</span><span class="p">.</span><span class="nx">animals</span><span class="p">.</span><span class="nx">findOne</span><span class="p">({</span> <span class="nx">species</span><span class="o">:</span><span class="s2">"dog"</span> <span class="p">},</span> <span class="p">{},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Dog's name is: "</span> <span class="o">+</span> <span class="nx">res</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
+            <span class="p">});</span>
+        <span class="p">});</span>
+    <span class="p">});</span>
+<span class="p">},</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="nx">alert</span><span class="p">(</span><span class="s2">"some error!"</span><span class="p">);</span> <span class="p">});</span>
+
+</pre></div>
+
+<h3>
+<a name="hybriddb" class="anchor" href="#hybriddb"><span class="octicon octicon-link"></span></a>HybridDb</h3>
+
+<p>Queries the local database first and then returns remote data if different than local version. </p>
+
+<p>This approach allows fast responses but with subsequent correction if the server has differing information.</p>
+
+<h3>
+<a name="remotedb" class="anchor" href="#remotedb"><span class="octicon octicon-link"></span></a>RemoteDb</h3>
+
+<p>Uses AJAX-JSON calls to an API to query a real Mongo database. API is simple and contains only query, upsert and remove commands.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Minimongo maintained by <a href="https://github.com/mWater">mWater</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
