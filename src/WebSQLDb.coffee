@@ -198,3 +198,15 @@ class Collection
         else
           if success then success(doc)
     , error
+
+  # Add but do not overwrite upsert/removed and do not record as upsert
+  cacheOne: (doc, success, error) ->
+    @db.transaction (tx) =>
+      tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, doc._id], (tx, results) =>
+        # Only insert if not present or cached
+        if results.rows.length == 0 or results.rows.item(0).state == "cached"
+          tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], =>
+            if success then success(doc)
+        else
+          if success then success(doc)
+    , error

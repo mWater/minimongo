@@ -109,3 +109,8 @@ class Collection
       @items[doc._id] = doc
     if success? then success()
 
+  # Add but do not overwrite upserts or removes
+  cacheOne: (doc, success) ->
+    if not _.has(@upserts, doc._id) and not _.has(@removes, doc._id)
+      @items[doc._id] = doc
+    if success? then success()

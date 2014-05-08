@@ -172,3 +172,31 @@ module.exports = ->
             @db.scratch.find({}).fetch (results) ->
               assert.equal results.length, 0
               done()
+
+    it 'cache one single doc', (done) ->
+      @db.scratch.cacheOne { _id: 1, a: 'apple' }, =>
+        @db.scratch.find({}).fetch (results) ->
+          assert.equal results[0].a, 'apple'
+          done()
+
+    it 'cache one overwrite existing', (done) ->
+      @db.scratch.cache [{ _id: 1, a: 'apple' }], {}, {}, =>
+        @db.scratch.cacheOne { _id: 1, a: 'banana' }, =>
+          @db.scratch.find({}).fetch (results) ->
+            assert.equal results[0].a, 'banana'
+            done()
+
+    it "cache one doesn't overwrite upsert", (done) ->
+      @db.scratch.upsert { _id: 1, a: 'apple' }, =>
+        @db.scratch.cacheOne { _id: 1, a: 'banana' }, =>
+          @db.scratch.find({}).fetch (results) ->
+            assert.equal results[0].a, 'apple'
+            done()
+
+    it "cache one doesn't overwrite remove", (done) ->
+      @db.scratch.cache [{ _id: 1, a: 'delete' }], {}, {}, =>
+        @db.scratch.remove 1, =>
+          @db.scratch.cacheOne { _id: 1, a: 'banana' }, =>
+            @db.scratch.find({}).fetch (results) ->
+              assert.equal results.length, 0
+              done()

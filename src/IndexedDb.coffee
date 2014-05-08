@@ -132,7 +132,7 @@ class Collection
         async.each results, (result, callback) =>
           # If not present in docs and is present locally and not upserted/deleted
           @store.get [@name, result._id], (record) =>
-            if not docsMap[result._id] and record.state == "cached"
+            if not docsMap[result._id] and record and record.state == "cached"
               # If past end on sorted limited, ignore
               if options.sort and options.limit and docs.length == options.limit
                 if sort(result, _.last(docs)) >= 0
@@ -189,6 +189,23 @@ class Collection
           state: "cached"
           doc: doc
         }
+        @store.put record, =>
+          if success? then success()
+        , error
+      else
+        if success? then success()
+
+  # Add but do not overwrite upsert/removed and do not record as upsert
+  cacheOne: (doc, success, error) ->
+    @store.get [@name, doc._id], (record) =>
+      if not record?
+        record = {
+          col: @name
+          state: "cached"
+          doc: doc
+        }
+      if record.state == "cached"
+        record.doc = doc
         @store.put record, =>
           if success? then success()
         , error
