@@ -4,6 +4,10 @@ A client-side MongoDB implementation which supports basic queries, including som
 
 Uses code from Meteor.js minimongo package, reworked to support more geospatial queries and made npm+browserify friendly.
 
+It is either IndexedDb backed (IndexedDb), WebSQL backed (WebSQLDb), Local storage backed (LocalStorageDb) or in memory only (MemoryDb).
+
+Autoselection is possible with utils.autoselectLocalDb(options, success, error)
+
 ## Usage
 
 Minimongo is designed to be used with browserify.
@@ -13,7 +17,7 @@ Minimongo is designed to be used with browserify.
 // Require minimongo
 var minimongo = require("minimongo");
 
-var LocalDb = minimongo.LocalDb;
+var LocalDb = minimongo.MemoryDb;
 
 // Create local db (in memory database with no backing)
 db = new LocalDb();
@@ -39,3 +43,8 @@ db.animals.upsert(doc, function() {
 Queries the local database first and then returns remote data if different than local version. 
 
 This approach allows fast responses but with subsequent correction if the server has differing information.
+
+
+### RemoteDb
+
+Uses AJAX-JSON calls to an API to query a real Mongo database. API is simple and contains only query, upsert and remove commands.
