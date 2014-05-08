@@ -14,14 +14,16 @@ module.exports = class HybridDb
     @remoteDb = remoteDb
     @collections = {}
 
-  addCollection: (name) ->
+  addCollection: (name, success, error) ->
     collection = new HybridCollection(name, @localDb[name], @remoteDb[name])
     @[name] = collection
     @collections[name] = collection
+    if success? then success()
 
-  removeCollection: (name) ->
+  removeCollection: (name, success, error) ->
     delete @[name]
     delete @collections[name]
+    if success? then success()
   
   upload: (success, error) ->
     cols = _.values(@collections)
@@ -176,9 +178,12 @@ class HybridCollection
     uploadUpserts = (upserts, success, error) =>
       upsert = _.first(upserts)
       if upsert
-        @remoteCol.upsert(upsert, () =>
+        @remoteCol.upsert(upsert, (remoteDoc) =>
           @localCol.resolveUpsert upsert, =>
-            uploadUpserts(_.rest(upserts), success, error)
+            # Cache new value
+            @localCol.cacheOne remoteDoc, =>
+              uploadUpserts(_.rest(upserts), success, error)
+            , error
         , (err) =>
           error(err))
       else 

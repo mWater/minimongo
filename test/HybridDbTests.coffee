@@ -1,7 +1,7 @@
 _ = require 'lodash'
 chai = require 'chai'
 assert = chai.assert
-LocalDb = require "../lib/LocalDb"
+MemoryDb = require "../lib/MemoryDb"
 HybridDb = require "../lib/HybridDb"
 db_queries = require "./db_queries"
 
@@ -11,14 +11,19 @@ fail = ->
 
 describe 'HybridDb', ->
   beforeEach ->
-    @local = new LocalDb()
-    @remote = new LocalDb()
+    @local = new MemoryDb()
+    @remote = new MemoryDb()
     @hybrid = new HybridDb(@local, @remote)
     @db = @hybrid
 
-    @lc = @local.addCollection("scratch")
-    @rc = @remote.addCollection("scratch")
-    @hc = @hybrid.addCollection("scratch")
+    @local.addCollection("scratch")
+    @lc = @local.scratch
+
+    @remote.addCollection("scratch")
+    @rc = @remote.scratch
+
+    @hybrid.addCollection("scratch")
+    @hc = @hybrid.scratch
 
   describe "passes queries", ->
     db_queries.call(this)
@@ -238,6 +243,43 @@ describe 'HybridDb', ->
 
         @rc.pendingUpserts (data) =>
           assert.deepEqual _.pluck(data, 'a'), [1,2]
+          done()
+    , fail)
+
+  it "does not resolve upsert if data changed", (done) ->
+    @lc.upsert(_id:"1", a:1)
+
+    # Override pending upserts to change doc right before returning
+    oldPendingUpserts = @lc.pendingUpserts
+    @lc.pendingUpserts = (success) =>
+      oldPendingUpserts.call @lc, (upserts) =>
+        # Alter row
+        @lc.upsert(_id:"1", a:2)
+        success(upserts)
+
+    @hybrid.upload(() =>
+      @lc.pendingUpserts (data) =>
+        assert.equal data.length, 1
+        assert.deepEqual data[0], { _id:"1", a:2 }
+
+        @rc.pendingUpserts (data) =>
+          assert.deepEqual data[0], { _id:"1", a:1 }
+          done()
+    , fail)
+
+  it "caches new upserted value", (done) ->
+    @lc.upsert(_id:"1", a:1)
+
+    # Override remote upsert to change returned doc
+    @rc.upsert = (doc, success) =>
+      success(_id:"1", a:2)
+
+    @hybrid.upload(() =>
+      @lc.pendingUpserts (data) =>
+        assert.equal data.length, 0
+        
+        @lc.findOne {_id:"1"}, {}, (data) =>
+          assert.deepEqual data, { _id:"1", a:2 }
           done()
     , fail)
 

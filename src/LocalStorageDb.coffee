@@ -3,22 +3,25 @@ createUid = require('./utils').createUid
 processFind = require('./utils').processFind
 compileSort = require('./selector').compileSort
 
-class LocalDb
-  constructor: (options) ->
+module.exports = class LocalStorageDb
+  constructor: (options, success) ->
     @collections = {}
 
     if options and options.namespace and window.localStorage
       @namespace = options.namespace
 
-  addCollection: (name) ->
+    if success then success(this)
+
+  addCollection: (name, success, error) ->
     # Set namespace for collection
     namespace = @namespace+"."+name if @namespace
 
     collection = new Collection(name, namespace)
     @[name] = collection
     @collections[name] = collection
+    if success? then success()
 
-  removeCollection: (name) ->
+  removeCollection: (name, success, error) ->
     if @namespace and window.localStorage
       keys = []
       for i in [0...window.localStorage.length]
@@ -30,6 +33,7 @@ class LocalDb
 
     delete @[name]
     delete @collections[name]
+    if success? then success()
 
 
 # Stores data in memory, optionally backed by local storage
@@ -95,6 +99,8 @@ class Collection
       @_putRemove(@items[id])
       @_deleteItem(id)
       @_deleteUpsert(id)
+    else
+      @_putRemove({ _id: id })
 
     if success? then success()
 
@@ -160,11 +166,8 @@ class Collection
 
   resolveUpsert: (doc, success) ->
     if @upserts[doc._id]
-      # Only safely remove upsert if doc received back from 
-      # server is the same, excluding certain server-added fields (_rev, created, modified)
-      # or server-modified fields (user, org)
-      serverFields = ['_rev', 'created', 'modified', 'user', 'org']
-      if _.isEqual(_.omit(doc, serverFields), _.omit(@upserts[doc._id], serverFields))
+      # Only safely remove upsert if doc is unchanged
+      if _.isEqual(doc, @upserts[doc._id])
         @_deleteUpsert(doc._id)
     if success? then success()
 
@@ -178,4 +181,8 @@ class Collection
       @_putItem(doc)
     if success? then success()
 
-module.exports = LocalDb
+  # Add but do not overwrite upserts or removes
+  cacheOne: (doc, success) ->
+    if not _.has(@upserts, doc._id) and not _.has(@removes, doc._id)
+      @_putItem(doc)
+    if success? then success()
