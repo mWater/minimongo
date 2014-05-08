@@ -4,8 +4,10 @@ processFind = require('./utils').processFind
 compileSort = require('./selector').compileSort
 
 module.exports = class MemoryDb
-  constructor: (options) ->
+  constructor: (options, success) ->
     @collections = {}
+    
+    if success then success(this)
 
   addCollection: (name, success, error) ->
     collection = new Collection(name)

@@ -4,6 +4,32 @@ _ = require 'lodash'
 compileDocumentSelector = require('./selector').compileDocumentSelector
 compileSort = require('./selector').compileSort
 
+# Select appropriate local database, prefering IndexedDb, then WebSQLDb, then LocalStorageDb, then MemoryDb
+exports.autoselectLocalDb = (options, success, error) ->
+  # Here due to browserify circularity quirks
+  IndexedDb = require './IndexedDb'
+  WebSQLDb = require './WebSQLDb'
+  LocalStorageDb = require './LocalStorageDb'
+  MemoryDb = require './MemoryDb'
+
+  if not ('indexedDB' in window)
+    window.indexedDB = window.indexedDB or window.webkitIndexedDB or window.mozIndexedDB or window.oIndexedDB or window.msIndexedDB
+  
+  # detect browsers with known IndexedDb issues (e.g. Android pre-4.4)
+  poorIndexedDbSupport = false
+  if navigator.userAgent.match(/Android 2/) or navigator.userAgent.match(/Android 3/) or navigator.userAgent.match(/Android 4\.[0-3]/)
+    # Chrome is an exception. It supports IndexedDb 
+    if not navigator.userAgent.match(/Chrome/)
+      poorIndexedDbSupport = true
+
+  if typeof window.indexedDB != "undefined" and not poorIndexedDbSupport
+    return new IndexedDb options, success, error
+
+  if typeof window.openDatabase != "undefined"
+    return new WebSQLDb options, success, error
+    
+  return new LocalStorageDb(options, success, error)
+
 exports.processFind = (items, selector, options) ->
   filtered = _.filter(_.values(items), compileDocumentSelector(selector))
 

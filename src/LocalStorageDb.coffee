@@ -4,11 +4,13 @@ processFind = require('./utils').processFind
 compileSort = require('./selector').compileSort
 
 module.exports = class LocalStorageDb
-  constructor: (options) ->
+  constructor: (options, success) ->
     @collections = {}
 
     if options and options.namespace and window.localStorage
       @namespace = options.namespace
+
+    if success then success(this)
 
   addCollection: (name, success, error) ->
     # Set namespace for collection

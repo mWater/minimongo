@@ -25,7 +25,8 @@ module.exports = class IndexedDb
           PRIMARY KEY (col, id));''')
 
      # Create tables
-     @db.transaction(createTables, error, success)
+     @db.transaction createTables, error, =>
+      if success then success(this)
 
   addCollection: (name, success, error) ->
     collection = new Collection(name, @db)
