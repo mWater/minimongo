@@ -107,7 +107,7 @@ class Collection
   cache: (docs, selector, options, success, error) ->
     # Add all non-local that are not upserted or removed
     async.each docs, (doc, callback) =>
-      # Check if present and not upserted/deleted
+      # Check if not present or not upserted/deleted
       @store.get [@name, doc._id], (record) =>
         if not record? or record.state == "cached"
           @store.put { col: @name, state: "cached", doc: doc }, =>
