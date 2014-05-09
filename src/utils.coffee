@@ -1,7 +1,6 @@
 # Utilities for db handling
 _ = require 'lodash'
 async = require 'async'
-HybridDb = require './HybridDb'
 
 compileDocumentSelector = require('./selector').compileDocumentSelector
 compileSort = require('./selector').compileSort
@@ -36,6 +35,8 @@ exports.autoselectLocalDb = (options, success, error) ->
 # Useful for upgrading from one type of database to another
 exports.migrateLocalDb = (fromDb, toDb, success, error) ->
   # Migrate collection using a HybridDb
+  # Here due to browserify circularity quirks
+  HybridDb = require './HybridDb'
   hybridDb = new HybridDb(fromDb, toDb)
   for name, col of fromDb.collections
     if toDb[name]

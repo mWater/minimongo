@@ -33,6 +33,8 @@ describe 'migrated Local Db', ->
       utils.migrateLocalDb @from, @to, =>
         @to.a.pendingUpserts (upserts) =>
           assert.deepEqual upserts, [{ _id: "1", x: 1 }]
+          @from.a.pendingUpserts (upserts2) =>
+            assert.equal upserts2.length, 0
           done()
 
   it 'migrates removes', (done) ->
