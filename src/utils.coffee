@@ -1,5 +1,7 @@
 # Utilities for db handling
 _ = require 'lodash'
+async = require 'async'
+HybridDb = require './HybridDb'
 
 compileDocumentSelector = require('./selector').compileDocumentSelector
 compileSort = require('./selector').compileSort
@@ -30,6 +32,18 @@ exports.autoselectLocalDb = (options, success, error) ->
     
   return new LocalStorageDb(options, success, error)
 
+# Migrates a local database's pending upserts and removes from one database to another
+# Useful for upgrading from one type of database to another
+exports.migrateLocalDb = (fromDb, toDb, success, error) ->
+  # Migrate collection using a HybridDb
+  hybridDb = new HybridDb(fromDb, toDb)
+  for name, col of fromDb.collections
+    if toDb[name]
+      hybridDb.addCollection(name)
+
+  hybridDb.upload(success, error)
+
+# Processes a find with sorting and filtering and limiting
 exports.processFind = (items, selector, options) ->
   filtered = _.filter(_.values(items), compileDocumentSelector(selector))
 
@@ -56,6 +70,7 @@ exports.processFind = (items, selector, options) ->
 
   return filtered
 
+# Creates a unique identifier string
 exports.createUid = -> 
   'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, (c) ->
     r = Math.random()*16|0
