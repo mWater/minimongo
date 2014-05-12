@@ -20,7 +20,7 @@
     "storage"
   ],
   "author": "Clayton Grassick",
-  "license": "GPLv3",
+  "license": "LGPLv3",
   "bugs": {
     "url": "https://github.com/mWater/minimongo/issues"
   },
@@ -28,6 +28,7 @@
   "devDependencies": {
     "chai": "~1.9.0",
     "coffee-script": "~1.6.3",
+    "glob": "^3.2.9",
     "gulp": "^3.6.2",
     "gulp-coffee": "^1.4.2",
     "gulp-util": "^2.2.14",
@@ -37,9 +38,10 @@
   },
   "dependencies": {
     "async": "^0.8.0",
-    "browserify": "~3.29.0",
+    "browserify": "^3.29.1",
     "coffeeify": "~0.6.0",
     "idb-wrapper": "^1.4.1",
-    "jquery": "~2.1.0"
+    "jquery": "~2.1.0",
+    "vinyl-source-stream": "^0.1.1"
   }
 }
