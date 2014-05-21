@@ -45,14 +45,20 @@ class Collection
     if success? then success(processFind(@items, selector, options))
 
   upsert: (doc, success, error) ->
-    if not doc._id
-      doc._id = createUid()
+    # Handle both single and multiple upsert
+    items = doc
+    if not _.isArray(items)
+      items = [items]
 
-    # Replace/add 
-    @items[doc._id] = doc
-    @upserts[doc._id] = doc
+    for item in items
+      if not item._id
+        item._id = createUid()
 
-    if success? then success(doc)
+      # Replace/add 
+      @items[item._id] = item
+      @upserts[item._id] = item
+
+    if success then success(doc)
 
   remove: (id, success, error) ->
     if _.has(@items, id)

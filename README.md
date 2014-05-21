@@ -38,6 +38,10 @@ db.animals.upsert(doc, function() {
 });
 ```
 
+### Upserting
+
+`db.upsert(doc, success, error)` can take either a single document or multiple documents (array) for the first parameter
+
 ### IndexedDb
 
 To make a database backed by IndexedDb:

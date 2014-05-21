@@ -74,16 +74,23 @@ class Collection
     , { index: "col", keyRange: @store.makeKeyRange(only: @name), onError: error }
 
   upsert: (doc, success, error) ->
-    if not doc._id
-      doc._id = createUid()
+    # Handle both single and multiple upsert
+    items = doc
+    if not _.isArray(items)
+      items = [items]
 
-    record = {
-      col: @name
-      state: "upserted"
-      doc: doc
-    }
+    for item in items
+      if not item._id
+        item._id = createUid()
 
-    @store.put record, => 
+    records = _.map items, (item) =>
+      return {
+        col: @name
+        state: "upserted"
+        doc: item
+      }
+
+    @store.putBatch records, => 
       if success then success(doc)
     , error
 

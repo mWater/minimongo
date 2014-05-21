@@ -64,7 +64,7 @@ class Collection
 
   _findFetch: (selector, options, success, error) ->
     # Get all docs from collection
-    @db.transaction (tx) =>
+    @db.readTransaction (tx) =>
       tx.executeSql "SELECT * FROM docs WHERE col = ?", [@name], (tx, results) =>
         docs = []
         for i in [0...results.rows.length]
@@ -75,13 +75,21 @@ class Collection
     , error
 
   upsert: (doc, success, error) ->
-    if not doc._id
-      doc._id = createUid()
+    # Handle both single and multiple upsert
+    items = doc
+    if not _.isArray(items)
+      items = [items]
 
+    for item in items
+      if not item._id
+        item._id = createUid()
+  
     @db.transaction (tx) =>
-      tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "upserted", JSON.stringify(doc)], =>
-        if success then success(doc)
+      for item in items
+        tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, item._id, "upserted", JSON.stringify(item)]
     , error
+    , =>
+      if success then success(doc)
 
   remove: (id, success, error) ->
     # Find record
@@ -97,9 +105,9 @@ class Collection
     , error
 
   cache: (docs, selector, options, success, error) ->
-    # Add all non-local that are not upserted or removed
-    async.each docs, (doc, callback) =>
-      @db.transaction (tx) =>
+    @db.transaction (tx) =>
+      # Add all non-local that are not upserted or removed
+      async.eachSeries docs, (doc, callback) =>
         tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, doc._id], (tx, results) =>
           # Check if present and not upserted/deleted
           if results.rows.length == 0 or results.rows.item(0).state == "cached"
@@ -108,45 +116,47 @@ class Collection
               callback()
           else
             callback()
-      , callback
-    , (err) =>
-      if err
-        if error then error(err)
-        return
+        , callback
+      , (err) =>
+        if err
+          if error then error(err)
+          return
 
-      # Rows have been cached, now look for stale ones to remove
-      docsMap = _.object(_.pluck(docs, "_id"), docs)
+        # Rows have been cached, now look for stale ones to remove
+        docsMap = _.object(_.pluck(docs, "_id"), docs)
 
-      if options.sort
-        sort = compileSort(options.sort)
+        if options.sort
+          sort = compileSort(options.sort)
 
-      # Perform query, removing rows missing in docs from local db 
-      @find(selector, options).fetch (results) =>
-        async.each results, (result, callback) =>
-          # If not present in docs and is present locally and not upserted/deleted
+        # Perform query, removing rows missing in docs from local db 
+        @find(selector, options).fetch (results) =>
           @db.transaction (tx) =>
-            tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, result._id], (tx, rows) =>
-              if not docsMap[result._id] and rows.rows.length > 0 and rows.rows.item(0).state == "cached"
-                # If past end on sorted limited, ignore
-                if options.sort and options.limit and docs.length == options.limit
-                  if sort(result, _.last(docs)) >= 0
-                    return callback()
-                
-                # Item is gone from server, remove locally
-                tx.executeSql "DELETE FROM docs WHERE col = ? AND id = ?", [@name, result._id], =>
+            async.eachSeries results, (result, callback) =>
+              # If not present in docs and is present locally and not upserted/deleted
+              tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, result._id], (tx, rows) =>
+                if not docsMap[result._id] and rows.rows.length > 0 and rows.rows.item(0).state == "cached"
+                  # If past end on sorted limited, ignore
+                  if options.sort and options.limit and docs.length == options.limit
+                    if sort(result, _.last(docs)) >= 0
+                      return callback()
+                  
+                  # Item is gone from server, remove locally
+                  tx.executeSql "DELETE FROM docs WHERE col = ? AND id = ?", [@name, result._id], =>
+                    callback()
+                else
                   callback()
-              else
-                callback()
-          , callback
-        , (err) =>
-          if err?
-            if error? then error(err)
-            return
-          if success? then success()  
-      , error
+              , callback
+            , (err) =>
+              if err?
+                if error? then error(err)
+                return
+              if success? then success()  
+          , error
+        , error
+    , error 
     
   pendingUpserts: (success, error) ->
-    @db.transaction (tx) =>
+    @db.readTransaction (tx) =>
       tx.executeSql "SELECT * FROM docs WHERE col = ? AND state = ?", [@name, "upserted"], (tx, results) =>
         docs = []
         for i in [0...results.rows.length]
@@ -156,7 +166,7 @@ class Collection
     , error
 
   pendingRemoves: (success, error) ->
-    @db.transaction (tx) =>
+    @db.readTransaction (tx) =>
       tx.executeSql "SELECT * FROM docs WHERE col = ? AND state = ?", [@name, "removed"], (tx, results) =>
         docs = []
         for i in [0...results.rows.length]

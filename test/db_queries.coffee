@@ -108,6 +108,19 @@ module.exports = ->
         assert.deepEqual item, { _id:"1", a:1 }
         done()
 
+  it 'upserts multiple rows', (done) ->
+    @timeout(10000)
+    @db.removeCollection 'scratch', =>
+      @db.addCollection 'scratch', =>
+        docs = []
+        for i in [0...100]
+          docs.push { x: i }
+
+        @db.scratch.upsert docs, =>
+          @db.scratch.find({}).fetch (results) =>
+            assert.equal results.length, 100
+            done()
+
   geopoint = (lng, lat) ->
     return {
       type: 'Point'
