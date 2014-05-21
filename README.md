@@ -40,7 +40,17 @@ db.animals.upsert(doc, function() {
 
 ### Upserting
 
-`db.upsert(doc, success, error)` can take either a single document or multiple documents (array) for the first parameter
+`db.sometable.upsert(doc, success, error)` can take either a single document or multiple documents (array) for the first parameter.
+
+*Note*: Only applies to local databases for now, not RemoteDb
+
+### Resolving upserts
+
+Upserts are stored in local databases in a special state to record that they are upserts, not cached rows. 
+
+To resolve the upsert (for example once sent to central db), use resolveUpsert on collection
+
+`db.sometable.resolveUpsert(doc, success, error)` can take either a single document or multiple documents (array) for the first parameter.
 
 ### IndexedDb
 

@@ -97,6 +97,18 @@ module.exports = ->
             assert.equal results.length, 0
             done()
 
+    it "resolves multiple upserts", (done) ->
+      docs = [
+        { _id: 1, a: 'apple' }
+        { _id: 2, a: 'banana' }
+        { _id: 3, a: 'orange' }
+      ]
+      @db.scratch.upsert docs, =>
+        @db.scratch.resolveUpsert docs, =>
+          @db.scratch.pendingUpserts (results) =>
+            assert.equal results.length, 0
+            done()
+
     it "retains changed pending upserts", (done) ->
       @db.scratch.upsert { _id: 2, a: 'banana' }, =>
         @db.scratch.upsert { _id: 2, a: 'banana2' }, =>

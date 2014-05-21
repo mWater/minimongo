@@ -176,18 +176,30 @@ class Collection
     , error
 
   resolveUpsert: (doc, success, error) ->
-    # Find record
+    # Handle both single and multiple resolve
+    items = doc
+    if not _.isArray(items)
+      items = [items]
+
+    # Find records
     @db.transaction (tx) =>
-      tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, doc._id], (tx, results) =>
-        if results.rows.length > 0
-          # Only safely remove upsert if doc is the same
-          if results.rows.item(0).state == "upserted" and _.isEqual(JSON.parse(results.rows.item(0).doc), doc)
-            tx.executeSql 'UPDATE docs SET state="cached" WHERE col = ? AND id = ?', [@name, doc._id], =>
-              if success then success(doc)
+      async.eachSeries items, (item, cb) =>
+        tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, item._id], (tx, results) =>
+          if results.rows.length > 0
+            # Only safely remove upsert if doc is the same
+            if results.rows.item(0).state == "upserted" and _.isEqual(JSON.parse(results.rows.item(0).doc), item)
+              tx.executeSql 'UPDATE docs SET state="cached" WHERE col = ? AND id = ?', [@name, item._id]
+              cb()
+            else
+              cb()
           else
-            if success then success(doc)
-        else
-          error(new Error("Upsert not found"))
+            cb(new Error("Upsert not found"))
+      , (err) =>
+        if err
+          return error(err)
+
+        # Success
+        if success then success(doc)
     , error
 
   resolveRemove: (id, success, error) ->

@@ -170,15 +170,31 @@ class Collection
     , { index: "col-state", keyRange: @store.makeKeyRange(only: [@name, "removed"]), onError: error }
 
   resolveUpsert: (doc, success, error) ->
-    @store.get [@name, doc._id], (record) =>
-      # Only safely remove upsert if doc is the same
-      if record.state == "upserted" and _.isEqual(record.doc, doc)
-        record.state = "cached"
-        @store.put record, => 
-          if success then success(doc)
+    # Handle both single and multiple upsert
+    items = doc
+    if not _.isArray(items)
+      items = [items]
+
+    # Get items
+    keys = _.map items, (item) => [@name, item._id]
+    @store.getBatch keys, (records) =>
+      puts = []
+      for i in [0...items.length]
+        record = records[i]
+
+        # Only safely remove upsert if doc is the same
+        if record.state == "upserted" and _.isEqual(record.doc, items[i])
+          record.state = "cached"
+          puts.push(record)
+
+      # Put all changed items
+      if puts.length > 0
+        @store.putBatch puts, =>
+          if success then success(doc)  
         , error
       else
-        if success? then success()
+        if success then success(doc)
+    , error
 
   resolveRemove: (id, success, error) ->
     @store.get [@name, id], (record) =>

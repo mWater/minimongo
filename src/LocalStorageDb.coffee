@@ -172,10 +172,16 @@ class Collection
     success _.pluck(@removes, "_id")
 
   resolveUpsert: (doc, success) ->
-    if @upserts[doc._id]
-      # Only safely remove upsert if doc is unchanged
-      if _.isEqual(doc, @upserts[doc._id])
-        @_deleteUpsert(doc._id)
+    # Handle both single and multiple upsert
+    items = doc
+    if not _.isArray(items)
+      items = [items]
+
+    for item in items
+      if @upserts[item._id]
+        # Only safely remove upsert if item is unchanged
+        if _.isEqual(item, @upserts[item._id])
+          @_deleteUpsert(item._id)
     if success? then success()
 
   resolveRemove: (id, success) ->
