@@ -113,28 +113,6 @@ class Collection
       , error
 
   cache: (docs, selector, options, success, error) ->
-    # Create keys to get items
-    keys = _.map docs, (doc) => [@name, doc._id]
-
-    # Create batch of puts
-    puts = []
-    @store.getBatch keys, (records) =>
-      # Add all non-local that are not upserted or removed
-      for i in [0...records.length]
-        record = records[i]
-        doc = docs[i]
-
-        # Check if not present or not upserted/deleted
-        if not record? or record.state == "cached"
-          puts.push { col: @name, state: "cached", doc: doc }
-
-      # Put batch
-      if puts.length > 0
-        @store.putBatch puts, step2, error
-      else
-        step2()
-    , error
-
     step2 = =>
       # Rows have been cached, now look for stale ones to remove
       docsMap = _.object(_.pluck(docs, "_id"), docs)
@@ -173,7 +151,32 @@ class Collection
             if success? then success()
         , error
       , error
-    
+
+    if docs.length == 0
+      return step2()
+
+    # Create keys to get items
+    keys = _.map docs, (doc) => [@name, doc._id]
+
+    # Create batch of puts
+    puts = []
+    @store.getBatch keys, (records) =>
+      # Add all non-local that are not upserted or removed
+      for i in [0...records.length]
+        record = records[i]
+        doc = docs[i]
+
+        # Check if not present or not upserted/deleted
+        if not record? or record.state == "cached"
+          puts.push { col: @name, state: "cached", doc: doc }
+
+      # Put batch
+      if puts.length > 0
+        @store.putBatch puts, step2, error
+      else
+        step2()
+    , error
+  
   pendingUpserts: (success, error) ->
     @store.query (matches) =>
       if success? then success(_.pluck(matches, "doc"))

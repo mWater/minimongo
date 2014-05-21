@@ -28,6 +28,13 @@ module.exports = ->
           assert.equal results.length, 4
           done()
 
+    it 'caches zero rows', (done) ->
+      rows = []
+      @db.scratch.cache rows, {}, {}, =>
+        @db.scratch.find({}).fetch (results) ->
+          assert.equal results.length, 0
+          done()
+
     it 'cache overwrite existing', (done) ->
       @db.scratch.cache [{ _id: 1, a: 'apple' }], {}, {}, =>
         @db.scratch.cache [{ _id: 1, a: 'banana' }], {}, {}, =>
