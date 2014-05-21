@@ -113,22 +113,29 @@ class Collection
       , error
 
   cache: (docs, selector, options, success, error) ->
-    # Add all non-local that are not upserted or removed
-    async.each docs, (doc, callback) =>
-      # Check if not present or not upserted/deleted
-      @store.get [@name, doc._id], (record) =>
-        if not record? or record.state == "cached"
-          @store.put { col: @name, state: "cached", doc: doc }, =>
-            callback()
-          , callback
-        else
-          callback()
-      , callback
-    , (err) =>
-      if err
-        if error then error(err)
-        return
+    # Create keys to get items
+    keys = _.map docs, (doc) => [@name, doc._id]
 
+    # Create batch of puts
+    puts = []
+    @store.getBatch keys, (records) =>
+      # Add all non-local that are not upserted or removed
+      for i in [0...records.length]
+        record = records[i]
+        doc = docs[i]
+
+        # Check if not present or not upserted/deleted
+        if not record? or record.state == "cached"
+          puts.push { col: @name, state: "cached", doc: doc }
+
+      # Put batch
+      if puts.length > 0
+        @store.putBatch puts, step2, error
+      else
+        step2()
+    , error
+
+    step2 = =>
       # Rows have been cached, now look for stale ones to remove
       docsMap = _.object(_.pluck(docs, "_id"), docs)
 
@@ -137,26 +144,34 @@ class Collection
 
       # Perform query, removing rows missing in docs from local db 
       @find(selector, options).fetch (results) =>
-        async.each results, (result, callback) =>
-          # If not present in docs and is present locally and not upserted/deleted
-          @store.get [@name, result._id], (record) =>
+        removes = []
+        keys = _.map results, (result) => [@name, result._id]
+        if keys.length == 0
+          if success? then success()
+          return
+        @store.getBatch keys, (records) =>
+          for i in [0...records.length]
+            record = records[i]
+            result = results[i]
+
+            # If not present in docs and is present locally and not upserted/deleted
             if not docsMap[result._id] and record and record.state == "cached"
               # If past end on sorted limited, ignore
               if options.sort and options.limit and docs.length == options.limit
                 if sort(result, _.last(docs)) >= 0
-                  return callback()
+                  continue
+
               # Item is gone from server, remove locally
-              @store.remove [@name, result._id], =>
-                callback()
-              , callback
-            else
-              callback()
-          , callback
-        , (err) =>
-          if err?
-            if error? then error(err)
-            return
-          if success? then success()  
+              removes.push [@name, result._id]
+
+          # If removes, handle them
+          if removes.length > 0
+            @store.removeBatch removes, =>
+              if success? then success()
+            , error
+          else
+            if success? then success()
+        , error
       , error
     
   pendingUpserts: (success, error) ->
