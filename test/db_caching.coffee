@@ -10,10 +10,22 @@ module.exports = ->
         @db.addCollection 'scratch', =>
           done()
 
-    it 'caches rows', (done) ->
+    it 'caches row', (done) ->
       @db.scratch.cache [{ _id: 1, a: 'apple' }], {}, {}, =>
         @db.scratch.find({}).fetch (results) ->
           assert.equal results[0].a, 'apple'
+          done()
+
+    it 'caches rows', (done) ->
+      rows = [
+        { _id: 1, a: 'apple' }
+        { _id: 2, a: 'banana' }
+        { _id: 3, a: 'orange' }
+        { _id: 4, a: 'kiwi' }
+      ]
+      @db.scratch.cache rows, {}, {}, =>
+        @db.scratch.find({}).fetch (results) ->
+          assert.equal results.length, 4
           done()
 
     it 'cache overwrite existing', (done) ->
