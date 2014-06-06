@@ -16,9 +16,14 @@ exports.autoselectLocalDb = (options, success, error) ->
   if not ('indexedDB' in window)
     window.indexedDB = window.indexedDB or window.webkitIndexedDB or window.mozIndexedDB or window.oIndexedDB or window.msIndexedDB
   
-  # detect browsers with known IndexedDb issues (e.g. Android pre-4.4)
+  # detect browsers with known IndexedDb issues (e.g. Android pre-4.4, Safari)
   poorIndexedDbSupport = false
   if navigator.userAgent.match(/Android 2/) or navigator.userAgent.match(/Android 3/) or navigator.userAgent.match(/Android 4\.[0-3]/)
+    # Chrome is an exception. It supports IndexedDb 
+    if not navigator.userAgent.match(/Chrome/)
+      poorIndexedDbSupport = true
+
+  if navigator.userAgent.match(/Safari/)
     # Chrome is an exception. It supports IndexedDb 
     if not navigator.userAgent.match(/Chrome/)
       poorIndexedDbSupport = true
