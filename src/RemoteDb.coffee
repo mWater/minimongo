@@ -49,7 +49,7 @@ class Collection
         success(data)
       req.fail (jqXHR, textStatus, errorThrown) =>
         if error
-          error(errorThrown)
+          error(jqXHR)
 
   findOne: (selector, options = {}, success, error) ->
     if _.isFunction(options) 
@@ -73,7 +73,7 @@ class Collection
       success(data[0] || null)
     req.fail (jqXHR, textStatus, errorThrown) =>
       if error
-        error(errorThrown)
+        error(jqXHR)
 
   upsert: (doc, success, error) ->
     if not @client
@@ -96,7 +96,7 @@ class Collection
       success(data || null)
     req.fail (jqXHR, textStatus, errorThrown) =>
       if error
-        error(errorThrown)
+        error(jqXHR)
 
   remove: (id, success, error) ->
     if not @client
@@ -110,4 +110,4 @@ class Collection
       if jqXHR.status == 410
         success()
       else if error
-        error(errorThrown)
+        error(jqXHR)
