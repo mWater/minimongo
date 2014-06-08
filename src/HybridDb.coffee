@@ -184,8 +184,8 @@ class HybridCollection
             @localCol.cacheOne remoteDoc, =>
               uploadUpserts(_.rest(upserts), success, error)
             , error
-        , (err) =>
-          error(err))
+          , error
+        , error)
       else 
         success()
 
@@ -195,8 +195,8 @@ class HybridCollection
         @remoteCol.remove(remove, () =>
           @localCol.resolveRemove remove, =>
             uploadRemoves(_.rest(removes), success, error)
-        , (err) =>
-          error(err))
+          , error
+        , error)
       else 
         success()
 
@@ -205,4 +205,6 @@ class HybridCollection
       uploadUpserts upserts, =>
         @localCol.pendingRemoves (removes) =>
           uploadRemoves(removes, success, error)
+        , error
       , error
+    , error
