@@ -42,6 +42,27 @@ module.exports = ->
             assert.equal results[0].a, 'banana'
             done()
 
+    it 'cache with same _rev overwrite existing', (done) ->
+      @db.scratch.cache [{ _id: 1, a: 'apple', _rev: 2 }], {}, {}, =>
+        @db.scratch.cache [{ _id: 1, a: 'banana', _rev: 2 }], {}, {}, =>
+          @db.scratch.find({}).fetch (results) ->
+            assert.equal results[0].a, 'banana'
+            done()
+
+    it 'cache with greater _rev overwrite existing', (done) ->
+      @db.scratch.cache [{ _id: 1, a: 'apple', _rev: 1 }], {}, {}, =>
+        @db.scratch.cache [{ _id: 1, a: 'banana', _rev: 2 }], {}, {}, =>
+          @db.scratch.find({}).fetch (results) ->
+            assert.equal results[0].a, 'banana'
+            done()
+
+    it 'cache with lesser _rev does not overwrite existing', (done) ->
+      @db.scratch.cache [{ _id: 1, a: 'apple', _rev: 2 }], {}, {}, =>
+        @db.scratch.cache [{ _id: 1, a: 'banana', _rev: 1 }], {}, {}, =>
+          @db.scratch.find({}).fetch (results) ->
+            assert.equal results[0].a, 'apple'
+            done()
+
     it "cache doesn't overwrite upsert", (done) ->
       @db.scratch.upsert { _id: 1, a: 'apple' }, =>
         @db.scratch.cache [{ _id: 1, a: 'banana' }], {}, {}, =>

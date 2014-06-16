@@ -168,7 +168,9 @@ class Collection
 
         # Check if not present or not upserted/deleted
         if not record? or record.state == "cached"
-          puts.push { col: @name, state: "cached", doc: doc }
+          # If _rev present, make sure that not overwritten by lower _rev
+          if not record or not doc._rev or not record.doc._rev or doc._rev >= record.doc._rev
+            puts.push { col: @name, state: "cached", doc: doc }
 
       # Put batch
       if puts.length > 0

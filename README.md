@@ -83,6 +83,16 @@ db = new IndexedDb({namespace: "mydb"}, function() {
 
 ```
 
+### Caching
+
+Rows can be cached without creating a pending upsert. This is done automatically when HybridDb uploads to a remote database
+with the returned upserted rows. It is also done when a query is performed on HybridDb: the results are cached in the local db
+and the query is re-performed on the local database.
+
+The field `_rev`, if present is used to prevent overwriting with older versions. This is the odd scenario where an updated version of a row
+is present, but an older query to the server is delayed in returning. To prevent this race condition from giving stale data, the _rev
+field is used.
+
 ### HybridDb
 
 Queries the local database first and then returns remote data if different than local version. 
@@ -93,3 +103,4 @@ This approach allows fast responses but with subsequent correction if the server
 ### RemoteDb
 
 Uses AJAX-JSON calls to an API to query a real Mongo database. API is simple and contains only query, upsert and remove commands.
+

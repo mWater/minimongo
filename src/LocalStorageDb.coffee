@@ -145,7 +145,11 @@ class Collection
     # Add all non-local that are not upserted or removed
     for doc in docs
       if not _.has(@upserts, doc._id) and not _.has(@removes, doc._id)
-        @_putItem(doc)
+        existing = @items[doc._id]
+
+        # If _rev present, make sure that not overwritten by lower _rev
+        if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
+          @_putItem(doc)
 
     docsMap = _.object(_.pluck(docs, "_id"), docs)
 
