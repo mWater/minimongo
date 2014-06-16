@@ -234,7 +234,13 @@ class Collection
       tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, doc._id], (tx, results) =>
         # Only insert if not present or cached
         if results.rows.length == 0 or results.rows.item(0).state == "cached"
-          tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], =>
+          existing = if results.rows.length > 0 then JSON.parse(results.rows.item(0).doc) else null
+
+          # If _rev present, make sure that not overwritten by lower _rev
+          if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
+            tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], =>
+              if success then success(doc)
+          else
             if success then success(doc)
         else
           if success then success(doc)

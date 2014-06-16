@@ -242,6 +242,11 @@ class Collection
   # Add but do not overwrite upsert/removed and do not record as upsert
   cacheOne: (doc, success, error) ->
     @store.get [@name, doc._id], (record) =>
+      # If _rev present, make sure that not overwritten by lower _rev
+      if record and doc._rev and record.doc._rev and doc._rev < record.doc._rev
+        if success? then success()
+        return
+
       if not record?
         record = {
           col: @name

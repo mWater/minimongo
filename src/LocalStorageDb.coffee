@@ -144,12 +144,7 @@ class Collection
   cache: (docs, selector, options, success, error) ->
     # Add all non-local that are not upserted or removed
     for doc in docs
-      if not _.has(@upserts, doc._id) and not _.has(@removes, doc._id)
-        existing = @items[doc._id]
-
-        # If _rev present, make sure that not overwritten by lower _rev
-        if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
-          @_putItem(doc)
+      @cacheOne(doc)
 
     docsMap = _.object(_.pluck(docs, "_id"), docs)
 
@@ -201,5 +196,9 @@ class Collection
   # Add but do not overwrite upserts or removes
   cacheOne: (doc, success) ->
     if not _.has(@upserts, doc._id) and not _.has(@removes, doc._id)
-      @_putItem(doc)
+      existing = @items[doc._id]
+
+      # If _rev present, make sure that not overwritten by lower _rev
+      if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
+        @_putItem(doc)
     if success? then success()
