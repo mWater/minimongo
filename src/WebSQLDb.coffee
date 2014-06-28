@@ -5,13 +5,13 @@ createUid = require('./utils').createUid
 processFind = require('./utils').processFind
 compileSort = require('./selector').compileSort
 
-module.exports = class IndexedDb
+module.exports = class WebSQLDb
   constructor: (options, success, error) ->
     @collections = {}
 
     # Create database
     # TODO escape name
-    @db = window.openDatabase 'minimongo_' + options.namespace, '1.0', 'Minimongo:' + options.namespace, 50 * 1024 * 1024
+    @db = window.openDatabase 'minimongo_' + options.namespace, '1.0', 'Minimongo:' + options.namespace, 5 * 1024 * 1024
     if not @db
       return error("Failed to create database")
 
