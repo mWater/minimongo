@@ -121,7 +121,7 @@ class HybridCollection
               if not _.isEqual(localData, localData2)
                 # Send again
                 success(localData2)
-            @localCol.find(selector, options).fetch(localSuccess2)
+            @localCol.find(selector, options).fetch(localSuccess2, error)
           @localCol.cache(remoteData, selector, options, cacheSuccess, error)
         @remoteCol.find(selector, _.omit(options, "fields")).fetch(remoteSuccess)
 
