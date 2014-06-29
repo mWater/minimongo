@@ -63,6 +63,9 @@ class Collection
     , error
 
   _findFetch: (selector, options, success, error) ->
+    # Android 2.x requires error callback
+    error = error or -> return
+
     # Get all docs from collection
     @db.readTransaction (tx) =>
       tx.executeSql "SELECT * FROM docs WHERE col = ?", [@name], (tx, results) =>
@@ -75,6 +78,9 @@ class Collection
     , error
 
   upsert: (doc, success, error) ->
+    # Android 2.x requires error callback
+    error = error or -> return
+
     # Handle both single and multiple upsert
     items = doc
     if not _.isArray(items)
@@ -92,6 +98,9 @@ class Collection
       if success then success(doc)
 
   remove: (id, success, error) ->
+    # Android 2.x requires error callback
+    error = error or -> return
+
     # Find record
     @db.transaction (tx) =>
       tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, id], (tx, results) =>
@@ -105,6 +114,9 @@ class Collection
     , error
 
   cache: (docs, selector, options, success, error) ->
+    # Android 2.x requires error callback
+    error = error or -> return
+
     @db.transaction (tx) =>
       # Add all non-local that are not upserted or removed
       async.eachSeries docs, (doc, callback) =>
@@ -162,6 +174,9 @@ class Collection
     , error 
     
   pendingUpserts: (success, error) ->
+    # Android 2.x requires error callback
+    error = error or -> return
+
     @db.readTransaction (tx) =>
       tx.executeSql "SELECT * FROM docs WHERE col = ? AND state = ?", [@name, "upserted"], (tx, results) =>
         docs = []
@@ -172,6 +187,9 @@ class Collection
     , error
 
   pendingRemoves: (success, error) ->
+    # Android 2.x requires error callback
+    error = error or -> return
+
     @db.readTransaction (tx) =>
       tx.executeSql "SELECT * FROM docs WHERE col = ? AND state = ?", [@name, "removed"], (tx, results) =>
         docs = []
@@ -182,6 +200,9 @@ class Collection
     , error
 
   resolveUpsert: (doc, success, error) ->
+    # Android 2.x requires error callback
+    error = error or -> return
+
     # Handle both single and multiple resolve
     items = doc
     if not _.isArray(items)
@@ -209,6 +230,9 @@ class Collection
     , error
 
   resolveRemove: (id, success, error) ->
+    # Android 2.x requires error callback
+    error = error or -> return
+
     # Find record
     @db.transaction (tx) =>
       # Only safely remove if removed state
@@ -218,6 +242,9 @@ class Collection
 
   # Add but do not overwrite or record as upsert
   seed: (doc, success, error) ->
+    # Android 2.x requires error callback
+    error = error or -> return
+
     @db.transaction (tx) =>
       tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, doc._id], (tx, results) =>
         # Only insert if not present 
@@ -230,6 +257,9 @@ class Collection
 
   # Add but do not overwrite upsert/removed and do not record as upsert
   cacheOne: (doc, success, error) ->
+    # Android 2.x requires error callback
+    error = error or -> return
+
     @db.transaction (tx) =>
       tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, doc._id], (tx, results) =>
         # Only insert if not present or cached
