@@ -23,6 +23,10 @@ exports.autoselectLocalDb = (options, success, error) ->
     if not navigator.userAgent.match(/Chrome/)
       poorIndexedDbSupport = true
 
+  # Always use WebSQL in cordova (phonegap) on Android
+  if navigator.userAgent.match(/Android/) and window.cordova
+    poorIndexedDbSupport = true
+
   if navigator.userAgent.match(/Safari/)
     # Chrome is an exception. It supports IndexedDb 
     if not navigator.userAgent.match(/Chrome/)
