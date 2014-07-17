@@ -25,7 +25,7 @@ module.exports = class WebSQLDb
           id TEXT NOT NULL,
           state TEXT NOT NULL,
           doc TEXT, 
-          PRIMARY KEY (col, id));''', doNothing, error)
+          PRIMARY KEY (col, id));''', [], doNothing, error)
 
      # Create tables
      @db.transaction createTables, error, =>
