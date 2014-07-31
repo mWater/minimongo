@@ -203,7 +203,7 @@ class Collection
         record = records[i]
 
         # Only safely remove upsert if doc is the same
-        if record.state == "upserted" and _.isEqual(record.doc, items[i])
+        if record and record.state == "upserted" and _.isEqual(record.doc, items[i])
           record.state = "cached"
           puts.push(record)
 

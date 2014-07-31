@@ -7,7 +7,7 @@ _ = require 'lodash'
 async = require 'async'
 
 describe 'WebSQLDb', ->
-  @timeout(5000)
+  @timeout(10000)
   before (done) ->
     @db = new WebSQLDb { namespace: "db.scratch" }, =>
       @db.addCollection 'scratch', =>
