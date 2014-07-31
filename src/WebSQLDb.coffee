@@ -231,7 +231,8 @@ class Collection
             else
               cb()
           else
-            cb(new Error("Upsert not found"))
+            # Upsert removed, which is fine
+            cb()
         , error
       , (err) =>
         if err
