@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "async": "^0.8.0",
+    "bowser": "^0.7.1",
     "browserify": "^3.29.1",
     "coffeeify": "~0.6.0",
     "idb-wrapper": "^1.4.1",

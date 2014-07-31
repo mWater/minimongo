@@ -1,6 +1,7 @@
 # Utilities for db handling
 _ = require 'lodash'
 async = require 'async'
+bowser = require 'bowser'
 
 compileDocumentSelector = require('./selector').compileDocumentSelector
 compileSort = require('./selector').compileSort
@@ -13,31 +14,26 @@ exports.autoselectLocalDb = (options, success, error) ->
   LocalStorageDb = require './LocalStorageDb'
   MemoryDb = require './MemoryDb'
 
-  if not ('indexedDB' in window)
-    window.indexedDB = window.indexedDB or window.webkitIndexedDB or window.mozIndexedDB or window.oIndexedDB or window.msIndexedDB
-  
-  # detect browsers with known IndexedDb issues (e.g. Android pre-4.4, Safari)
-  poorIndexedDbSupport = false
-  if navigator.userAgent.match(/Android 2/) or navigator.userAgent.match(/Android 3/) or navigator.userAgent.match(/Android 4\.[0-3]/)
-    # Chrome is an exception. It supports IndexedDb 
-    if not navigator.userAgent.match(/Chrome/)
-      poorIndexedDbSupport = true
+  # Get browser capabilities
+  browser = bowser.browser
 
-  # Always use WebSQL in cordova (phonegap) on Android
-  if navigator.userAgent.match(/Android/) and window.cordova
-    poorIndexedDbSupport = true
+  # Always use WebSQL in cordova
+  if window.cordova
+    console.log "Selecting WebSQLDb for Cordova"
+    return new WebSQLDb options, success, error
 
-  if navigator.userAgent.match(/Safari/)
-    # Chrome is an exception. It supports IndexedDb 
-    if not navigator.userAgent.match(/Chrome/)
-      poorIndexedDbSupport = true
+  # Use WebSQL in Android, iOS, Chrome, Safari, Opera, Blackberry
+  if browser.android or browser.ios or browser.chrome or browser.safari or browser.opera or browser.blackberry
+    console.log "Selecting WebSQLDb for browser"
+    return new WebSQLDb options, success, error
 
-  if typeof window.indexedDB != "undefined" and not poorIndexedDbSupport
+  # Use IndexedDb on Firefox >= 16
+  if browser.firefox and browser.version >= 16
+    console.log "Selecting IndexedDb for browser"
     return new IndexedDb options, success, error
 
-  if typeof window.openDatabase != "undefined"
-    return new WebSQLDb options, success, error
-    
+  # Use Local Storage otherwise
+  console.log "Selecting LocalStorageDb for fallback"
   return new LocalStorageDb(options, success, error)
 
 # Migrates a local database's pending upserts and removes from one database to another
