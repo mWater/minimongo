@@ -321,6 +321,25 @@ describe 'HybridDb', ->
         done()
     )
 
+  it "removes upsert if fails with 410 (gone)", (done) ->
+    @lc.upsert(_id:"1", a:1)
+
+    @rc.upsert = (doc, success, error) =>
+      error({ status: 410 })
+
+    @hybrid.upload () =>
+      @lc.pendingUpserts (data) =>
+        assert.equal data.length, 0
+        @lc.pendingRemoves (data) =>
+          assert.equal data.length, 0
+          @lc.findOne { _id: "1"}, (data) =>
+            assert.isNull data
+            done()
+          , fail
+        , fail
+      , fail
+    , fail
+
   it "upserts to local db", (done) ->
     @hc.upsert(_id:"1", a:1)
     @lc.pendingUpserts (data) =>

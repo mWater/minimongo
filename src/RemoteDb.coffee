@@ -26,6 +26,7 @@ class Collection
     @url = url
     @client = client
 
+  # error is called with jqXHR
   find: (selector, options = {}) ->
     return fetch: (success, error) =>
       # Create url
@@ -51,6 +52,7 @@ class Collection
         if error
           error(jqXHR)
 
+  # error is called with jqXHR
   findOne: (selector, options = {}, success, error) ->
     if _.isFunction(options) 
       [options, success, error] = [{}, options, success]
@@ -75,6 +77,7 @@ class Collection
       if error
         error(jqXHR)
 
+  # error is called with jqXHR
   upsert: (doc, success, error) ->
     if not @client
       throw new Error("Client required to upsert")
@@ -98,6 +101,7 @@ class Collection
       if error
         error(jqXHR)
 
+  # error is called with jqXHR
   remove: (id, success, error) ->
     if not @client
       throw new Error("Client required to remove")

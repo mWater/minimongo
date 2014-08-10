@@ -178,14 +178,24 @@ class HybridCollection
     uploadUpserts = (upserts, success, error) =>
       upsert = _.first(upserts)
       if upsert
-        @remoteCol.upsert(upsert, (remoteDoc) =>
+        @remoteCol.upsert upsert, (remoteDoc) =>
           @localCol.resolveUpsert upsert, =>
             # Cache new value
             @localCol.cacheOne remoteDoc, =>
               uploadUpserts(_.rest(upserts), success, error)
             , error
           , error
-        , error)
+        , (err) =>
+          # If 410 error, remove document
+          if err.status == 410
+            @localCol.remove upsert._id, =>
+              # Resolve remove
+              @localCol.resolveRemove upsert._id, =>
+                uploadUpserts(_.rest(upserts), success, error)
+              , error
+            , error
+          else
+            error(err)
       else 
         success()
 
