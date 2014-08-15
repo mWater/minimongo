@@ -321,7 +321,7 @@ describe 'HybridDb', ->
         done()
     )
 
-  it "removes upsert if fails with 410 (gone)", (done) ->
+  it "removes upsert if fails with 410 (gone) and continue", (done) ->
     @lc.upsert(_id:"1", a:1)
 
     @rc.upsert = (doc, success, error) =>
@@ -339,6 +339,43 @@ describe 'HybridDb', ->
         , fail
       , fail
     , fail
+
+  it "removes upsert if fails with 403 (permission) and fail", (done) ->
+    @lc.upsert(_id:"1", a:1)
+
+    @rc.upsert = (doc, success, error) =>
+      error({ status: 403 })
+
+    @hybrid.upload fail, () =>
+      @lc.pendingUpserts (data) =>
+        assert.equal data.length, 0
+        @lc.pendingRemoves (data) =>
+          assert.equal data.length, 0
+          @lc.findOne { _id: "1"}, (data) =>
+            assert.isNull data
+            done()
+          , fail
+        , fail
+      , fail
+
+  it "removes document if remove fails with 403 (permission) and fail", (done) ->
+    @lc.seed(_id:"1", a:1)
+    @hc.remove("3")
+
+    @rc.remove = (id, success, error) =>
+      error({ status: 403 })
+
+    @hybrid.upload(() =>
+      assert.fail()
+    , ()=>
+      @lc.pendingUpserts (data) =>
+        assert.equal data.length, 0, "Should have zero upserts"
+        @lc.pendingRemoves (data) =>
+          assert.equal data.length, 0, "Should have zero removes"
+          @lc.findOne { _id: "1" }, (data) =>
+            assert.equal data.a, 1
+            done()
+    )
 
   it "upserts to local db", (done) ->
     @hc.upsert(_id:"1", a:1)

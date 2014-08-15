@@ -186,12 +186,16 @@ class HybridCollection
             , error
           , error
         , (err) =>
-          # If 410 error, remove document
-          if err.status == 410
+          # If 410 error or 403, remove document
+          if err.status == 410 or err.status == 403
             @localCol.remove upsert._id, =>
               # Resolve remove
               @localCol.resolveRemove upsert._id, =>
-                uploadUpserts(_.rest(upserts), success, error)
+                # Continue if was 410
+                if err.status == 410
+                  uploadUpserts(_.rest(upserts), success, error)
+                else
+                  error(err)
               , error
             , error
           else
@@ -202,11 +206,23 @@ class HybridCollection
     uploadRemoves = (removes, success, error) =>
       remove = _.first(removes)
       if remove
-        @remoteCol.remove(remove, () =>
+        @remoteCol.remove remove, () =>
           @localCol.resolveRemove remove, =>
             uploadRemoves(_.rest(removes), success, error)
           , error
-        , error)
+        , (err) =>
+          # If 403 or 410, remove document 
+          if err.status == 410 or err.status == 403
+            @localCol.resolveRemove remove, =>
+              # Continue if was 410
+              if err.status == 410
+                uploadRemoves(_.rest(removes), success, error)
+              else
+                error(err)
+            , error
+          else
+            error(err)          
+        , error
       else 
         success()
 
