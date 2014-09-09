@@ -389,3 +389,114 @@ describe 'HybridDb', ->
     @lc.pendingRemoves (data) =>
       assert.equal data.length, 1
       done()
+
+  context "caching false", ->
+    beforeEach ->
+      @local = new MemoryDb()
+      @remote = new MemoryDb()
+      @hybrid = new HybridDb(@local, @remote)
+      @db = @hybrid
+
+      @local.addCollection("scratch")
+      @lc = @local.scratch
+
+      @remote.addCollection("scratch")
+      @rc = @remote.scratch
+
+      # No caching
+      @hybrid.addCollection("scratch", { caching: false })
+      @hc = @hybrid.scratch
+
+      # Seed some remote data
+      @rc.seed(_id:"1", a:3)
+      @rc.seed(_id:"2", a:4)
+
+    it "find uses remote", (done) ->
+      @hc.find({}).fetch (data) =>
+        assert.deepEqual _.pluck(data, 'a'), [3,4]
+        done()
+
+    it "find does not cache results", (done) ->
+      @hc.find({}).fetch (data) =>
+        @lc.find({}).fetch (data) =>
+          assert.equal data.length, 0
+          done()
+
+    it "find fails if remote fails", (done) ->
+      @rc.find = (selector, options) =>
+        return { fetch: (success, error) ->
+          error()
+        }
+      @hc.find({}).fetch (data) =>
+        assert.fail()
+      , =>
+        done()
+
+    it "find respects local upserts", (done) ->
+      @lc.upsert({ _id:"1", a:9 })
+
+      @hc.find({}, { sort: ['_id'] }).fetch (data) =>
+        assert.deepEqual _.pluck(data, 'a'), [9,4]
+        done()
+
+    it "find respects local removes", (done) ->
+      @lc.remove("1")
+
+      @hc.find({}).fetch (data) =>
+        assert.deepEqual _.pluck(data, 'a'), [4]
+        done()
+
+    it "findOne without _id selector uses remote", (done) ->
+      @hc.findOne {}, { sort: ['_id'] }, (data) =>
+        assert.deepEqual data, { _id:"1", a:3 }
+        done()
+
+    it "findOne without _id selector respects local upsert", (done) ->
+      @lc.upsert({ _id:"1", a:9 })
+      @hc.findOne {}, { sort: ['_id'] }, (data) =>
+        assert.deepEqual data, { _id:"1", a:9 }
+        done()
+
+    it "findOne without _id selector respects local remove", (done) ->
+      @lc.remove("1")
+
+      @hc.findOne {}, { sort: ['_id'] }, (data) =>
+        assert.deepEqual data, { _id: "2", a: 4 }
+        done()
+
+    it "findOne with _id selector uses remote", (done) ->
+      @hc.findOne { _id: "1" }, { sort: ['_id'] }, (data) =>
+        assert.deepEqual data, { _id:"1", a:3 }
+        done()
+
+    it "findOne with _id selector respects local upsert", (done) ->
+      @lc.upsert({ _id:"1", a:9 })
+      @hc.findOne { _id: "1" }, { sort: ['_id'] }, (data) =>
+        assert.deepEqual data, { _id:"1", a:9 }
+        done()
+
+    it "findOne with _id selector respects local remove", (done) ->
+      @lc.remove("1")
+
+      @hc.findOne { _id: "1" }, { sort: ['_id'] }, (data) =>
+        assert.isNull data
+        done()
+
+    it "upload success removes from local", (done) ->
+      @lc.upsert({ _id:"1", a:9 })
+      @hybrid.upload () =>
+        # Not pending locally
+        @lc.pendingRemoves (data) =>
+          assert.equal data.length, 0
+
+          # Pending remotely
+          @rc.pendingUpserts (data) =>
+            assert.deepEqual _.pluck(data, 'a'), [9]
+
+            # Not cached locally
+            @lc.find({}).fetch (data) =>
+              assert.equal data.length, 0
+              done()
+            , fail
+          , fail
+      , fail

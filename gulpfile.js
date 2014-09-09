@@ -25,6 +25,9 @@ gulp.task('prepareTests', ['coffee', 'copy'], function() {
 	var bundler = browserify({entries: glob.sync("./test/*Tests.coffee"), extensions: [".coffee"] }).
 		transform(coffeeify);
 	var stream = bundler.bundle()
+		// TODO error handling not working
+	    .on('error', gutil.log)
+	    .on('error', function() { throw "Failed" })
 		.pipe(streamConvert('browserified.js'))
 		.pipe(gulp.dest('./test'));
 	return stream;
