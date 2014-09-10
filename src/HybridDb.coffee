@@ -14,8 +14,12 @@ module.exports = class HybridDb
     @remoteDb = remoteDb
     @collections = {}
 
-  addCollection: (name, success, error) ->
-    collection = new HybridCollection(name, @localDb[name], @remoteDb[name])
+  addCollection: (name, options, success, error) ->
+    # Shift options over if not present
+    if _.isFunction(options) 
+      [options, success, error] = [{}, options, success]
+
+    collection = new HybridCollection(name, @localDb[name], @remoteDb[name], options)
     @[name] = collection
     @collections[name] = collection
     if success? then success()
@@ -40,12 +44,20 @@ module.exports = class HybridDb
     uploadCols(cols, success, error)
 
 class HybridCollection
-  constructor: (name, localCol, remoteCol) ->
+  # Options includes 
+  constructor: (name, localCol, remoteCol, options) ->
     @name = name
     @localCol = localCol
     @remoteCol = remoteCol
 
-  # options.mode defaults to "hybrid".
+    # Default options
+    options = options or {}
+    _.defaults(options, { caching: true })
+
+    # Extract options
+    @caching = options.caching
+
+  # options.mode defaults to "hybrid" (unless caching=false, in which case "remote")
   # In "hybrid", it will return local results, then hit remote and return again if different
   # If remote gives error, it will be ignored
   # In "remote", it will call remote and not cache, but integrates local upserts/deletes
@@ -61,12 +73,13 @@ class HybridCollection
   # will return twice
   # In "local", it will return local if present. If not present, only then will it hit remote.
   # If remote gives error, then it will return null
-  # In "remote"... (not implemented)
+  # In "remote", it gets remote and integrates local changes. Much more efficient if _id specified
+  # If remote gives error, falls back to local if caching
   findOne: (selector, options = {}, success, error) ->
     if _.isFunction(options) 
       [options, success, error] = [{}, options, success]
 
-    mode = options.mode || "hybrid"
+    mode = options.mode || (if @caching then "hybrid" else "remote")
 
     if mode == "hybrid" or mode == "local"
       options.limit = 1
@@ -99,11 +112,50 @@ class HybridCollection
         # Call remote
         @remoteCol.findOne selector, _.omit(options, 'fields'), remoteSuccess, remoteError
       , error
-    else 
+    else if mode == "remote"
+      # If _id specified, use remote findOne
+      if selector._id 
+        remoteSuccess2 = (remoteData) =>
+          # Check for local upsert
+          @localCol.pendingUpserts (pendingUpserts) =>
+            localData = _.findWhere(pendingUpserts, { _id: selector._id })
+            if localData
+              return success(localData)
+
+            # Check for local remove
+            @localCol.pendingRemoves (pendingRemoves) =>
+              if selector._id in pendingRemoves
+                # Removed, success null
+                return success(null)
+
+              success(remoteData)
+          , error
+
+        # Get remote response
+        @remoteCol.findOne selector, options, remoteSuccess2, error
+      else
+        # Without _id specified, interaction between local and remote changes is complex
+        # For example, if the one result returned by remote is locally deleted, we have no fallback
+        # So instead we do a normal find and then take the first result, which is very inefficient
+        @find(selector, options).fetch (findData) =>
+          if findData.length > 0
+            success(findData[0])
+          else
+            success(null)
+        , (err) =>
+          # Call local if caching
+          if @caching
+            @localCol.findOne(selector, options, success, error)
+          else
+            # Otherwise bubble up
+            if error
+              error(err)
+
+    else
       throw new Error("Unknown mode")
 
   _findFetch: (selector, options, success, error) ->
-    mode = options.mode || "hybrid"
+    mode = options.mode || (if @caching then "hybrid" else "remote")
 
     if mode == "hybrid"
       # Get local results
@@ -156,9 +208,14 @@ class HybridCollection
 
             success(data)
 
-      remoteError = =>
-        # Call local
-        @localCol.find(selector, options).fetch(success, error)
+      remoteError = (err) =>
+        # Call local if caching
+        if @caching
+          @localCol.find(selector, options).fetch(success, error)
+        else
+          # Otherwise bubble up
+          if error
+            error(err)
 
       @remoteCol.find(selector, options).fetch(remoteSuccess, remoteError)
     else
@@ -180,10 +237,19 @@ class HybridCollection
       if upsert
         @remoteCol.upsert upsert, (remoteDoc) =>
           @localCol.resolveUpsert upsert, =>
-            # Cache new value
-            @localCol.cacheOne remoteDoc, =>
-              uploadUpserts(_.rest(upserts), success, error)
-            , error
+            # Cache new value if caching
+            if @caching
+              @localCol.cacheOne remoteDoc, =>
+                uploadUpserts(_.rest(upserts), success, error)
+              , error
+            else
+              # Remove document
+              @localCol.remove upsert._id, =>
+                # Resolve remove
+                @localCol.resolveRemove upsert._id, =>
+                  uploadUpserts(_.rest(upserts), success, error)
+                , error
+              , error
           , error
         , (err) =>
           # If 410 error or 403, remove document

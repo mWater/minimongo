@@ -10,5 +10,5 @@
     },
     "before_tests": "gulp prepareTests",
     "on_exit": "rm test/browserified.js",
-    "launch_in_dev": [ "chrome" ]
+    "launch_in_dev": [ ]
 }

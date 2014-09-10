@@ -175,6 +175,13 @@ module.exports = ->
             assert.equal results[0], 1
             done()
 
+    it "returns pending removes that are not present", (done) ->
+      @db.scratch.remove 2, =>
+        @db.scratch.pendingRemoves (results) =>
+          assert.equal results.length, 1
+          assert.equal results[0], 2
+          done()
+
     it "resolves pending removes", (done) ->
       @db.scratch.cache [{ _id: 1, a: 'apple' }], {}, {}, =>
         @db.scratch.remove 1, =>
