@@ -99,6 +99,12 @@ Queries the local database first and then returns remote data if different than 
 
 This approach allows fast responses but with subsequent correction if the server has differing information.
 
+The HybridDb collections can also be created in non-caching mode, which is useful for storing up changes to be 
+sent to a sever:
+
+```
+db.addCollection("sometable", { caching: false })
+```
 
 ### RemoteDb
 
