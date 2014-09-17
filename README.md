@@ -85,13 +85,9 @@ db = new IndexedDb({namespace: "mydb"}, function() {
 
 ### Caching
 
-Rows can be cached without creating a pending upsert. This is done automatically when HybridDb uploads to a remote database
-with the returned upserted rows. It is also done when a query is performed on HybridDb: the results are cached in the local db
-and the query is re-performed on the local database.
+Rows can be cached without creating a pending upsert. This is done automatically when HybridDb uploads to a remote database with the returned upserted rows. It is also done when a query is performed on HybridDb: the results are cached in the local db and the query is re-performed on the local database.
 
-The field `_rev`, if present is used to prevent overwriting with older versions. This is the odd scenario where an updated version of a row
-is present, but an older query to the server is delayed in returning. To prevent this race condition from giving stale data, the _rev
-field is used.
+The field `_rev`, if present is used to prevent overwriting with older versions. This is the odd scenario where an updated version of a row is present, but an older query to the server is delayed in returning. To prevent this race condition from giving stale data, the _rev field is used.
 
 ### HybridDb
 
@@ -99,12 +95,25 @@ Queries the local database first and then returns remote data if different than 
 
 This approach allows fast responses but with subsequent correction if the server has differing information.
 
-The HybridDb collections can also be created in non-caching mode, which is useful for storing up changes to be 
-sent to a sever:
+The HybridDb collections can also be created in non-caching mode, which is useful for storing up changes to be sent to a sever:
 
 ```
 db.addCollection("sometable", { caching: false })
 ```
+
+To keep a local database and a remote database in sync, create a HybridDb:
+
+```
+hybridDb = new HybridDb(localDb, remoteDb)
+```
+
+Be sure to add the same collections to all three databases (local, hybrid and remote).
+
+Then query the hybridDb (`find` and `findOne`) to have it get results and correctly combine them with any pending local results. If you are not interested in caching results, add `{ mode: "remote" }` to the options of `find` or `findOne`
+
+When upserts and removes are done on the HybridDb, they are queued up in the LocalDb until `hybridDb.upload(success, error)` is called.
+
+`upload` will go through each collection and send any upserts or removes to the remoteDb.
 
 ### RemoteDb
 
