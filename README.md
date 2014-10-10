@@ -2,7 +2,7 @@
 
 A client-side MongoDB implementation which supports basic queries, including some geospatial ones.
 
-Uses code from Meteor.js minimongo package, reworked to support more geospatial queries and made npm+browserify friendly.
+Uses code from Meteor.js minimongo package, reworked to support more geospatial queries and made npm+browserify friendly. It was forked in January 2014.
 
 It is either IndexedDb backed (IndexedDb), WebSQL backed (WebSQLDb), Local storage backed (LocalStorageDb) or in memory only (MemoryDb).
 
