@@ -65,12 +65,58 @@ exports.processFind = (items, selector, options) ->
 
   # Clone to prevent accidental updates, or apply fields if present
   if options and options.fields
-    if _.first(_.values(options.fields)) == 1
-      # Include fields
-      filtered = _.map filtered, (doc) -> _.pick(doc, _.keys(options.fields).concat(["_id"]))
-    else
-      # Exclude fields
-      filtered = _.map filtered, (doc) -> _.omit(doc, _.keys(options.fields))
+    # For each item
+    filtered = _.map filtered, (item) ->
+      item = _.cloneDeep(item)
+
+      newItem = {}
+
+      if _.first(_.values(options.fields)) == 1
+        # Include fields
+        for field in _.keys(options.fields).concat(["_id"])
+          path = field.split(".")
+
+          # Determine if path exists
+          obj = item
+          for pathElem in path
+            if obj
+              obj = obj[pathElem]
+
+          if not obj?
+            continue
+
+          # Go into path, creating as necessary
+          from = item
+          to = newItem
+          for pathElem in _.initial(path)
+            to[pathElem] = to[pathElem] or {}
+
+            # Move inside
+            to = to[pathElem]
+            from = from[pathElem]
+
+          # Copy value
+          to[_.last(path)] = from[_.last(path)]
+
+        return newItem
+      else
+        # Exclude fields
+        for field in _.keys(options.fields).concat(["_id"])
+          path = field.split(".")
+
+          # Go inside path
+          obj = item
+          for pathElem in _.initial(path)
+            if obj
+              obj = obj[pathElem]
+
+          # If not there, don't exclude
+          if not obj?
+            continue
+
+          delete obj[_.last(path)]
+
+        return item
   else
     filtered = _.map filtered, (doc) -> _.cloneDeep(doc)
 

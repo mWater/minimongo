@@ -8,7 +8,7 @@ module.exports = ->
     beforeEach (done) ->
       @db.removeCollection 'scratch', =>
         @db.addCollection 'scratch', =>
-          @db.scratch.upsert { _id:"1", a:"Alice", b:1 }, =>
+          @db.scratch.upsert { _id:"1", a:"Alice", b:1, c: { d: 1, e: 2 } }, =>
             @db.scratch.upsert { _id:"2", a:"Charlie", b:2 }, =>
               @db.scratch.upsert { _id:"3", a:"Bob", b:3 }, =>
                 done()
@@ -34,10 +34,30 @@ module.exports = ->
         assert.deepEqual results[0], { _id: "1",  a: "Alice" }
         done()
 
+    it 'includes fields', (done) ->
+      @db.scratch.find({ _id: "1" }, { fields: { a:1 }}).fetch (results) =>
+        assert.deepEqual results[0], { _id: "1",  a: "Alice" }
+        done()
+
+    it 'includes subfields', (done) ->
+      @db.scratch.find({ _id: "1" }, { fields: { "c.d":1 }}).fetch (results) =>
+        assert.deepEqual results[0], { _id: "1",  c: { d: 1 } }
+        done()
+
+    it 'ignores non-existent subfields', (done) ->
+      @db.scratch.find({ _id: "1" }, { fields: { "x.y":1 }}).fetch (results) =>
+        assert.deepEqual results[0], { _id: "1" }
+        done()
+
     it 'excludes fields', (done) ->
       @db.scratch.find({ _id: "1" }, { fields: { a:0 }}).fetch (results) =>
         assert.isUndefined results[0].a
         assert.equal results[0].b, 1
+        done()
+
+    it 'excludes subfields', (done) ->
+      @db.scratch.find({ _id: "1" }, { fields: { "c.d": 0 }}).fetch (results) =>
+        assert.deepEqual results[0].c, { e: 2 }
         done()
 
     it 'finds one row', (done) ->
