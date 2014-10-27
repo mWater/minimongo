@@ -33,8 +33,8 @@ gulp.task('prepareTests', ['coffee', 'copy'], function() {
 	return stream;
 });
 
-gulp.task('dist', function() {
-  bundler = browserify({ extensions: [".coffee"] });
+gulp.task('dist', ['copy', 'coffee'], function() {
+  bundler = browserify();
   bundler.require("./jquery-shim.js", { expose: "jquery"});
   bundler.require("./lodash-shim.js", { expose: "lodash"});
   bundler.require("./index.js", { expose: "minimongo"});
