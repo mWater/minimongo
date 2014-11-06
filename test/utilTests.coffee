@@ -32,7 +32,7 @@ describe 'migrated Local Db', ->
     @from.a.upsert { _id: "1", x: 1 }, =>
       utils.migrateLocalDb @from, @to, =>
         @to.a.pendingUpserts (upserts) =>
-          assert.deepEqual upserts, [{ _id: "1", x: 1 }]
+          assert.deepEqual upserts, [{ doc: { _id: "1", x: 1 }, base: null }]
           @from.a.pendingUpserts (upserts2) =>
             assert.equal upserts2.length, 0
           done()

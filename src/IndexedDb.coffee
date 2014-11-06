@@ -80,8 +80,6 @@ class Collection
     keys = _.map items, (item) => [@name, item.doc._id]
     @store.getBatch keys, (records) =>
       puts = _.map items, (item, i) =>
-        base = null
-
         # Prefer explicit base
         if item.base != undefined
           base = item.base
@@ -89,6 +87,8 @@ class Collection
           base = records[i].doc
         else if records[i] and records[i].doc and records[i].state == "upserted"
           base = records[i].base
+        else
+          base = null
 
         return {
           col: @name

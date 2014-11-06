@@ -1,7 +1,7 @@
 _ = require 'lodash'
 async = require 'async'
 
-createUid = require('./utils').createUid
+utils = require('./utils')
 processFind = require('./utils').processFind
 compileSort = require('./selector').compileSort
 
@@ -14,22 +14,39 @@ module.exports = class WebSQLDb
 
     # Create database
     # TODO escape name
-    @db = window.openDatabase 'minimongo_' + options.namespace, '1.0', 'Minimongo:' + options.namespace, 5 * 1024 * 1024
+    @db = window.openDatabase 'minimongo_' + options.namespace, '', 'Minimongo:' + options.namespace, 5 * 1024 * 1024
     if not @db
       return error("Failed to create database")
 
-    createTables = (tx) =>
+    migrateToV1 = (tx) =>
       tx.executeSql('''
-        CREATE TABLE IF NOT EXISTS docs (
+        CREATE TABLE docs (
           col TEXT NOT NULL,
           id TEXT NOT NULL,
           state TEXT NOT NULL,
           doc TEXT, 
           PRIMARY KEY (col, id));''', [], doNothing, error)
 
-     # Create tables
-     @db.transaction createTables, error, =>
-      if success then success(this)
+    migrateToV2 = (tx) =>
+      tx.executeSql('''
+        ALTER TABLE docs ADD COLUMN base TEXT;''', [], doNothing, error)
+
+    # Check if at v2 version
+    checkV2 = =>
+      if @db.version == "1.0"
+        @db.changeVersion "1.0", "2.0", migrateToV2, error, () =>
+          if success then success(this)
+      else if @db.version != "2.0"
+        return error("Unknown db version " + @db.version)
+      else 
+        if success then success(this)
+
+    if @db.version == ""
+      @db.changeVersion "", "1.0", migrateToV1, error, checkV2
+    else
+      checkV2()
+
+    return @db
 
   addCollection: (name, success, error) ->
     collection = new Collection(name, @db)
@@ -81,25 +98,42 @@ class Collection
       , error   
     , error
 
-  upsert: (doc, success, error) ->
+  upsert: (docs, bases, success, error) ->
+    [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
+
     # Android 2.x requires error callback
     error = error or -> return
 
-    # Handle both single and multiple upsert
-    items = doc
-    if not _.isArray(items)
-      items = [items]
-
-    for item in items
-      if not item._id
-        item._id = createUid()
-  
     @db.transaction (tx) =>
-      for item in items
-        tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, item._id, "upserted", JSON.stringify(item)], doNothing, error
+      ids = _.map(items, (item) -> item.doc._id)
+
+      # Get bases
+      bases = {}
+      async.eachSeries ids, (id, callback) =>
+        tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, id], (tx2, results) =>
+          tx = tx2
+          if results.rows.length > 0
+            row = results.rows.item(0)
+            if row.state == "upserted"
+              bases[row.id] = if row.base then JSON.parse(row.base) else null
+            else if row.state == "cached"
+              bases[row.id] = JSON.parse(row.doc)
+          callback()
+      , () =>
+        for item in items
+          id = item.doc._id
+
+          # Prefer explicit base
+          if item.base != undefined
+            base = item.base
+          else if bases[id]
+            base = bases[id]
+          else
+            base = null
+          tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc, base) VALUES (?, ?, ?, ?, ?)",  [@name, item.doc._id, "upserted", JSON.stringify(item.doc), JSON.stringify(base)], doNothing, error
     , error
     , =>
-      if success then success(doc)
+      if success then success(docs)
 
   remove: (id, success, error) ->
     # Android 2.x requires error callback
@@ -191,7 +225,7 @@ class Collection
         docs = []
         for i in [0...results.rows.length]
           row = results.rows.item(i)
-          docs.push JSON.parse(row.doc)
+          docs.push { doc: JSON.parse(row.doc), base: if row.base then JSON.parse(row.base) else null }
         if success? then success(docs)
       , error
     , error
@@ -210,25 +244,21 @@ class Collection
       , error
     , error
 
-  resolveUpsert: (doc, success, error) ->
+  resolveUpserts: (upserts, success, error) ->
     # Android 2.x requires error callback
     error = error or -> return
 
-    # Handle both single and multiple resolve
-    items = doc
-    if not _.isArray(items)
-      items = [items]
-
     # Find records
     @db.transaction (tx) =>
-      async.eachSeries items, (item, cb) =>
-        tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, item._id], (tx, results) =>
-          if results.rows.length > 0
+      async.eachSeries upserts, (upsert, cb) =>
+        tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, upsert.doc._id], (tx, results) =>
+          if results.rows.length > 0 and results.rows.item(0).state == "upserted"
             # Only safely remove upsert if doc is the same
-            if results.rows.item(0).state == "upserted" and _.isEqual(JSON.parse(results.rows.item(0).doc), item)
-              tx.executeSql 'UPDATE docs SET state="cached" WHERE col = ? AND id = ?', [@name, item._id], doNothing, error
+            if _.isEqual(JSON.parse(results.rows.item(0).doc), upsert.doc)
+              tx.executeSql 'UPDATE docs SET state="cached" WHERE col = ? AND id = ?', [@name, upsert.doc._id], doNothing, error
               cb()
             else
+              tx.executeSql 'UPDATE docs SET base=? WHERE col = ? AND id = ?', [JSON.stringify(upsert.doc), @name, upsert.doc._id], doNothing, error
               cb()
           else
             # Upsert removed, which is fine
@@ -239,7 +269,7 @@ class Collection
           return error(err)
 
         # Success
-        if success then success(doc)
+        if success then success()
     , error
 
   resolveRemove: (id, success, error) ->

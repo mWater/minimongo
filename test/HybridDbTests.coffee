@@ -273,7 +273,7 @@ describe 'HybridDb', ->
     @lc.upsert(_id:"1", a:1)
 
     # Override remote upsert to change returned doc
-    @rc.upsert = (doc, success) =>
+    @rc.upsert = (docs, bases, success) =>
       success(_id:"1", a:2)
 
     @hybrid.upload(() =>
@@ -306,7 +306,7 @@ describe 'HybridDb', ->
     @rc.seed(_id:"3", a:3)
     @hc.remove("3")
 
-    @rc.upsert = (doc, success, error) =>
+    @rc.upsert = (docs, bases, success, error) =>
       error(new Error("fail"))
 
     @rc.remove = (id, success, error) =>
@@ -326,7 +326,7 @@ describe 'HybridDb', ->
   it "removes upsert if fails with 410 (gone) and continue", (done) ->
     @lc.upsert(_id:"1", a:1)
 
-    @rc.upsert = (doc, success, error) =>
+    @rc.upsert = (docs, bases, success, error) =>
       error({ status: 410 })
 
     @hybrid.upload () =>
@@ -345,7 +345,7 @@ describe 'HybridDb', ->
   it "removes upsert if fails with 403 (permission) and fail", (done) ->
     @lc.upsert(_id:"1", a:1)
 
-    @rc.upsert = (doc, success, error) =>
+    @rc.upsert = (docs, bases, success, error) =>
       error({ status: 403 })
 
     @hybrid.upload fail, () =>

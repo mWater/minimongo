@@ -6,10 +6,15 @@ db_caching = require "./db_caching"
 _ = require 'lodash'
 async = require 'async'
 
+error = (err) ->
+  console.log err
+  assert.fail(JSON.stringify(err))
+
 describe 'WebSQLDb', ->
   @timeout(5000)
   before (done) ->
-    @db = new WebSQLDb { namespace: "db.scratch" }, =>
+    new WebSQLDb { namespace: "db.scratch" }, (db) =>
+      @db = db
       @db.addCollection 'scratch', =>
         done()
 
@@ -21,40 +26,40 @@ describe 'WebSQLDb', ->
 
 describe 'WebSQLDb storage', ->
   beforeEach (done) ->
-    @db = new WebSQLDb { namespace: "db.scratch" }, =>
+    new WebSQLDb { namespace: "db.scratch" }, (db) =>
+      @db = db
       @db.removeCollection 'scratch', =>
         @db.addCollection 'scratch', =>
           done()
 
   it "retains items", (done) ->
-    @db.scratch.upsert { _id:1, a:"Alice" }, =>
-      db2 = new WebSQLDb { namespace: "db.scratch" }, =>
+    @db.scratch.upsert { _id:"1", a:"Alice" }, =>
+      new WebSQLDb { namespace: "db.scratch" }, (db2) =>
         db2.addCollection 'scratch', =>
           db2.scratch.find({}).fetch (results) ->
             assert.equal results[0].a, "Alice"
             done()
 
   it "retains upserts", (done) ->
-    @db.scratch.cacheOne { _id:1, a:"Alice" }, =>
-      @db.scratch.upsert { _id:1, a:"Bob" }, =>
-        db2 = new WebSQLDb { namespace: "db.scratch" }, =>
-        db2 = new LocalStorageDb { namespace: "db.scratch" }, =>
+    @db.scratch.cacheOne { _id:"1", a:"Alice" }, =>
+      @db.scratch.upsert { _id:"1", a:"Bob" }, =>
+        new WebSQLDb { namespace: "db.scratch" }, (db2) =>
           db2.addCollection 'scratch', =>
             db2.scratch.find({}).fetch (results) ->
-              assert.deepEqual results, [{ _id:1, a:"Bob" }]
+              assert.deepEqual results, [{ _id:"1", a:"Bob" }]
               db2.scratch.pendingUpserts (upserts) ->
                 assert.equal upserts.length, 1
-                assert.deepEqual upserts[0].doc, { _id:1, a:"Bob" }
-                assert.deepEqual upserts[0].base, { _id:1, a:"Alice" }
+                assert.deepEqual upserts[0].doc, { _id:"1", a:"Bob" }
+                assert.deepEqual upserts[0].base, { _id:"1", a:"Alice" }
                 done()
 
   it "retains removes", (done) ->
-    @db.scratch.seed { _id:1, a:"Alice" }, =>
-      @db.scratch.remove 1, =>
-        db2 = new WebSQLDb { namespace: "db.scratch" }, =>
+    @db.scratch.seed { _id:"1", a:"Alice" }, =>
+      @db.scratch.remove "1", =>
+        new WebSQLDb { namespace: "db.scratch" }, (db2) =>
           db2.addCollection 'scratch', =>
             db2.scratch.pendingRemoves (removes) ->
-              assert.deepEqual removes, [1]
+              assert.deepEqual removes, ["1"]
               done()
 
   it "inserts 1000 documents at once", (done) ->
@@ -67,6 +72,8 @@ describe 'WebSQLDb storage', ->
       @db.scratch.find({}).fetch (results) =>
         assert.equal results.length, 1000
         done()
+      , error
+    , error
 
   # context "10000 documents", ->
   #   @timeout(30000)

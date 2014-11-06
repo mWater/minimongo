@@ -2,6 +2,10 @@ _ = require 'lodash'
 chai = require 'chai'
 assert = chai.assert
 
+error = (err) ->
+  console.log err
+  assert.fail(JSON.stringify(err))
+
 # Runs queries on db which must be a property of this
 module.exports = ->
   context 'With sample rows', ->
@@ -106,6 +110,11 @@ module.exports = ->
         assert.lengthOf item._id, 32
         done()
 
+    it 'returns array if called with array', (done) ->
+      @db.scratch.upsert [{ a: 1 }], (items) =>
+        assert.equal items[0].a, 1
+        done()
+
     it 'updates by id', (done) ->
       @db.scratch.upsert { _id:"1", a:1 }, (item) =>
         @db.scratch.upsert { _id:"1", a:2, _rev: 1 }, (item) =>
@@ -140,6 +149,8 @@ module.exports = ->
           @db.scratch.find({}).fetch (results) =>
             assert.equal results.length, 100
             done()
+          , error
+        , error
 
   geopoint = (lng, lat) ->
     return {

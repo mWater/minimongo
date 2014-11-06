@@ -7,6 +7,7 @@ ultimately from a RemoteDb
 
 _ = require 'lodash'
 processFind = require('./utils').processFind
+utils = require('./utils')
 
 module.exports = class HybridDb
   constructor: (localDb, remoteDb) ->
@@ -118,9 +119,9 @@ class HybridCollection
         remoteSuccess2 = (remoteData) =>
           # Check for local upsert
           @localCol.pendingUpserts (pendingUpserts) =>
-            localData = _.findWhere(pendingUpserts, { _id: selector._id })
+            localData = _.find(pendingUpserts, (u) -> u.doc._id == selector._id)
             if localData
-              return success(localData)
+              return success(localData.doc)
 
             # Check for local remove
             @localCol.pendingRemoves (pendingRemoves) =>
@@ -196,12 +197,12 @@ class HybridCollection
           @localCol.pendingUpserts (upserts) =>
             if upserts.length > 0
               # Remove upserts from data
-              upsertsMap = _.object(_.pluck(upserts, '_id'), _.pluck(upserts, '_id'))
+              upsertsMap = _.object(_.map(upserts, (u) -> u.doc._id), _.map(upserts, (u) -> u.doc._id))
               data = _.filter data, (doc) ->
                 return not _.has(upsertsMap, doc._id)
 
               # Add upserts
-              data = data.concat(upserts)
+              data = data.concat(_.pluck(upserts, "doc"))
 
               # Refilter/sort/limit
               data = processFind(data, selector, options)
@@ -221,9 +222,9 @@ class HybridCollection
     else
       throw new Error("Unknown mode")
 
-  upsert: (doc, success, error) ->
-    @localCol.upsert(doc, (result) =>
-      success(result) if success?
+  upsert: (docs, bases, success, error) ->
+    @localCol.upsert(docs, bases, (result) =>
+      success(docs) if success?
     , error)
 
   remove: (id, success, error) ->
@@ -235,8 +236,8 @@ class HybridCollection
     uploadUpserts = (upserts, success, error) =>
       upsert = _.first(upserts)
       if upsert
-        @remoteCol.upsert upsert, (remoteDoc) =>
-          @localCol.resolveUpsert upsert, =>
+        @remoteCol.upsert upsert.doc, upsert.base, (remoteDoc) =>
+          @localCol.resolveUpserts [upsert], =>
             # Cache new value if caching
             if @caching
               @localCol.cacheOne remoteDoc, =>
@@ -244,9 +245,9 @@ class HybridCollection
               , error
             else
               # Remove document
-              @localCol.remove upsert._id, =>
+              @localCol.remove upsert.doc._id, =>
                 # Resolve remove
-                @localCol.resolveRemove upsert._id, =>
+                @localCol.resolveRemove upsert.doc._id, =>
                   uploadUpserts(_.rest(upserts), success, error)
                 , error
               , error
@@ -254,9 +255,9 @@ class HybridCollection
         , (err) =>
           # If 410 error or 403, remove document
           if err.status == 410 or err.status == 403
-            @localCol.remove upsert._id, =>
+            @localCol.remove upsert.doc._id, =>
               # Resolve remove
-              @localCol.resolveRemove upsert._id, =>
+              @localCol.resolveRemove upsert.doc._id, =>
                 # Continue if was 410
                 if err.status == 410
                   uploadUpserts(_.rest(upserts), success, error)
