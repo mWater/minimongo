@@ -6,6 +6,8 @@ db_caching = require "./db_caching"
 _ = require 'lodash'
 async = require 'async'
 
+OldWebSQLDb = require './v2/WebSQLDb'
+
 error = (err) ->
   console.log err
   assert.fail(JSON.stringify(err))
@@ -75,37 +77,13 @@ describe 'WebSQLDb storage', ->
       , error
     , error
 
-  # context "10000 documents", ->
-  #   @timeout(30000)
-
-  #   beforeEach (done) ->
-  #     docs = []
-  #     for i in [0...10000]
-  #       docs.push { lat: i, lng: i+1, timestamp: new Date().toISOString() }
-
-  #     @db.scratch.upsert docs, =>
-  #       done()
-
-  #   it "retrieves them 50 times", (done) ->
-  #     async.times 50, (n, cb) =>
-  #       @db.scratch.find({}).fetch (results) =>
-  #         assert.equal results.length, 10000
-  #         cb()
-  #     , => done()
-
-  # it "inserts 50 documents in series", (done) ->
-  #   @timeout(30000)
-  #   docs = []
-  #   for i in [0...50]
-  #     docs.push { lat: i, lng: i+1, timestamp: new Date().toISOString() }
-
-  #   async.eachSeries docs, (doc, cb) =>
-  #     @db.scratch.upsert doc, =>
-  #       cb()
-  #     , cb
-  #   , =>
-  #     done()
-      
-
-
-
+describe 'WebSQLDb upgrade', ->
+  it "retains items", (done) ->
+    new OldWebSQLDb { namespace: "db.scratch" }, (olddb) => 
+      olddb.addCollection 'scratch', =>
+        olddb.scratch.upsert { _id:"1", a:"Alice" }, =>
+          new WebSQLDb { namespace: "db.scratch" }, (newdb) =>
+            newdb.addCollection 'scratch', =>
+              newdb.scratch.find({}).fetch (results) ->
+                assert.equal results[0].a, "Alice"
+                done()

@@ -14,7 +14,7 @@ module.exports = class WebSQLDb
 
     # Create database
     # TODO escape name
-    @db = window.openDatabase 'minimongo_' + options.namespace, '1.0', 'Minimongo:' + options.namespace, 5 * 1024 * 1024
+    @db = window.openDatabase 'minimongo_' + options.namespace, '', 'Minimongo:' + options.namespace, 5 * 1024 * 1024
     if not @db
       return error("Failed to create database")
 
