@@ -48,9 +48,13 @@ class Collection
     [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
     for item in items
-      # Fill in base
-      if not item.base
-        item.base = @items[item.doc._id] or null
+      # Fill in base if undefined
+      if item.base == undefined
+        # Use existing base
+        if @upserts[item.doc._id] 
+          item.base = @upserts[item.doc._id].base
+        else
+          item.base = @items[item.doc._id] or null
 
       # Replace/add 
       @items[item.doc._id] = item.doc
@@ -98,12 +102,16 @@ class Collection
     success _.pluck(@removes, "_id")
 
   resolveUpserts: (upserts, success) ->
-    for item in upserts
-      id = item.doc._id
+    for upsert in upserts
+      id = upsert.doc._id
       if @upserts[id]
         # Only safely remove upsert if doc is unchanged
-        if _.isEqual(item.doc, @upserts[id].doc)
+        if _.isEqual(upsert.doc, @upserts[id].doc)
           delete @upserts[id]
+        else
+          # Just update base
+          @upserts[id].base = upsert.doc
+          
     if success? then success()
 
   resolveRemove: (id, success) ->

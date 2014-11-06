@@ -135,6 +135,16 @@ module.exports = ->
             assert.equal results[0].base.a, 'apple'
             done()
 
+    it "keeps base on subsequent upserts", (done) ->
+      @db.scratch.cacheOne { _id: 2, a: 'apple' }, =>
+        @db.scratch.upsert { _id: 2, a: 'banana' }, =>
+          @db.scratch.upsert { _id: 2, a: 'orange' }, =>
+            @db.scratch.pendingUpserts (results) =>
+              assert.equal results.length, 1
+              assert.equal results[0].doc.a, 'orange'
+              assert.equal results[0].base.a, 'apple'
+              done()
+
     it "allows setting of upsert base", (done) ->
       @db.scratch.upsert { _id: 2, a: 'banana' }, { _id: 2, a: 'apple' }, =>
         @db.scratch.pendingUpserts (results) =>
@@ -142,6 +152,15 @@ module.exports = ->
           assert.equal results[0].doc.a, 'banana'
           assert.equal results[0].base.a, 'apple'
           done()
+
+    it "allows setting of null upsert base", (done) ->
+      @db.scratch.cacheOne { _id: 2, a: 'apple' }, =>
+        @db.scratch.upsert { _id: 2, a: 'banana' }, null, =>
+          @db.scratch.pendingUpserts (results) =>
+            assert.equal results.length, 1
+            assert.equal results[0].doc.a, 'banana'
+            assert.equal results[0].base, null
+            done()
 
     it "allows multiple upserts", (done) ->
       docs = [

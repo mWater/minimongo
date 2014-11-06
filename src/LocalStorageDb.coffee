@@ -92,8 +92,12 @@ class Collection
 
     for item in items
       # Fill in base
-      if not item.base
-        item.base = @items[item.doc._id] or null
+      if item.base == undefined
+        # Use existing base
+        if @upserts[item.doc._id] 
+          item.base = @upserts[item.doc._id].base
+        else
+          item.base = @items[item.doc._id] or null
 
       # Replace/add 
       @_putItem(item.doc)
@@ -177,6 +181,10 @@ class Collection
         # Only safely remove upsert if item is unchanged
         if _.isEqual(upsert.doc, @upserts[upsert.doc._id].doc)
           @_deleteUpsert(upsert.doc._id)
+        else
+          # Just update base
+          @upserts[upsert.doc._id].base = upsert.doc
+          @_putUpsert(@upserts[upsert.doc._id])
     if success? then success()
 
   resolveRemove: (id, success) ->

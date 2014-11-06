@@ -222,7 +222,7 @@ processGeoIntersectsOperator = (selector, list) ->
 exports.regularizeUpsert = (docs, bases, success, error) ->
   # Handle case of bases not present
   if _.isFunction(bases)
-    [bases, success, error] = [null, bases, success]
+    [bases, success, error] = [undefined, bases, success]
 
   # Handle single upsert
   if not _.isArray(docs)
@@ -232,7 +232,7 @@ exports.regularizeUpsert = (docs, bases, success, error) ->
     bases = bases or []
 
   # Make into list of { doc: .., base: }
-  items = _.map(docs, (doc, i) -> { doc: doc, base: if i<bases.length then bases[i] else null})
+  items = _.map(docs, (doc, i) -> { doc: doc, base: if i < bases.length then bases[i] else undefined})
 
   # Set _id
   for item in items

@@ -81,11 +81,14 @@ class Collection
     @store.getBatch keys, (records) =>
       puts = _.map items, (item, i) =>
         base = null
+
         # Prefer explicit base
-        if item.base
+        if item.base != undefined
           base = item.base
-        else if records[i] and records[i].doc
+        else if records[i] and records[i].doc and records[i].state == "cached"
           base = records[i].doc
+        else if records[i] and records[i].doc and records[i].state == "upserted"
+          base = records[i].base
 
         return {
           col: @name
@@ -204,9 +207,13 @@ class Collection
         record = records[i]
 
         # Only safely remove upsert if doc is the same
-        if record and record.state == "upserted" and _.isEqual(record.doc, upserts[i].doc)
-          record.state = "cached"
-          puts.push(record)
+        if record and record.state == "upserted"
+          if _.isEqual(record.doc, upserts[i].doc)
+            record.state = "cached"
+            puts.push(record)
+          else
+            record.base = upserts[i].doc
+            puts.push(record)
 
       # Put all changed items
       if puts.length > 0
