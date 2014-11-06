@@ -42,15 +42,17 @@ db.animals.upsert(doc, function() {
 
 `db.sometable.upsert(doc, success, error)` can take either a single document or multiple documents (array) for the first parameter.
 
-*Note*: Only applies to local databases for now, not RemoteDb
+*Note*: Multiple-upsert only applies to local databases for now, not RemoteDb
 
 ### Resolving upserts
 
-Upserts are stored in local databases in a special state to record that they are upserts, not cached rows. 
+Upserts are stored in local databases in a special state to record that they are upserts, not cached rows. The base document on which the upsert is based is also stored. For example, if a row starts in cached state with `{ x:1 }` and is upserted to `{ x: 2 }`, both the upserted and the original state are stored. This allows the server to do 3-way merging and apply only the changes.
 
 To resolve the upsert (for example once sent to central db), use resolveUpsert on collection
 
 `db.sometable.resolveUpsert(doc, success, error)` can take either a single document or multiple documents (array) for the first parameter.
+
+`resolveUpsert` takes the `doc` parameter which is the document that was the local upserted row, not the merged value from the server. It is used to determine if another upsert has taken place since. If another upsert has taken place, the base value is updated (since the change has been accepted by the server) but the new upserted value is left alone. 
 
 ### IndexedDb
 

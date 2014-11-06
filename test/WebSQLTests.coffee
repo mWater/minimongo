@@ -35,13 +35,18 @@ describe 'WebSQLDb storage', ->
             done()
 
   it "retains upserts", (done) ->
-    @db.scratch.upsert { _id:1, a:"Alice" }, =>
-      db2 = new WebSQLDb { namespace: "db.scratch" }, =>
-        db2.addCollection 'scratch', =>
-          db2.scratch.find({}).fetch (results) ->
-            db2.scratch.pendingUpserts (upserts) ->
-              assert.deepEqual results, upserts
-              done()
+    @db.scratch.cacheOne { _id:1, a:"Alice" }, =>
+      @db.scratch.upsert { _id:1, a:"Bob" }, =>
+        db2 = new WebSQLDb { namespace: "db.scratch" }, =>
+        db2 = new LocalStorageDb { namespace: "db.scratch" }, =>
+          db2.addCollection 'scratch', =>
+            db2.scratch.find({}).fetch (results) ->
+              assert.deepEqual results, [{ _id:1, a:"Bob" }]
+              db2.scratch.pendingUpserts (upserts) ->
+                assert.equal upserts.length, 1
+                assert.deepEqual upserts[0].doc, { _id:1, a:"Bob" }
+                assert.deepEqual upserts[0].base, { _id:1, a:"Alice" }
+                done()
 
   it "retains removes", (done) ->
     @db.scratch.seed { _id:1, a:"Alice" }, =>

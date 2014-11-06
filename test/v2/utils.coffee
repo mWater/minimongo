@@ -215,32 +215,3 @@ processGeoIntersectsOperator = (selector, list) ->
         return pointInPolygon(doc[key], geo)
 
   return list
-
-# Tidy up upsert parameters to always be a list of { doc: <doc>, base: <base> }, 
-# doing basic error checking and making sure that _id is present
-# Returns [items, success, error]
-exports.regularizeUpsert = (docs, bases, success, error) ->
-  # Handle case of bases not present
-  if _.isFunction(bases)
-    [bases, success, error] = [null, bases, success]
-
-  # Handle single upsert
-  if not _.isArray(docs)
-    docs = [docs]
-    bases = [bases]
-  else
-    bases = bases or []
-
-  # Make into list of { doc: .., base: }
-  items = _.map(docs, (doc, i) -> { doc: doc, base: if i<bases.length then bases[i] else null})
-
-  # Set _id
-  for item in items
-    if not item.doc._id
-      item.doc._id = exports.createUid()
-    if item.base and not item.base._id
-      throw new Error("Base needs _id")
-    if item.base and item.base._id != item.doc._id
-      throw new Error("Base needs same _id")
-
-  return [items, success, error]

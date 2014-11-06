@@ -115,15 +115,63 @@ module.exports = ->
         @db.scratch.upsert { _id: 2, a: 'banana' }, =>
           @db.scratch.pendingUpserts (results) =>
             assert.equal results.length, 1
-            assert.equal results[0].a, 'banana'
+            assert.equal results[0].doc.a, 'banana'
+            assert.isNull results[0].base
             done()
 
     it "resolves pending upserts", (done) ->
       @db.scratch.upsert { _id: 2, a: 'banana' }, =>
-        @db.scratch.resolveUpsert { _id: 2, a: 'banana' }, =>
+        @db.scratch.resolveUpserts [{ doc: { _id: 2, a: 'banana' }, base: null }], =>
           @db.scratch.pendingUpserts (results) =>
             assert.equal results.length, 0
             done()
+
+    it "sets base of upserts", (done) ->
+      @db.scratch.cacheOne { _id: 2, a: 'apple' }, =>
+        @db.scratch.upsert { _id: 2, a: 'banana' }, =>
+          @db.scratch.pendingUpserts (results) =>
+            assert.equal results.length, 1
+            assert.equal results[0].doc.a, 'banana'
+            assert.equal results[0].base.a, 'apple'
+            done()
+
+    it "allows setting of upsert base", (done) ->
+      @db.scratch.upsert { _id: 2, a: 'banana' }, { _id: 2, a: 'apple' }, =>
+        @db.scratch.pendingUpserts (results) =>
+          assert.equal results.length, 1
+          assert.equal results[0].doc.a, 'banana'
+          assert.equal results[0].base.a, 'apple'
+          done()
+
+    it "allows multiple upserts", (done) ->
+      docs = [
+        { _id: 1, a: 'apple' }
+        { _id: 2, a: 'banana' }
+        { _id: 3, a: 'orange' }
+      ]
+      @db.scratch.upsert docs, =>
+        @db.scratch.pendingUpserts (results) =>
+          assert.deepEqual _.pluck(results, "doc"), docs
+          assert.deepEqual _.pluck(results, "base"), [null, null, null]
+          done()
+
+    it "allows multiple upserts with bases", (done) ->
+      docs = [
+        { _id: 1, a: 'apple' }
+        { _id: 2, a: 'banana' }
+        { _id: 3, a: 'orange' }
+      ]
+      bases = [
+        { _id: 1, a: 'apple2' }
+        { _id: 2, a: 'banana2' }
+        { _id: 3, a: 'orange2' }
+      ]
+      @db.scratch.upsert docs, bases, =>
+        @db.scratch.pendingUpserts (results) =>
+          assert.deepEqual _.pluck(results, "doc"), docs
+          assert.deepEqual _.pluck(results, "base"), bases
+          done()
+
 
     it "resolves multiple upserts", (done) ->
       docs = [
@@ -132,10 +180,11 @@ module.exports = ->
         { _id: 3, a: 'orange' }
       ]
       @db.scratch.upsert docs, =>
-        @db.scratch.resolveUpsert docs, =>
-          @db.scratch.pendingUpserts (results) =>
-            assert.equal results.length, 0
-            done()
+        @db.scratch.pendingUpserts (upserts) =>
+          @db.scratch.resolveUpserts upserts, =>
+            @db.scratch.pendingUpserts (results) =>
+              assert.equal results.length, 0
+              done()
 
     it "handles removed pending upserts", (done) ->
       docs = [
@@ -146,18 +195,20 @@ module.exports = ->
       @db.scratch.upsert docs, =>
         @db.scratch.remove 1, =>
           @db.scratch.resolveRemove 1, =>
-            @db.scratch.resolveUpsert docs, =>
-              @db.scratch.pendingUpserts (results) =>
-                assert.equal results.length, 0
-                done()
+            @db.scratch.pendingUpserts (upserts) =>
+              @db.scratch.resolveUpserts upserts, =>
+                @db.scratch.pendingUpserts (results) =>
+                  assert.equal results.length, 0
+                  done()
 
-    it "retains changed pending upserts", (done) ->
+    it "retains changed pending upserts but updates base", (done) ->
       @db.scratch.upsert { _id: 2, a: 'banana' }, =>
         @db.scratch.upsert { _id: 2, a: 'banana2' }, =>
-          @db.scratch.resolveUpsert { _id: 2, a: 'banana' }, =>
+          @db.scratch.resolveUpserts [{ doc: { _id: 2, a: 'banana' }, base: null }], =>
             @db.scratch.pendingUpserts (results) =>
               assert.equal results.length, 1
-              assert.equal results[0].a, 'banana2'
+              assert.equal results[0].doc.a, 'banana2'
+              assert.equal results[0].base.a, 'banana'
               done()
 
     it "removes pending upserts", (done) ->

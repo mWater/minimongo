@@ -1,5 +1,5 @@
 _ = require 'lodash'
-utils = require('./utils')
+createUid = require('./utils').createUid
 processFind = require('./utils').processFind
 compileSort = require('./selector').compileSort
 
@@ -44,19 +44,21 @@ class Collection
   _findFetch: (selector, options, success, error) ->
     if success? then success(processFind(@items, selector, options))
 
-  upsert: (docs, bases, success, error) ->
-    [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
+  upsert: (doc, success, error) ->
+    # Handle both single and multiple upsert
+    items = doc
+    if not _.isArray(items)
+      items = [items]
 
     for item in items
-      # Fill in base
-      if not item.base
-        item.base = @items[item.doc._id] or null
+      if not item._id
+        item._id = createUid()
 
       # Replace/add 
-      @items[item.doc._id] = item.doc
-      @upserts[item.doc._id] = item
+      @items[item._id] = item
+      @upserts[item._id] = item
 
-    if success then success(docs)
+    if success then success(doc)
 
   remove: (id, success, error) ->
     if _.has(@items, id)
@@ -97,13 +99,17 @@ class Collection
   pendingRemoves: (success) ->
     success _.pluck(@removes, "_id")
 
-  resolveUpserts: (upserts, success) ->
-    for item in upserts
-      id = item.doc._id
-      if @upserts[id]
+  resolveUpsert: (doc, success) ->
+    # Handle both single and multiple upsert
+    items = doc
+    if not _.isArray(items)
+      items = [items]
+
+    for item in items
+      if @upserts[item._id]
         # Only safely remove upsert if doc is unchanged
-        if _.isEqual(item.doc, @upserts[id].doc)
-          delete @upserts[id]
+        if _.isEqual(item, @upserts[item._id])
+          delete @upserts[item._id]
     if success? then success()
 
   resolveRemove: (id, success) ->

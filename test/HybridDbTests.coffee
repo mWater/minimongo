@@ -242,11 +242,11 @@ describe 'HybridDb', ->
         assert.equal data.length, 0
 
         @rc.pendingUpserts (data) =>
-          assert.deepEqual _.pluck(data, 'a'), [1,2]
+          assert.deepEqual _.pluck(_.pluck(data, 'doc'), 'a'), [1,2]
           done()
     , fail)
 
-  it "does not resolve upsert if data changed", (done) ->
+  it "does not resolve upsert if data changed, but changes base", (done) ->
     @lc.upsert(_id:"1", a:1)
 
     # Override pending upserts to change doc right before returning
@@ -260,10 +260,12 @@ describe 'HybridDb', ->
     @hybrid.upload(() =>
       @lc.pendingUpserts (data) =>
         assert.equal data.length, 1
-        assert.deepEqual data[0], { _id:"1", a:2 }
+        assert.deepEqual data[0].doc, { _id:"1", a:2 }
+        assert.deepEqual data[0].base, { _id:"1", a:1 }
 
         @rc.pendingUpserts (data) =>
-          assert.deepEqual data[0], { _id:"1", a:1 }
+          assert.deepEqual data[0].doc, { _id:"1", a:1 }
+          assert.isNull data[0].base
           done()
     , fail)
 
@@ -383,6 +385,14 @@ describe 'HybridDb', ->
       assert.equal data.length, 1
       done()
 
+  it "upserts to local db with base version", (done) ->
+    @hc.upsert({_id:"1", a:2}, {_id:"1", a:1})
+    @lc.pendingUpserts (data) =>
+      assert.equal data.length, 1
+      assert.equal data[0].doc.a, 2
+      assert.equal data[0].base.a, 1
+      done()
+
   it "removes to local db", (done) ->
     @lc.seed(_id:"1", a:1)
     @hc.remove("1")
@@ -491,7 +501,7 @@ describe 'HybridDb', ->
 
           # Pending remotely
           @rc.pendingUpserts (data) =>
-            assert.deepEqual _.pluck(data, 'a'), [9]
+            assert.deepEqual _.pluck(_.pluck(data, 'doc'), "a"), [9]
 
             # Not cached locally
             @lc.find({}).fetch (data) =>
