@@ -36,7 +36,7 @@ describe 'LocalStorageDb with local storage', ->
   it "retains upserts", (done) ->
     @db.scratch.cacheOne { _id:1, a:"Alice" }, =>
       @db.scratch.upsert { _id:1, a:"Bob" }, =>
-        db2 = new LocalStorageDb { namespace: "db.scratch" }, =>
+        new LocalStorageDb { namespace: "db.scratch" }, (db2) =>
           db2.addCollection 'scratch', =>
             db2.scratch.find({}).fetch (results) ->
               assert.deepEqual results, [{ _id:1, a:"Bob" }]

@@ -1,5 +1,5 @@
 _ = require 'lodash'
-createUid = require('./utils').createUid
+utils = require('./utils')
 processFind = require('./utils').processFind
 compileSort = require('./selector').compileSort
 
@@ -63,7 +63,10 @@ class Collection
     # Read upserts
     upsertKeys = if window.localStorage[@namespace+"upserts"] then JSON.parse(window.localStorage[@namespace+"upserts"]) else []
     for key in upsertKeys
-      @upserts[key] = @items[key]
+      @upserts[key] = { doc: @items[key] }
+      # Get base if present
+      base = if window.localStorage[@namespace+"upsertbase_"+key] then JSON.parse(window.localStorage[@namespace+"upsertbase_"+key]) else null
+      @upserts[key].base = base
 
     # Read removes
     removeItems = if window.localStorage[@namespace+"removes"] then JSON.parse(window.localStorage[@namespace+"removes"]) else []
@@ -84,22 +87,19 @@ class Collection
   _findFetch: (selector, options, success, error) ->
     if success? then success(processFind(@items, selector, options))
 
-  upsert: (doc, success, error) ->
-    # Handle both single and multiple upsert
-    items = doc
-    if not _.isArray(items)
-      items = [items]
+  upsert: (docs, bases, success, error) ->
+    [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
-    # Handle case of array
     for item in items
-      if not item._id
-        item._id = createUid()
+      # Fill in base
+      if not item.base
+        item.base = @items[item.doc._id] or null
 
       # Replace/add 
-      @_putItem(item)
+      @_putItem(item.doc)
       @_putUpsert(item)
 
-    if success then success(doc)
+    if success then success(docs)
 
   remove: (id, success, error) ->
     if _.has(@items, id)
@@ -121,10 +121,11 @@ class Collection
     if @namespace
       window.localStorage.removeItem(@itemNamespace + id)
 
-  _putUpsert: (doc) ->
-    @upserts[doc._id] = doc
+  _putUpsert: (upsert) ->
+    @upserts[upsert.doc._id] = upsert
     if @namespace
       window.localStorage[@namespace+"upserts"] = JSON.stringify(_.keys(@upserts))
+      window.localStorage[@namespace+"upsertbase_"+upsert.doc._id] = JSON.stringify(upsert.base)
 
   _deleteUpsert: (id) ->
     delete @upserts[id]
@@ -170,17 +171,12 @@ class Collection
   pendingRemoves: (success) ->
     success _.pluck(@removes, "_id")
 
-  resolveUpsert: (doc, success) ->
-    # Handle both single and multiple upsert
-    items = doc
-    if not _.isArray(items)
-      items = [items]
-
-    for item in items
-      if @upserts[item._id]
+  resolveUpserts: (upserts, success) ->
+    for upsert in upserts
+      if @upserts[upsert.doc._id]
         # Only safely remove upsert if item is unchanged
-        if _.isEqual(item, @upserts[item._id])
-          @_deleteUpsert(item._id)
+        if _.isEqual(upsert.doc, @upserts[upsert.doc._id].doc)
+          @_deleteUpsert(upsert.doc._id)
     if success? then success()
 
   resolveRemove: (id, success) ->
