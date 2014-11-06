@@ -1,17 +1,41 @@
 _ = require 'lodash'
 $ = require 'jquery'
 
-createUid = require('./utils').createUid
+# Create default JSON http client
+jQueryHttpClient = (method, url, params, data, success, error) ->
+  # Append 
+  fullUrl = url + "?" + $.params(params)
+
+  if method == "GET"
+    req = $.getJSON(fullUrl)
+    req.done (response, textStatus, jqXHR) =>
+      success(response)
+    req.fail (jqXHR, textStatus, errorThrown) =>
+      if error
+        error(jqXHR)
+  else if method == "DELETE"
+    req = $.ajax(fullUrl, { type : 'DELETE'})
+  else if method == "POST" or method == "PATCH"
+    req = $.ajax(fullUrl, {
+      data : JSON.stringify(data),
+      contentType : 'application/json',
+      type : method})
+    req.done (response, textStatus, jqXHR) =>
+      success(response or null)
+    req.fail (jqXHR, textStatus, errorThrown) =>
+      if error
+        error(jqXHR)
 
 module.exports = class RemoteDb
   # Url must have trailing /
-  constructor: (url, client) ->
+  constructor: (url, client, httpClient) ->
     @url = url
     @client = client
     @collections = {}
+    @httpClient = httpClient or jQueryHttpClient
 
   addCollection: (name) ->
-    collection = new Collection(name, @url + name, @client)
+    collection = new Collection(name, @url + name, @client, @httpClient)
     @[name] = collection
     @collections[name] = collection
 
@@ -21,10 +45,11 @@ module.exports = class RemoteDb
 
 # Remote collection on server
 class Collection
-  constructor: (name, url, client) ->
+  constructor: (name, url, client, httpClient) ->
     @name = name
     @url = url
     @client = client
+    @httpClient = httpClient
 
   # error is called with jqXHR
   find: (selector, options = {}) ->
@@ -45,13 +70,8 @@ class Collection
       if navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
         params._ = new Date().getTime()
 
-      req = $.getJSON(@url, params)
-      req.done (data, textStatus, jqXHR) =>
-        success(data)
-      req.fail (jqXHR, textStatus, errorThrown) =>
-        if error
-          error(jqXHR)
-
+      @httpClient("GET", @url, params, null, success, error)
+      
   # error is called with jqXHR
   findOne: (selector, options = {}, success, error) ->
     if _.isFunction(options) 
@@ -70,48 +90,34 @@ class Collection
     if navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
       params._ = new Date().getTime()
 
-    req = $.getJSON(@url, params)
-    req.done (data, textStatus, jqXHR) =>
-      success(data[0] || null)
-    req.fail (jqXHR, textStatus, errorThrown) =>
-      if error
-        error(jqXHR)
+    @httpClient("GET", @url, params, null, success, error)
 
   # error is called with jqXHR
-  upsert: (doc, success, error) ->
+  upsert: (doc, base, success, error) ->
     if not @client
       throw new Error("Client required to upsert")
 
     if not doc._id
       doc._id = createUid()
 
+    params = {}
+    if @client
+      params.client = @client
+
     # Add timestamp for Android 2.3.6 bug with caching
     if navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
-      url = @url + "?client=" + @client + "&_=" + new Date().getTime()
-    else
-      url = @url + "?client=" + @client
+      params._ = new Date().getTime()
 
-    req = $.ajax(url, {
-      data : JSON.stringify(doc),
-      contentType : 'application/json',
-      type : 'POST'})
-    req.done (data, textStatus, jqXHR) =>
-      success(data || null)
-    req.fail (jqXHR, textStatus, errorThrown) =>
-      if error
-        error(jqXHR)
+    # POST if no base, PATCH otherwise
+    if base
+      @httpClient("PATCH", @url, params, { doc: doc, base: base }, success, error)
+    else
+      @httpClient("POST", @url, params, doc, success, error)
 
   # error is called with jqXHR
   remove: (id, success, error) ->
     if not @client
       throw new Error("Client required to remove")
-      
-    req = $.ajax(@url + "/" + id + "?client=" + @client, { type : 'DELETE'})
-    req.done (data, textStatus, jqXHR) =>
-      success()
-    req.fail (jqXHR, textStatus, errorThrown) =>
-      # 410 means already deleted
-      if jqXHR.status == 410
-        success()
-      else if error
-        error(jqXHR)
+
+    params = { client: @client }
+    @httpClient("DELETE", @url, params, doc, success, error)
