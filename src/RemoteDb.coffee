@@ -1,5 +1,6 @@
 _ = require 'lodash'
 $ = require 'jquery'
+async = require 'async'
 utils = require('./utils')
 
 # Create default JSON http client
@@ -93,7 +94,12 @@ class Collection
     if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
       params._ = new Date().getTime()
 
-    @httpClient("GET", @url, params, null, success, error)
+    @httpClient "GET", @url, params, null, (results) =>
+      if results and results.length > 0
+        success(results[0])
+      else
+        success(null)
+    , error
 
   # error is called with jqXHR
   upsert: (docs, bases, success, error) ->
@@ -102,24 +108,41 @@ class Collection
     if not @client
       throw new Error("Client required to upsert")
 
-    if items.length > 1
-      throw new Error("Multiple upsert not allowed")
+    results = []
 
-    item = items[0]
-    if not item.doc._id
-      item.doc._id = utils.createUid()
+    async.eachLimit items, 8, (item, cb) =>
+      if not item.doc._id
+        item.doc._id = utils.createUid()
 
-    params = { client: @client }
+      params = { client: @client }
 
-    # Add timestamp for Android 2.3.6 bug with caching
-    if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
-      params._ = new Date().getTime()
+      # Add timestamp for Android 2.3.6 bug with caching
+      if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
+        params._ = new Date().getTime()
 
-    # POST if no base, PATCH otherwise
-    if item.base
-      @httpClient("PATCH", @url + "/" + item.doc._id, params, item, success, error)
-    else
-      @httpClient("POST", @url, params, item.doc, success, error)
+      # POST if no base, PATCH otherwise
+      if item.base
+        @httpClient "PATCH", @url + "/" + item.doc._id, params, item, (result) =>
+          results.push result
+          cb()
+        , (err) =>
+          cb(err)
+      else
+        @httpClient "POST", @url, params, item.doc, (result) =>
+          results.push result
+          cb()
+        , (err) =>
+          cb(err)
+    , (err) =>
+      if err
+        if error then error(err)
+        return
+
+      # Call back differently depending on orig parameters
+      if _.isArray(docs)
+        if success then success(results)
+      else
+        if success then success(results[0])
 
   # error is called with jqXHR
   remove: (id, success, error) ->
@@ -129,7 +152,6 @@ class Collection
     params = { client: @client }
     @httpClient "DELETE", @url + "/" + id, params, null, success, (err) =>
       # 410 is an acceptable delete status
-      console.log err
       if err.status == 410
         success()
       else

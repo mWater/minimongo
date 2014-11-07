@@ -40,9 +40,10 @@ db.animals.upsert(doc, function() {
 
 ### Upserting
 
-`db.sometable.upsert(doc, success, error)` can take either a single document or multiple documents (array) for the first parameter.
+`db.sometable.upsert(docs, bases, success, error)` can take either a single document or multiple documents (array) for the first and second parameter.
 
-*Note*: Multiple-upsert only applies to local databases for now, not RemoteDb
+docs is the document(s) to upsert. If bases is present, it is the base version on which the update is based. It can be omitted to use the current cached value
+as the base, or put as `null` to force an overwrite (a true upsert, not a patch)
 
 ### Resolving upserts
 

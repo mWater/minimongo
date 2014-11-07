@@ -16,8 +16,7 @@ exports.runTests = () ->
       db_queries.call(this)
 
     describe "merging", ->
-      beforeEach (done) ->
-        @resetDatabase(done)
+      beforeEach (done) -> @reset(done)
 
       it "merges changes with base specified", (done) ->
         base = { _id: "1", a: "1", b: 1 }

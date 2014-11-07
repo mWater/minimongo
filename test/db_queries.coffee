@@ -126,7 +126,8 @@ module.exports = ->
 
     it 'call upsert with upserted row', (done) ->
       @col.upsert { _id:"1", a:"1" }, (item) =>
-        assert.deepEqual item, { _id:"1", a:"1" }
+        assert.equal item._id, "1"
+        assert.equal item.a, "1"
         done()
 
   it 'upserts multiple rows', (done) ->
