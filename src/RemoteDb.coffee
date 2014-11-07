@@ -1,5 +1,6 @@
 _ = require 'lodash'
 $ = require 'jquery'
+utils = require('./utils')
 
 # Create default JSON http client
 jQueryHttpClient = (method, url, params, data, success, error) ->
@@ -34,14 +35,16 @@ module.exports = class RemoteDb
     @collections = {}
     @httpClient = httpClient or jQueryHttpClient
 
-  addCollection: (name) ->
+  addCollection: (name, success, error) ->
     collection = new Collection(name, @url + name, @client, @httpClient)
     @[name] = collection
     @collections[name] = collection
+    if success? then success()
 
-  removeCollection: (name) ->
+  removeCollection: (name, success, error) ->
     delete @[name]
     delete @collections[name]
+    if success? then success()
 
 # Remote collection on server
 class Collection
@@ -67,7 +70,7 @@ class Collection
       params.selector = JSON.stringify(selector || {})
 
       # Add timestamp for Android 2.3.6 bug with caching
-      if navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
+      if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
         params._ = new Date().getTime()
 
       @httpClient("GET", @url, params, null, success, error)
@@ -87,32 +90,36 @@ class Collection
     params.selector = JSON.stringify(selector || {})
 
     # Add timestamp for Android 2.3.6 bug with caching
-    if navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
+    if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
       params._ = new Date().getTime()
 
     @httpClient("GET", @url, params, null, success, error)
 
   # error is called with jqXHR
-  upsert: (doc, base, success, error) ->
+  upsert: (docs, bases, success, error) ->
+    [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
+
     if not @client
       throw new Error("Client required to upsert")
 
-    if not doc._id
-      doc._id = createUid()
+    if items.length > 1
+      throw new Error("Multiple upsert not allowed")
 
-    params = {}
-    if @client
-      params.client = @client
+    item = items[0]
+    if not item.doc._id
+      item.doc._id = utils.createUid()
+
+    params = { client: @client }
 
     # Add timestamp for Android 2.3.6 bug with caching
-    if navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
+    if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
       params._ = new Date().getTime()
 
     # POST if no base, PATCH otherwise
-    if base
-      @httpClient("PATCH", @url, params, { doc: doc, base: base }, success, error)
+    if item.base
+      @httpClient("PATCH", @url + "/" + item.doc._id, params, item, success, error)
     else
-      @httpClient("POST", @url, params, doc, success, error)
+      @httpClient("POST", @url, params, item.doc, success, error)
 
   # error is called with jqXHR
   remove: (id, success, error) ->
@@ -120,4 +127,10 @@ class Collection
       throw new Error("Client required to remove")
 
     params = { client: @client }
-    @httpClient("DELETE", @url, params, doc, success, error)
+    @httpClient "DELETE", @url + "/" + id, params, null, success, (err) =>
+      # 410 is an acceptable delete status
+      console.log err
+      if err.status == 410
+        success()
+      else
+        error(err)
