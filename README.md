@@ -149,8 +149,9 @@ Performs a single upsert, returning the upserted row. POST value is the document
 **401** : client was invalid or not present
 **403** : permission denied to upsert
 **409** : another client was upserting same document. Try again.
+**410** : document was already removed and cannot be upserted
 
-On `403`, the change is automatically discarded in the HybridDb.
+On `403` or `410`, the change is automatically discarded in the HybridDb.
 
 #### PATCH `/<collection>/<_id>`
 
@@ -178,6 +179,7 @@ Possible HTTP response codes:
 **401** : client was invalid or not present
 **403** : permission denied to upsert
 **409** : another client was upserting same document. Try again.
+**410** : document was already removed and cannot be upserted
 
 On `403` or `410`, the change is automatically discarded in the HybridDb.
 
