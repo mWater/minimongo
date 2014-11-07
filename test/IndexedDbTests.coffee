@@ -7,9 +7,13 @@ _ = require 'lodash'
 
 describe 'IndexedDb', ->
   before (done) ->
-    @db = new IndexedDb { namespace: "db.scratch" }, =>
-      @db.addCollection 'scratch', =>
-        done()
+    @reset = (done) =>
+      @db = new IndexedDb { namespace: "db.scratch" }, =>
+        @db.removeCollection 'scratch', =>
+          @db.addCollection 'scratch', =>
+            @col = @db.scratch
+            done()
+    @reset(done)
 
   describe "passes queries", ->
     db_queries.call(this)

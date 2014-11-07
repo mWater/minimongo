@@ -14,11 +14,16 @@ error = (err) ->
 
 describe 'WebSQLDb', ->
   @timeout(5000)
+  
   before (done) ->
-    new WebSQLDb { namespace: "db.scratch" }, (db) =>
-      @db = db
-      @db.addCollection 'scratch', =>
-        done()
+    @reset = (done) =>
+      new WebSQLDb { namespace: "db.scratch" }, (db) =>
+        @db = db
+        @db.removeCollection 'scratch', =>
+          @db.addCollection 'scratch', =>
+            @col = @db.scratch
+            done()
+    @reset(done)
 
   describe "passes queries", ->
     db_queries.call(this)
@@ -77,13 +82,13 @@ describe 'WebSQLDb storage', ->
       , error
     , error
 
-describe 'WebSQLDb upgrade', ->
-  it "retains items", (done) ->
-    new OldWebSQLDb { namespace: "db.scratch" }, (olddb) => 
-      olddb.addCollection 'scratch', =>
-        olddb.scratch.upsert { _id:"1", a:"Alice" }, =>
-          new WebSQLDb { namespace: "db.scratch" }, (newdb) =>
-            newdb.addCollection 'scratch', =>
-              newdb.scratch.find({}).fetch (results) ->
-                assert.equal results[0].a, "Alice"
-                done()
+# describe 'WebSQLDb upgrade', ->
+#   it "retains items", (done) ->
+#     new OldWebSQLDb { namespace: "db.scratch" }, (olddb) => 
+#       olddb.addCollection 'scratch', =>
+#         olddb.scratch.upsert { _id:"1", a:"Alice" }, =>
+#           new WebSQLDb { namespace: "db.scratch" }, (newdb) =>
+#             newdb.addCollection 'scratch', =>
+#               newdb.scratch.find({}).fetch (results) ->
+#                 assert.equal results[0].a, "Alice"
+#                 done()
