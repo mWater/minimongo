@@ -160,14 +160,14 @@ module.exports = ->
 
   context 'With geolocated rows', ->
     beforeEach (done) ->
-      @db.scratch.upsert { _id:"1", loc:geopoint(90, 45) }, =>
-        @db.scratch.upsert { _id:"2", loc:geopoint(90, 46) }, =>
-          @db.scratch.upsert { _id:"3", loc:geopoint(91, 45) }, =>
-            @db.scratch.upsert { _id:"4", loc:geopoint(91, 46) }, =>
+      @db.scratch.upsert { _id:"1", geo:geopoint(90, 45) }, =>
+        @db.scratch.upsert { _id:"2", geo:geopoint(90, 46) }, =>
+          @db.scratch.upsert { _id:"3", geo:geopoint(91, 45) }, =>
+            @db.scratch.upsert { _id:"4", geo:geopoint(91, 46) }, =>
               done()
 
     it 'finds points near', (done) ->
-      selector = loc: 
+      selector = geo: 
         $near: 
           $geometry: geopoint(90, 45)
 
@@ -176,7 +176,7 @@ module.exports = ->
         done()
 
     it 'finds points near maxDistance', (done) ->
-      selector = loc: 
+      selector = geo: 
         $near: 
           $geometry: geopoint(90, 45)
           $maxDistance: 111000
@@ -186,7 +186,7 @@ module.exports = ->
         done()      
 
     it 'finds points near maxDistance just above', (done) ->
-      selector = loc: 
+      selector = geo: 
         $near: 
           $geometry: geopoint(90, 45)
           $maxDistance: 112000
@@ -196,7 +196,7 @@ module.exports = ->
         done()
 
     it 'finds points within simple box', (done) ->
-      selector = loc: 
+      selector = geo: 
         $geoIntersects: 
           $geometry: 
             type: 'Polygon'
@@ -208,7 +208,7 @@ module.exports = ->
         done()
 
     it 'finds points within big box', (done) ->
-      selector = loc: 
+      selector = geo: 
         $geoIntersects: 
           $geometry: 
             type: 'Polygon'
@@ -220,7 +220,7 @@ module.exports = ->
         done()
 
     it 'handles undefined', (done) ->
-      selector = loc: 
+      selector = geo: 
         $geoIntersects: 
           $geometry: 
             type: 'Polygon'
