@@ -6,7 +6,7 @@ utils = require('./utils')
 # Create default JSON http client
 jQueryHttpClient = (method, url, params, data, success, error) ->
   # Append 
-  fullUrl = url + "?" + $.params(params)
+  fullUrl = url + "?" + $.param(params)
 
   if method == "GET"
     req = $.getJSON(fullUrl)
