@@ -57,3 +57,4 @@ exports.runTests = () ->
             @db.scratch.upsert change2, null, (doc2) =>
               assert.equal doc2.a, "1", "Should not merge returned document"
               assert.equal doc2.b, 2, "Should keep new value"
+              done()
