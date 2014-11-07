@@ -105,20 +105,20 @@ module.exports = ->
           done()
 
     it 'adds _id to rows', (done) ->
-      @db.scratch.upsert { a: 1 }, (item) =>
+      @db.scratch.upsert { a: "1" }, (item) =>
         assert.property item, '_id'
         assert.lengthOf item._id, 32
         done()
 
     it 'returns array if called with array', (done) ->
-      @db.scratch.upsert [{ a: 1 }], (items) =>
-        assert.equal items[0].a, 1
+      @db.scratch.upsert [{ a: "1" }], (items) =>
+        assert.equal items[0].a, "1"
         done()
 
     it 'updates by id', (done) ->
-      @db.scratch.upsert { _id:"1", a:1 }, (item) =>
-        @db.scratch.upsert { _id:"1", a:2, _rev: 1 }, (item) =>
-          assert.equal item.a, 2
+      @db.scratch.upsert { _id:"1", a:"1" }, (item) =>
+        @db.scratch.upsert { _id:"1", a:"2", b: 1 }, (item) =>
+          assert.equal item.a, "2"
     
           @db.scratch.find({ _id: "1" }).fetch (results) =>
             assert.equal 1, results.length, "Should be only one document"
@@ -133,8 +133,8 @@ module.exports = ->
       #       done()
 
     it 'call upsert with upserted row', (done) ->
-      @db.scratch.upsert { _id:"1", a:1 }, (item) =>
-        assert.deepEqual item, { _id:"1", a:1 }
+      @db.scratch.upsert { _id:"1", a:"1" }, (item) =>
+        assert.deepEqual item, { _id:"1", a:"1" }
         done()
 
   it 'upserts multiple rows', (done) ->
@@ -143,7 +143,7 @@ module.exports = ->
       @db.addCollection 'scratch', =>
         docs = []
         for i in [0...100]
-          docs.push { x: i }
+          docs.push { b: i }
 
         @db.scratch.upsert docs, =>
           @db.scratch.find({}).fetch (results) =>
