@@ -52,76 +52,57 @@ class HybridCollection
     @remoteCol = remoteCol
 
     # Default options
-    options = options or {}
-    _.defaults(options, { caching: true })
+    @options = options or {}
+    _.defaults @options, { 
+      cacheFind: true       # Cache find results in local db
+      cacheFindOne: true    # Cache findOne results in local db
+      interim: true         # Return interim results from local db while waiting for remote db. Return again if different
+    }
 
-    # Extract options
-    @caching = options.caching
-
-  # options.mode defaults to "hybrid" (unless caching=false, in which case "remote")
-  # In "hybrid", it will return local results, then hit remote and return again if different
-  # If remote gives error, it will be ignored
-  # In "remote", it will call remote and not cache, but integrates local upserts/deletes
-  # If remote gives error, then it will return local results
-  # In "local", just returns local results
   find: (selector, options = {}) ->
     return fetch: (success, error) =>
       @_findFetch(selector, options, success, error)
 
-  # options.mode defaults to "hybrid".
-  # In "hybrid", it will return local if present, otherwise fall to remote without returning null
-  # If remote gives error, then it will return null if none locally. If remote and local differ, it
-  # will return twice
-  # In "local", it will return local if present. If not present, only then will it hit remote.
-  # If remote gives error, then it will return null
-  # In "remote", it gets remote and integrates local changes. Much more efficient if _id specified
-  # If remote gives error, falls back to local if caching
+  # Finds one row. Note: Does *not* support selectors that don't include _id field
   findOne: (selector, options = {}, success, error) ->
     if _.isFunction(options) 
       [options, success, error] = [{}, options, success]
 
-    mode = options.mode || (if @caching then "hybrid" else "remote")
+    # Merge options
+    _.defaults(options, @options)
 
-    if mode == "hybrid" or mode == "local"
-      options.limit = 1
-      @localCol.findOne selector, options, (localDoc) =>
-        # If found, return
-        if localDoc
-          success(localDoc)
-          # No need to hit remote if local
-          if mode == "local"
-            return 
+    # Happens after initial find
+    step2 = (localDoc) =>
+      # Setup remote options
+      remoteOptions = _.cloneDeep(options)
 
-        remoteSuccess = (remoteDoc) =>
-          # Cache
+      # If caching, get all fields
+      if options.cacheFindOne
+        delete remoteOptions.fields
+
+      remoteSuccess = (remoteDoc) =>
+        # If caching, cache
+        if options.cacheFindOne
           cacheSuccess = =>
             # Try query again
             @localCol.findOne selector, options, (localDoc2) =>
               if not _.isEqual(localDoc, localDoc2)
-                success(localDoc2)
+                success(_.cloneDeep(localDoc2))
               else if not localDoc
                 success(null)
 
           docs = if remoteDoc then [remoteDoc] else []
           @localCol.cache(docs, selector, options, cacheSuccess, error)
-
-        remoteError = =>
-          # Remote errored out. Return null if local did not return
-          if not localDoc
-            success(null)
-
-        # Call remote
-        @remoteCol.findOne selector, _.omit(options, 'fields'), remoteSuccess, remoteError
-      , error
-    else if mode == "remote"
-      # If _id specified, use remote findOne
-      if selector._id 
-        remoteSuccess2 = (remoteData) =>
+        else
           # Check for local upsert
           @localCol.pendingUpserts (pendingUpserts) =>
             localData = _.find(pendingUpserts, (u) -> u.doc._id == selector._id)
             if localData
-              return success(localData.doc)
+              # Only call success if different from returned interim result
+              if not _.isEqual(localDoc, localData.doc)
+                return success(_.cloneDeep(localData.doc))
+              else
+                return
 
             # Check for local remove
             @localCol.pendingRemoves (pendingRemoves) =>
@@ -129,43 +110,47 @@ class HybridCollection
                 # Removed, success null
                 return success(null)
 
-              success(remoteData)
+              success(remoteDoc)
+            , error
           , error
 
-        # Get remote response
-        @remoteCol.findOne selector, options, remoteSuccess2, error
-      else
-        # Without _id specified, interaction between local and remote changes is complex
-        # For example, if the one result returned by remote is locally deleted, we have no fallback
-        # So instead we do a normal find and then take the first result, which is very inefficient
-        @find(selector, options).fetch (findData) =>
-          if findData.length > 0
-            success(findData[0])
-          else
-            success(null)
-        , (err) =>
-          # Call local if caching
-          if @caching
-            @localCol.findOne(selector, options, success, error)
-          else
-            # Otherwise bubble up
-            if error
-              error(err)
+      remoteError = =>
+        # Remote errored out. Return null if local did not return
+        if not localDoc
+          success(null)
 
+      # Call remote
+      @remoteCol.findOne selector, remoteOptions, remoteSuccess, remoteError
+
+    # If interim or shortcut, get local first
+    if options.interim or options.shortcut
+      @localCol.findOne selector, options, (localDoc) =>
+        # If found, return
+        if localDoc
+          success(_.cloneDeep(localDoc))
+
+          # If shortcut, we're done
+          if options.shortcut
+            return
+        step2(localDoc)
+      , error
     else
-      throw new Error("Unknown mode")
+      step2()
 
   _findFetch: (selector, options, success, error) ->
-    mode = options.mode || (if @caching then "hybrid" else "remote")
+    # Merge options
+    _.defaults(options, @options)
 
-    if mode == "hybrid"
-      # Get local results
-      localSuccess = (localData) =>
-        # Return data immediately
-        success(localData)
+    step2 = (localData) =>
+      # Setup remote options
+      remoteOptions = _.cloneDeep(options)
 
-        # Get remote data
-        remoteSuccess = (remoteData) =>
+      # If caching, get all fields
+      if options.cacheFind
+        delete remoteOptions.fields
+
+      remoteSuccess = (remoteData) =>
+        if options.cacheFind
           # Cache locally
           cacheSuccess = () =>
             # Get local data again
@@ -176,51 +161,54 @@ class HybridCollection
                 success(localData2)
             @localCol.find(selector, options).fetch(localSuccess2, error)
           @localCol.cache(remoteData, selector, options, cacheSuccess, error)
-        @remoteCol.find(selector, _.omit(options, "fields")).fetch(remoteSuccess)
+        else
+          # Remove local remotes
+          data = remoteData
 
-      @localCol.find(selector, options).fetch(localSuccess, error)
-    else if mode == "local"
-      @localCol.find(selector, options).fetch(success, error)
-    else if mode == "remote"
-      # Get remote results
-      remoteSuccess = (remoteData) =>
-        # Remove local remotes
-        data = remoteData
+          @localCol.pendingRemoves (removes) =>
+            if removes.length > 0
+              removesMap = _.object(_.map(removes, (id) -> [id, id]))
+              data = _.filter remoteData, (doc) ->
+                return not _.has(removesMap, doc._id)
 
-        @localCol.pendingRemoves (removes) =>
-          if removes.length > 0
-            removesMap = _.object(_.map(removes, (id) -> [id, id]))
-            data = _.filter remoteData, (doc) ->
-              return not _.has(removesMap, doc._id)
+            # Add upserts
+            @localCol.pendingUpserts (upserts) =>
+              if upserts.length > 0
+                # Remove upserts from data
+                upsertsMap = _.object(_.map(upserts, (u) -> u.doc._id), _.map(upserts, (u) -> u.doc._id))
+                data = _.filter data, (doc) ->
+                  return not _.has(upsertsMap, doc._id)
 
-          # Add upserts
-          @localCol.pendingUpserts (upserts) =>
-            if upserts.length > 0
-              # Remove upserts from data
-              upsertsMap = _.object(_.map(upserts, (u) -> u.doc._id), _.map(upserts, (u) -> u.doc._id))
-              data = _.filter data, (doc) ->
-                return not _.has(upsertsMap, doc._id)
+                # Add upserts
+                data = data.concat(_.pluck(upserts, "doc"))
 
-              # Add upserts
-              data = data.concat(_.pluck(upserts, "doc"))
+                # Refilter/sort/limit
+                data = processFind(data, selector, options)
 
-              # Refilter/sort/limit
-              data = processFind(data, selector, options)
-
-            success(data)
+              # Check if different
+              if not _.isEqual(localData, data)
+                # Send again
+                success(data)
 
       remoteError = (err) =>
-        # Call local if caching
-        if @caching
+        # If no interim, do local find
+        if not options.interim
           @localCol.find(selector, options).fetch(success, error)
         else
-          # Otherwise bubble up
-          if error
-            error(err)
+          # Otherwise do nothing
+          return
 
-      @remoteCol.find(selector, options).fetch(remoteSuccess, remoteError)
+      @remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError)
+
+    # If interim, get local first
+    if options.interim
+      localSuccess = (localData) =>
+        # Return data immediately
+        success(localData)
+        step2(localData)
+      @localCol.find(selector, options).fetch(localSuccess, error)
     else
-      throw new Error("Unknown mode")
+      step2()
 
   upsert: (docs, bases, success, error) ->
     @localCol.upsert(docs, bases, (result) =>
@@ -238,19 +226,10 @@ class HybridCollection
       if upsert
         @remoteCol.upsert upsert.doc, upsert.base, (remoteDoc) =>
           @localCol.resolveUpserts [upsert], =>
-            # Cache new value if caching
-            if @caching
-              @localCol.cacheOne remoteDoc, =>
-                uploadUpserts(_.rest(upserts), success, error)
-              , error
-            else
-              # Remove document
-              @localCol.remove upsert.doc._id, =>
-                # Resolve remove
-                @localCol.resolveRemove upsert.doc._id, =>
-                  uploadUpserts(_.rest(upserts), success, error)
-                , error
-              , error
+            # Cache new value 
+            @localCol.cacheOne remoteDoc, =>
+              uploadUpserts(_.rest(upserts), success, error)
+            , error
           , error
         , (err) =>
           # If 410 error or 403, remove document

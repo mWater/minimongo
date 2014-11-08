@@ -94,15 +94,13 @@ The field `_rev`, if present is used to prevent overwriting with older versions.
 
 ### HybridDb
 
-Queries the local database first and then returns remote data if different than local version. 
+Combines results from the local database with remote data. Multiple options can be specified at the collection level and then overriden at the find/findOne level:
 
-This approach allows fast responses but with subsequent correction if the server has differing information.
+**interim**: (default true) true to return interim results from the local database before the (slower) remote database has returned. If the remote database gives different results, the callback will be called a second time. This approach allows fast responses but with subsequent correction if the server has differing information.
 
-The HybridDb collections can also be created in non-caching mode, which is useful for storing up changes to be sent to a sever:
+**cacheFind**: (default true) true to cache the `find` results from the remote database in the local database
 
-```
-db.addCollection("sometable", { caching: false })
-```
+**cacheFindOne**: (default true) true to cache the `findOne` results from the remote database in the local database
 
 To keep a local database and a remote database in sync, create a HybridDb:
 
@@ -112,7 +110,7 @@ hybridDb = new HybridDb(localDb, remoteDb)
 
 Be sure to add the same collections to all three databases (local, hybrid and remote).
 
-Then query the hybridDb (`find` and `findOne`) to have it get results and correctly combine them with any pending local results. If you are not interested in caching results, add `{ mode: "remote" }` to the options of `find` or `findOne`
+Then query the hybridDb (`find` and `findOne`) to have it get results and correctly combine them with any pending local results. If you are not interested in caching results, add `{ cacheFind: false, cacheFindOne: false }` to the options of `find` or `findOne` or to the `addCollection` options.
 
 When upserts and removes are done on the HybridDb, they are queued up in the LocalDb until `hybridDb.upload(success, error)` is called.
 
