@@ -38,11 +38,6 @@ module.exports = ->
         assert.deepEqual results[0], { _id: "1",  a: "Alice" }
         done()
 
-    it 'includes fields', (done) ->
-      @col.find({ _id: "1" }, { fields: { a:1 }}).fetch (results) =>
-        assert.deepEqual results[0], { _id: "1",  a: "Alice" }
-        done()
-
     it 'includes subfields', (done) ->
       @col.find({ _id: "1" }, { fields: { "c.d":1 }}).fetch (results) =>
         assert.deepEqual results[0], { _id: "1",  c: { d: 1 } }
