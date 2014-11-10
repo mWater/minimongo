@@ -65,62 +65,66 @@ exports.processFind = (items, selector, options) ->
 
   # Clone to prevent accidental updates, or apply fields if present
   if options and options.fields
-    # For each item
-    filtered = _.map filtered, (item) ->
-      item = _.cloneDeep(item)
-
-      newItem = {}
-
-      if _.first(_.values(options.fields)) == 1
-        # Include fields
-        for field in _.keys(options.fields).concat(["_id"])
-          path = field.split(".")
-
-          # Determine if path exists
-          obj = item
-          for pathElem in path
-            if obj
-              obj = obj[pathElem]
-
-          if not obj?
-            continue
-
-          # Go into path, creating as necessary
-          from = item
-          to = newItem
-          for pathElem in _.initial(path)
-            to[pathElem] = to[pathElem] or {}
-
-            # Move inside
-            to = to[pathElem]
-            from = from[pathElem]
-
-          # Copy value
-          to[_.last(path)] = from[_.last(path)]
-
-        return newItem
-      else
-        # Exclude fields
-        for field in _.keys(options.fields).concat(["_id"])
-          path = field.split(".")
-
-          # Go inside path
-          obj = item
-          for pathElem in _.initial(path)
-            if obj
-              obj = obj[pathElem]
-
-          # If not there, don't exclude
-          if not obj?
-            continue
-
-          delete obj[_.last(path)]
-
-        return item
+    filtered = exports.filterFields(filtered, options.fields)
   else
     filtered = _.map filtered, (doc) -> _.cloneDeep(doc)
 
   return filtered
+
+exports.filterFields = (items, fields) ->
+  # For each item
+  return _.map items, (item) ->
+    item = _.cloneDeep(item)
+
+    newItem = {}
+
+    if _.first(_.values(fields)) == 1
+      # Include fields
+      for field in _.keys(fields).concat(["_id"])
+        path = field.split(".")
+
+        # Determine if path exists
+        obj = item
+        for pathElem in path
+          if obj
+            obj = obj[pathElem]
+
+        if not obj?
+          continue
+
+        # Go into path, creating as necessary
+        from = item
+        to = newItem
+        for pathElem in _.initial(path)
+          to[pathElem] = to[pathElem] or {}
+
+          # Move inside
+          to = to[pathElem]
+          from = from[pathElem]
+
+        # Copy value
+        to[_.last(path)] = from[_.last(path)]
+
+      return newItem
+    else
+      # Exclude fields
+      for field in _.keys(fields).concat(["_id"])
+        path = field.split(".")
+
+        # Go inside path
+        obj = item
+        for pathElem in _.initial(path)
+          if obj
+            obj = obj[pathElem]
+
+        # If not there, don't exclude
+        if not obj?
+          continue
+
+        delete obj[_.last(path)]
+
+      return item
+
 
 # Creates a unique identifier string
 exports.createUid = -> 
