@@ -65,66 +65,62 @@ exports.processFind = (items, selector, options) ->
 
   # Clone to prevent accidental updates, or apply fields if present
   if options and options.fields
-    filtered = exports.filterFields(filtered, options.fields)
+    # For each item
+    filtered = _.map filtered, (item) ->
+      item = _.cloneDeep(item)
+
+      newItem = {}
+
+      if _.first(_.values(options.fields)) == 1
+        # Include fields
+        for field in _.keys(options.fields).concat(["_id"])
+          path = field.split(".")
+
+          # Determine if path exists
+          obj = item
+          for pathElem in path
+            if obj
+              obj = obj[pathElem]
+
+          if not obj?
+            continue
+
+          # Go into path, creating as necessary
+          from = item
+          to = newItem
+          for pathElem in _.initial(path)
+            to[pathElem] = to[pathElem] or {}
+
+            # Move inside
+            to = to[pathElem]
+            from = from[pathElem]
+
+          # Copy value
+          to[_.last(path)] = from[_.last(path)]
+
+        return newItem
+      else
+        # Exclude fields
+        for field in _.keys(options.fields).concat(["_id"])
+          path = field.split(".")
+
+          # Go inside path
+          obj = item
+          for pathElem in _.initial(path)
+            if obj
+              obj = obj[pathElem]
+
+          # If not there, don't exclude
+          if not obj?
+            continue
+
+          delete obj[_.last(path)]
+
+        return item
   else
     filtered = _.map filtered, (doc) -> _.cloneDeep(doc)
 
   return filtered
-
-exports.filterFields = (items, fields) ->
-  # For each item
-  return _.map items, (item) ->
-    item = _.cloneDeep(item)
-
-    newItem = {}
-
-    if _.first(_.values(fields)) == 1
-      # Include fields
-      for field in _.keys(fields).concat(["_id"])
-        path = field.split(".")
-
-        # Determine if path exists
-        obj = item
-        for pathElem in path
-          if obj
-            obj = obj[pathElem]
-
-        if not obj?
-          continue
-
-        # Go into path, creating as necessary
-        from = item
-        to = newItem
-        for pathElem in _.initial(path)
-          to[pathElem] = to[pathElem] or {}
-
-          # Move inside
-          to = to[pathElem]
-          from = from[pathElem]
-
-        # Copy value
-        to[_.last(path)] = from[_.last(path)]
-
-      return newItem
-    else
-      # Exclude fields
-      for field in _.keys(fields).concat(["_id"])
-        path = field.split(".")
-
-        # Go inside path
-        obj = item
-        for pathElem in _.initial(path)
-          if obj
-            obj = obj[pathElem]
-
-        # If not there, don't exclude
-        if not obj?
-          continue
-
-        delete obj[_.last(path)]
-
-      return item
-
 
 # Creates a unique identifier string
 exports.createUid = -> 
@@ -219,32 +215,3 @@ processGeoIntersectsOperator = (selector, list) ->
         return pointInPolygon(doc[key], geo)
 
   return list
-
-# Tidy up upsert parameters to always be a list of { doc: <doc>, base: <base> }, 
-# doing basic error checking and making sure that _id is present
-# Returns [items, success, error]
-exports.regularizeUpsert = (docs, bases, success, error) ->
-  # Handle case of bases not present
-  if _.isFunction(bases)
-    [bases, success, error] = [undefined, bases, success]
-
-  # Handle single upsert
-  if not _.isArray(docs)
-    docs = [docs]
-    bases = [bases]
-  else
-    bases = bases or []
-
-  # Make into list of { doc: .., base: }
-  items = _.map(docs, (doc, i) -> { doc: doc, base: if i < bases.length then bases[i] else undefined})
-
-  # Set _id
-  for item in items
-    if not item.doc._id
-      item.doc._id = exports.createUid()
-    if item.base and not item.base._id
-      throw new Error("Base needs _id")
-    if item.base and item.base._id != item.doc._id
-      throw new Error("Base needs same _id")
-
-  return [items, success, error]

@@ -6,12 +6,24 @@ db_caching = require "./db_caching"
 _ = require 'lodash'
 async = require 'async'
 
+OldWebSQLDb = require './v2/WebSQLDb'
+
+error = (err) ->
+  console.log err
+  assert.fail(JSON.stringify(err))
+
 describe 'WebSQLDb', ->
   @timeout(5000)
+  
   before (done) ->
-    @db = new WebSQLDb { namespace: "db.scratch" }, =>
-      @db.addCollection 'scratch', =>
-        done()
+    @reset = (done) =>
+      new WebSQLDb { namespace: "db.scratch" }, (db) =>
+        @db = db
+        @db.removeCollection 'scratch', =>
+          @db.addCollection 'scratch', =>
+            @col = @db.scratch
+            done()
+    @reset(done)
 
   describe "passes queries", ->
     db_queries.call(this)
@@ -21,35 +33,40 @@ describe 'WebSQLDb', ->
 
 describe 'WebSQLDb storage', ->
   beforeEach (done) ->
-    @db = new WebSQLDb { namespace: "db.scratch" }, =>
+    new WebSQLDb { namespace: "db.scratch" }, (db) =>
+      @db = db
       @db.removeCollection 'scratch', =>
         @db.addCollection 'scratch', =>
           done()
 
   it "retains items", (done) ->
-    @db.scratch.upsert { _id:1, a:"Alice" }, =>
-      db2 = new WebSQLDb { namespace: "db.scratch" }, =>
+    @db.scratch.upsert { _id:"1", a:"Alice" }, =>
+      new WebSQLDb { namespace: "db.scratch" }, (db2) =>
         db2.addCollection 'scratch', =>
           db2.scratch.find({}).fetch (results) ->
             assert.equal results[0].a, "Alice"
             done()
 
   it "retains upserts", (done) ->
-    @db.scratch.upsert { _id:1, a:"Alice" }, =>
-      db2 = new WebSQLDb { namespace: "db.scratch" }, =>
-        db2.addCollection 'scratch', =>
-          db2.scratch.find({}).fetch (results) ->
-            db2.scratch.pendingUpserts (upserts) ->
-              assert.deepEqual results, upserts
-              done()
+    @db.scratch.cacheOne { _id:"1", a:"Alice" }, =>
+      @db.scratch.upsert { _id:"1", a:"Bob" }, =>
+        new WebSQLDb { namespace: "db.scratch" }, (db2) =>
+          db2.addCollection 'scratch', =>
+            db2.scratch.find({}).fetch (results) ->
+              assert.deepEqual results, [{ _id:"1", a:"Bob" }]
+              db2.scratch.pendingUpserts (upserts) ->
+                assert.equal upserts.length, 1
+                assert.deepEqual upserts[0].doc, { _id:"1", a:"Bob" }
+                assert.deepEqual upserts[0].base, { _id:"1", a:"Alice" }
+                done()
 
   it "retains removes", (done) ->
-    @db.scratch.seed { _id:1, a:"Alice" }, =>
-      @db.scratch.remove 1, =>
-        db2 = new WebSQLDb { namespace: "db.scratch" }, =>
+    @db.scratch.seed { _id:"1", a:"Alice" }, =>
+      @db.scratch.remove "1", =>
+        new WebSQLDb { namespace: "db.scratch" }, (db2) =>
           db2.addCollection 'scratch', =>
             db2.scratch.pendingRemoves (removes) ->
-              assert.deepEqual removes, [1]
+              assert.deepEqual removes, ["1"]
               done()
 
   it "inserts 1000 documents at once", (done) ->
@@ -62,38 +79,16 @@ describe 'WebSQLDb storage', ->
       @db.scratch.find({}).fetch (results) =>
         assert.equal results.length, 1000
         done()
+      , error
+    , error
 
-  # context "10000 documents", ->
-  #   @timeout(30000)
-
-  #   beforeEach (done) ->
-  #     docs = []
-  #     for i in [0...10000]
-  #       docs.push { lat: i, lng: i+1, timestamp: new Date().toISOString() }
-
-  #     @db.scratch.upsert docs, =>
-  #       done()
-
-  #   it "retrieves them 50 times", (done) ->
-  #     async.times 50, (n, cb) =>
-  #       @db.scratch.find({}).fetch (results) =>
-  #         assert.equal results.length, 10000
-  #         cb()
-  #     , => done()
-
-  # it "inserts 50 documents in series", (done) ->
-  #   @timeout(30000)
-  #   docs = []
-  #   for i in [0...50]
-  #     docs.push { lat: i, lng: i+1, timestamp: new Date().toISOString() }
-
-  #   async.eachSeries docs, (doc, cb) =>
-  #     @db.scratch.upsert doc, =>
-  #       cb()
-  #     , cb
-  #   , =>
-  #     done()
-      
-
-
-
+# describe 'WebSQLDb upgrade', ->
+#   it "retains items", (done) ->
+#     new OldWebSQLDb { namespace: "db.scratch" }, (olddb) => 
+#       olddb.addCollection 'scratch', =>
+#         olddb.scratch.upsert { _id:"1", a:"Alice" }, =>
+#           new WebSQLDb { namespace: "db.scratch" }, (newdb) =>
+#             newdb.addCollection 'scratch', =>
+#               newdb.scratch.find({}).fetch (results) ->
+#                 assert.equal results[0].a, "Alice"
+#                 done()

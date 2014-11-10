@@ -6,9 +6,13 @@ db_caching = require "./db_caching"
 _ = require 'lodash'
 
 describe 'LocalStorageDb', ->
-  before ->
-    @db = new LocalStorageDb()
-    @db.addCollection('scratch')
+  before (done) ->
+    @reset = (done) =>
+      @db = new LocalStorageDb()
+      @db.addCollection("scratch")
+      @col = @db.scratch
+      done()
+    @reset(done)
 
   describe "passes queries", ->
     db_queries.call(this)
@@ -26,7 +30,7 @@ describe 'LocalStorageDb with local storage', ->
     done()
 
   it "retains items", (done) ->
-    @db.scratch.upsert { _id:1, a:"Alice" }, =>
+    @db.scratch.upsert { _id:"1", a:"Alice" }, =>
       db2 = new LocalStorageDb({ namespace: "db.scratch" })
       db2.addCollection 'scratch'
       db2.scratch.find({}).fetch (results) ->
@@ -34,21 +38,25 @@ describe 'LocalStorageDb with local storage', ->
         done()
 
   it "retains upserts", (done) ->
-    @db.scratch.upsert { _id:1, a:"Alice" }, =>
-      db2 = new LocalStorageDb({ namespace: "db.scratch" })
-      db2.addCollection 'scratch'
-      db2.scratch.find({}).fetch (results) ->
-        db2.scratch.pendingUpserts (upserts) ->
-          assert.deepEqual results, upserts
-          done()
+    @db.scratch.cacheOne { _id:"1", a:"Alice" }, =>
+      @db.scratch.upsert { _id:"1", a:"Bob" }, =>
+        new LocalStorageDb { namespace: "db.scratch" }, (db2) =>
+          db2.addCollection 'scratch', =>
+            db2.scratch.find({}).fetch (results) ->
+              assert.deepEqual results, [{ _id:"1", a:"Bob" }]
+              db2.scratch.pendingUpserts (upserts) ->
+                assert.equal upserts.length, 1
+                assert.deepEqual upserts[0].doc, { _id:"1", a:"Bob" }
+                assert.deepEqual upserts[0].base, { _id:"1", a:"Alice" }
+                done()
 
   it "retains removes", (done) ->
-    @db.scratch.seed { _id:1, a:"Alice" }, =>
-      @db.scratch.remove 1, =>
+    @db.scratch.seed { _id:"1", a:"Alice" }, =>
+      @db.scratch.remove "1", =>
         db2 = new LocalStorageDb({ namespace: "db.scratch" })
         db2.addCollection 'scratch'
         db2.scratch.pendingRemoves (removes) ->
-          assert.deepEqual removes, [1]
+          assert.deepEqual removes, ["1"]
           done()
 
 describe 'LocalStorageDb without local storage', ->
@@ -61,7 +69,7 @@ describe 'LocalStorageDb without local storage', ->
     done()
 
   it "does not retain items", (done) ->
-    @db.scratch.upsert { _id:1, a:"Alice" }, =>
+    @db.scratch.upsert { _id:"1", a:"Alice" }, =>
       db2 = new LocalStorageDb()
       db2.addCollection 'scratch'
       db2.scratch.find({}).fetch (results) ->
@@ -69,7 +77,7 @@ describe 'LocalStorageDb without local storage', ->
         done()
 
   it "does not retain upserts", (done) ->
-    @db.scratch.upsert { _id:1, a:"Alice" }, =>
+    @db.scratch.upsert { _id:"1", a:"Alice" }, =>
       db2 = new LocalStorageDb()
       db2.addCollection 'scratch'
       db2.scratch.find({}).fetch (results) ->
@@ -78,8 +86,8 @@ describe 'LocalStorageDb without local storage', ->
           done()
 
   it "does not retain removes", (done) ->
-    @db.scratch.seed { _id:1, a:"Alice" }, =>
-      @db.scratch.remove 1, =>
+    @db.scratch.seed { _id:"1", a:"Alice" }, =>
+      @db.scratch.remove "1", =>
         db2 = new LocalStorageDb()
         db2.addCollection 'scratch'
         db2.scratch.pendingRemoves (removes) ->

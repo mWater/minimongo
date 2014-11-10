@@ -7,9 +7,13 @@ _ = require 'lodash'
 
 describe 'IndexedDb', ->
   before (done) ->
-    @db = new IndexedDb { namespace: "db.scratch" }, =>
-      @db.addCollection 'scratch', =>
-        done()
+    @reset = (done) =>
+      @db = new IndexedDb { namespace: "db.scratch" }, =>
+        @db.removeCollection 'scratch', =>
+          @db.addCollection 'scratch', =>
+            @col = @db.scratch
+            done()
+    @reset(done)
 
   describe "passes queries", ->
     db_queries.call(this)
@@ -25,7 +29,7 @@ describe 'IndexedDb storage', ->
           done()
 
   it "retains items", (done) ->
-    @db.scratch.upsert { _id:1, a:"Alice" }, =>
+    @db.scratch.upsert { _id:"1", a:"Alice" }, =>
       db2 = new IndexedDb { namespace: "db.scratch" }, =>
         db2.addCollection 'scratch', =>
           db2.scratch.find({}).fetch (results) ->
@@ -33,19 +37,23 @@ describe 'IndexedDb storage', ->
             done()
 
   it "retains upserts", (done) ->
-    @db.scratch.upsert { _id:1, a:"Alice" }, =>
-      db2 = new IndexedDb { namespace: "db.scratch" }, =>
-        db2.addCollection 'scratch', =>
-          db2.scratch.find({}).fetch (results) ->
-            db2.scratch.pendingUpserts (upserts) ->
-              assert.deepEqual results, upserts
-              done()
+    @db.scratch.cacheOne { _id:"1", a:"Alice" }, =>
+      @db.scratch.upsert { _id:"1", a:"Bob" }, =>
+        db2 = new IndexedDb { namespace: "db.scratch" }, =>
+          db2.addCollection 'scratch', =>
+            db2.scratch.find({}).fetch (results) ->
+              assert.deepEqual results, [{ _id:"1", a:"Bob" }]
+              db2.scratch.pendingUpserts (upserts) ->
+                assert.equal upserts.length, 1
+                assert.deepEqual upserts[0].doc, { _id:"1", a:"Bob" }
+                assert.deepEqual upserts[0].base, { _id:"1", a:"Alice" }
+                done()
 
   it "retains removes", (done) ->
-    @db.scratch.seed { _id:1, a:"Alice" }, =>
-      @db.scratch.remove 1, =>
+    @db.scratch.seed { _id:"1", a:"Alice" }, =>
+      @db.scratch.remove "1", =>
         db2 = new IndexedDb { namespace: "db.scratch" }, =>
           db2.addCollection 'scratch', =>
             db2.scratch.pendingRemoves (removes) ->
-              assert.deepEqual removes, [1]
+              assert.deepEqual removes, ["1"]
               done()

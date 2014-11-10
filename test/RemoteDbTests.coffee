@@ -1,86 +1,60 @@
-chai = require 'chai'
-assert = chai.assert
+assert = require('chai').assert
 RemoteDb = require "../lib/RemoteDb"
 db_queries = require "./db_queries"
-$ = require 'jquery'
+_ = require 'lodash'
 
-# To work, this must have the following server running:
-# NODE_ENV=test node server.js
-describe.skip 'RemoteDb', ->
-  @timeout(60000)
-  beforeEach (done) ->
-    url = 'http://localhost:8080/v3/'
-    req = $.post(url + "_reset", {})
-    req.fail (jqXHR, textStatus, errorThrown) =>
-      throw textStatus
-    req.done =>
-      req = $.ajax(url + "users/test", {
-        data : JSON.stringify({ email: "test@test.com", password:"xyzzy" }),
-        contentType : 'application/json',
-        type : 'PUT'})
-      req.done (data) =>
-        req = $.ajax(url + "clients", {
-        data : JSON.stringify({ username:"test", password:"xyzzy" }),
-        contentType : 'application/json',
-        type : 'POST'})
-        req.done (data) =>
-          @client = data.client
+# @db should have a collection called with fields:
+# "_id" as string, "a" as string, "b" as integer, "c" as JSON and "geo" as GeoJSON
+# @resetDatabase should remove all rows from the scratch table and then call the callback
+# passed to it.
+exports.runTests = () ->
+  describe 'RemoteDb', ->
+    @timeout(10000)
 
-          @db = new RemoteDb(url, @client)
-          @db.addCollection('scratch')
+    # Check that it passes all normal queries
+    describe "passes queries", ->
+      db_queries.call(this)
 
-          done()
+    describe "merging", ->
+      beforeEach (done) -> @reset(done)
 
-  describe "passes queries", ->
-    db_queries.call(this)
+      it "merges changes with base specified", (done) ->
+        base = { _id: "1", a: "1", b: 1 }
 
-#fakeServer = require 'sinon/lib/sinon/util/fake_server'
+        @db.scratch.upsert base, (baseDoc) =>
+          change1 = _.cloneDeep(baseDoc)
+          change1.a = "2"
 
-# DISABLED because sinon is a mess. Code has been well tested in other app
+          change2 = _.cloneDeep(baseDoc)
+          change2.b = 2
 
-# describe 'RemoteDb', ->
-#   beforeEach (done) ->
-#     @db = new RemoteDb("http://test/api/", "1234")
-#     @db.addCollection("scratch")
-#     @server = fakeServer.fakeServer.create()
-#     @server.autoRespond = true
+          @db.scratch.upsert change1, base, (doc1) =>
+            assert.equal doc1.a, "2"
 
-#   afterEach (done) ->
-#     @server.restore()
+            @db.scratch.upsert change2, base, (doc2) =>
+              assert.equal doc2.a, "2", "Should merge returned document"
+              assert.equal doc2.b, 2, "Should merge returned document"
 
-#   it "encodes get", ->
-#     @server.respondWith("GET", "http://test/api/scratch",
-#                                 [200, { "Content-Type": "application/json" },
-#                                  '[{ "_id": 12, "a": 1 }]']);    
+              # Should merge on server permanently
+              @db.scratch.findOne { _id: "1" }, (doc3) =>
+                assert.equal doc2.a, "2", "Should merge documents"
+                assert.equal doc2.b, 2, "Should merge documents"
+                done()
 
+      it "overrides changes with no base specified", (done) ->
+        base = { _id: "1", a: "1", b: 1 }
 
-#     @db.scratch.find({}).fetch (data) =>
-#       console.log data
-#     #@db.scratch.upsert {_id: "1234", a:1}, ->
+        @db.scratch.upsert base, (baseDoc) =>
+          change1 = _.cloneDeep(baseDoc)
+          change1.a = "2"
 
-      
+          change2 = _.cloneDeep(baseDoc)
+          change2.b = 2
 
-#   #   url = 'http://localhost:8080/v3/'
-#   #   req = $.post(url + "_reset", {})
-#   #   req.fail (jqXHR, textStatus, errorThrown) =>
-#   #     throw textStatus
-#   #   req.done =>
-#   #     req = $.ajax(url + "users/test", {
-#   #       data : JSON.stringify({ email: "test@test.com", password:"xyzzy" }),
-#   #       contentType : 'application/json',
-#   #       type : 'PUT'})
-#   #     req.done (data) =>
-#   #       req = $.ajax(url + "users/test", {
-#   #       data : JSON.stringify({ password:"xyzzy" }),
-#   #       contentType : 'application/json',
-#   #       type : 'POST'})
-#   #       req.done (data) =>
-#   #         @client = data.client
+          @db.scratch.upsert change1, base, (doc1) =>
+            assert.equal doc1.a, "2"
 
-#   #         @db = new RemoteDb(url, @client)
-#   #         @db.addCollection('scratch')
-
-#   #         done()
-
-#   # describe "passes queries", ->
-#   #   db_queries.call(this)
+            @db.scratch.upsert change2, null, (doc2) =>
+              assert.equal doc2.a, "1", "Should not merge returned document"
+              assert.equal doc2.b, 2, "Should keep new value"
+              done()

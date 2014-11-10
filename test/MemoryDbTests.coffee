@@ -6,8 +6,13 @@ db_caching = require "./db_caching"
 _ = require 'lodash'
 
 describe 'MemoryDb', ->
-  before ->
-    @db = new MemoryDb()
+  before (done) ->
+    @reset = (done) =>
+      @db = new MemoryDb()
+      @db.addCollection("scratch")
+      @col = @db.scratch
+      done()
+    @reset(done)
 
   describe "passes queries", ->
     db_queries.call(this)

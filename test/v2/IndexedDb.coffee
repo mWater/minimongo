@@ -1,8 +1,8 @@
 _ = require 'lodash'
 async = require 'async'
 IDBStore = require 'idb-wrapper'
-utils = require('./utils')
 
+createUid = require('./utils').createUid
 processFind = require('./utils').processFind
 compileSort = require('./selector').compileSort
 
@@ -73,33 +73,25 @@ class Collection
       if success? then success(processFind(_.pluck(matches, "doc"), selector, options))  
     , { index: "col", keyRange: @store.makeKeyRange(only: @name), onError: error }
 
-  upsert: (docs, bases, success, error) ->
-    [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
+  upsert: (doc, success, error) ->
+    # Handle both single and multiple upsert
+    items = doc
+    if not _.isArray(items)
+      items = [items]
 
-    # Get bases
-    keys = _.map items, (item) => [@name, item.doc._id]
-    @store.getBatch keys, (records) =>
-      puts = _.map items, (item, i) =>
-        # Prefer explicit base
-        if item.base != undefined
-          base = item.base
-        else if records[i] and records[i].doc and records[i].state == "cached"
-          base = records[i].doc
-        else if records[i] and records[i].doc and records[i].state == "upserted"
-          base = records[i].base
-        else
-          base = null
+    for item in items
+      if not item._id
+        item._id = createUid()
 
-        return {
-          col: @name
-          state: "upserted"
-          doc: item.doc
-          base: base
-        }
+    records = _.map items, (item) =>
+      return {
+        col: @name
+        state: "upserted"
+        doc: item
+      }
 
-      @store.putBatch puts, => 
-        if success then success(docs)
-      , error
+    @store.putBatch records, => 
+      if success then success(doc)
     , error
 
   remove: (id, success, error) ->
@@ -189,8 +181,7 @@ class Collection
   
   pendingUpserts: (success, error) ->
     @store.query (matches) =>
-      upserts = _.map matches, (m) -> { doc: m.doc, base: m.base or null }
-      if success? then success(upserts)
+      if success? then success(_.pluck(matches, "doc"))
     , { index: "col-state", keyRange: @store.makeKeyRange(only: [@name, "upserted"]), onError: error }
 
   pendingRemoves: (success, error) ->
@@ -198,30 +189,31 @@ class Collection
       if success? then success(_.pluck(_.pluck(matches, "doc"), "_id"))
     , { index: "col-state", keyRange: @store.makeKeyRange(only: [@name, "removed"]), onError: error }
 
-  resolveUpserts: (upserts, success, error) ->
+  resolveUpsert: (doc, success, error) ->
+    # Handle both single and multiple upsert
+    items = doc
+    if not _.isArray(items)
+      items = [items]
+
     # Get items
-    keys = _.map upserts, (upsert) => [@name, upsert.doc._id]
+    keys = _.map items, (item) => [@name, item._id]
     @store.getBatch keys, (records) =>
       puts = []
-      for i in [0...upserts.length]
+      for i in [0...items.length]
         record = records[i]
 
         # Only safely remove upsert if doc is the same
-        if record and record.state == "upserted"
-          if _.isEqual(record.doc, upserts[i].doc)
-            record.state = "cached"
-            puts.push(record)
-          else
-            record.base = upserts[i].doc
-            puts.push(record)
+        if record and record.state == "upserted" and _.isEqual(record.doc, items[i])
+          record.state = "cached"
+          puts.push(record)
 
       # Put all changed items
       if puts.length > 0
         @store.putBatch puts, =>
-          if success then success()  
+          if success then success(doc)  
         , error
       else
-        if success then success()
+        if success then success(doc)
     , error
 
   resolveRemove: (id, success, error) ->
