@@ -151,6 +151,11 @@ module.exports = ->
         assert.deepEqual _.pluck(results, '_id'), ["1","3"]
         done()
 
+    it 'skips', (done) ->
+      @col.find({}, {sort: ['a'], skip:2}).fetch (results) =>
+        assert.deepEqual _.pluck(results, '_id'), ["2"]
+        done()
+
     it 'fetches independent copies', (done) ->
       @col.findOne { _id: "2" }, (result1) =>
         @col.findOne { _id: "2" }, (result2) =>
