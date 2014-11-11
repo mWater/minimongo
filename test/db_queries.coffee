@@ -7,6 +7,9 @@ error = (err) ->
   assert.fail(JSON.stringify(err))
 
 # Runs queries on @col which must be a collection (with a:<string>, b:<integer>, c:<json>, geo:<geojson>)
+# When present:
+# c.arrstr is an array of string values
+# c.arrint is an array of integer values
 # @reset(done) must truncate the collection
 module.exports = ->
   before ->
@@ -34,71 +37,59 @@ module.exports = ->
         assert.equal 3, results.length
         done()
 
-    it 'filters rows by id', (done) ->
-      #@testFilter
-      @col.find({ _id: "1" }).fetch (results) =>
-        assert.equal 1, results.length
-        assert.equal 'Alice', results[0].a
-        done()
+    it 'filters by id', (done) ->
+      @testFilter { _id: "1" }, ["1"], done
 
-    it 'filters rows by string', (done) ->
-      @col.find({ a: "Alice" }).fetch (results) =>
-        assert.equal 1, results.length
-        assert.equal 'Alice', results[0].a
-        done()
+    it 'filters by string', (done) ->
+      @testFilter { a: "Alice" }, ["1"], done
 
-    it 'filters rows by number', (done) ->
-      @col.find({ b: 2 }).fetch (results) =>
-        assert.equal 1, results.length
-        assert.equal 'Charlie', results[0].a
-        done()
+    it 'filters by $in string', (done) ->
+      @testFilter { a: { $in: ["Alice", "Charlie"]} }, ["1", "2"], done
 
-    it 'filters rows by path', (done) ->
-      @col.find({ "c.d": 2 }).fetch (results) =>
-        assert.equal 1, results.length
-        assert.equal 'Charlie', results[0].a
-        done()
+    it 'filters by number', (done) ->
+      @testFilter { b: 2 }, ["2"], done
 
-    it 'filters rows by $ne', (done) ->
-      @col.find({ "b": { $ne: 2 }}, { sort:["_id"]}).fetch (results) =>
-        assert.deepEqual _.pluck(results, '_id'), ["1","3"]
-        done()
+    it 'filters by $in number', (done) ->
+      @testFilter { b: { $in: [2, 3]} }, ["2", "3"], done
 
-    it 'filters rows by $gt', (done) ->
-      @col.find({ "b": { $gt: 1 }}, { sort:["_id"]}).fetch (results) =>
-        assert.deepEqual _.pluck(results, '_id'), ["2","3"]
-        done()
+    it 'filters by $regex', (done) ->
+      @testFilter { a: { $regex: "li"} }, ["1", "2"], done
 
-    it 'filters rows by $lt', (done) ->
-      @col.find({ "b": { $lt: 3 }}, { sort:["_id"]}).fetch (results) =>
-        assert.deepEqual _.pluck(results, '_id'), ["1","2"]
-        done()
+    it 'filters by $regex case-sensitive', (done) ->
+      @testFilter { a: { $regex: "A"} }, ["1"], done
 
-    it 'filters rows by $gte', (done) ->
-      @col.find({ "b": { $gte: 2 }}, { sort:["_id"]}).fetch (results) =>
-        assert.deepEqual _.pluck(results, '_id'), ["2","3"]
-        done()
+    it 'filters by $regex case-insensitive', (done) ->
+      @testFilter { a: { $regex: "A", $options: 'i' } }, ["1", "2"], done
 
-    it 'filters rows by $lte', (done) ->
-      @col.find({ "b": { $lte: 2 }}, { sort:["_id"]}).fetch (results) =>
-        assert.equal 2, results.length
-        assert.deepEqual _.pluck(results, '_id'), ["1","2"]
-        done()
+    it 'filters by path', (done) ->
+      @testFilter { "c.d": 2 }, ["2"], done
 
-    it 'filters rows by $not', (done) ->
-      @col.find({ "b": { $not: { $lt: 3 }}, { sort:["_id"]}).fetch (results) =>
-        assert.deepEqual _.pluck(results, '_id'), ["3"]
-        done()
+    it 'filters by $ne', (done) ->
+      @testFilter { "b": { $ne: 2 }}, ["1","3"], done
 
-    it 'filters rows by $or', (done) ->
-      @col.find({ $or: [{b: 3},{b: 1}]}, { sort:["_id"]}).fetch (results) =>
-        assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
-        done()
+    it 'filters by $gt', (done) ->
+      @testFilter { "b": { $gt: 1 }}, ["2","3"], done
 
-    it 'filters rows by $exists: true', (done) ->
-      @col.find({ c: { $exists: true }}, { sort:["_id"]}).fetch (results) =>
-        assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
-        done()
+    it 'filters by $lt', (done) ->
+      @testFilter { "b": { $lt: 3 }}, ["1","2"], done
+
+    it 'filters by $gte', (done) ->
+      @testFilter { "b": { $gte: 2 }}, ["2","3"], done
+
+    it 'filters by $lte', (done) ->
+      @testFilter { "b": { $lte: 2 }}, ["1","2"], done
+
+    it 'filters by $not', (done) ->
+      @testFilter { "b": { $not: { $lt: 3 }}}, ["3"], done
+
+    it 'filters by $or', (done) ->
+      @testFilter { $or: [{b: 3},{b: 1}]}, ["1", "3"], done
+
+    it 'filters by $exists: true', (done) ->
+      @testFilter { c: { $exists: true }}, ["1", "2"], done
+
+    it 'filters by $exists: false', (done) ->
+      @testFilter { c: { $exists: false }}, ["3"], done
 
     it 'includes fields', (done) ->
       @col.find({ _id: "1" }, { fields: { a:1 }}).fetch (results) =>
@@ -206,19 +197,43 @@ module.exports = ->
         , error
       , error
 
-  context 'With complex array rows', ->
+  context 'With integer array rows', ->
     beforeEach (done) ->
       @reset =>
-        @col.upsert { _id:"1", c: [{ x: 1, y: 1 } }, =>
-          @col.upsert { _id:"2", c: [{ x: 2, y: 1 } }, =>
-            @col.upsert { _id:"3", c: [{ x: 1, y: 2 } }, =>
+        @col.upsert { _id:"1", c: { arrint: [1, 2] }}, =>
+          @col.upsert { _id:"2", c: { arrint: [2, 3] }}, =>
+            @col.upsert { _id:"3", c: { arrint: [1, 3] }}, =>
               done()
 
-    it 'filters rows by id', (done) ->
-      @col.find({ _id: "1" }).fetch (results) =>
-        assert.equal 1, results.length
-        assert.equal 'Alice', results[0].a
-        done()
+    it 'filters by $in', (done) ->
+      @testFilter { "c.arrint": { $in: [3] }}, ["2", "3"], done
+
+    it 'filters by list $in with multiple', (done) ->
+      @testFilter { "c.arrint": { $in: [1, 3] }}, ["1", "2", "3"], done
+
+  context 'With object array rows', ->
+    beforeEach (done) ->
+      @reset =>
+        @col.upsert { _id:"1", c: [{ x: 1, y: 1 }, { x:1, y:2 }] }, =>
+          @col.upsert { _id:"2", c: [{ x: 2, y: 1 }] }, =>
+            @col.upsert { _id:"3", c: [{ x: 2, y: 2 }] }, =>
+              done()
+
+    it 'filters by $elemMatch', (done) ->
+      @testFilter { "c": { $elemMatch: { y:1 }}}, ["1", "2"], =>
+        @testFilter { "c": { $elemMatch: { x:1 }}}, ["1"], done
+
+  context 'With array rows with inner string arrays', ->
+    beforeEach (done) ->
+      @reset =>
+        @col.upsert { _id:"1", c: [{ arrstr: ["a", "b"]}, { arrstr: ["b", "c"]}] }, =>
+          @col.upsert { _id:"2", c: [{ arrstr: ["b"]}] }, =>
+            @col.upsert { _id:"3", c: [{ arrstr: ["c", "d"]}, { arrstr: ["e", "f"]}] }, =>
+              done()
+
+    it 'filters by $elemMatch', (done) ->
+      @testFilter { "c": { $elemMatch: { "arrstr": { $in: ["b"]} }}}, ["1", "2"], =>
+        @testFilter { "c": { $elemMatch: { "arrstr": { $in: ["d", "e"]} }}}, ["3"], done
 
   geopoint = (lng, lat) ->
     return {

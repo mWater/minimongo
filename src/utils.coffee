@@ -6,6 +6,9 @@ bowser = require 'bowser'
 compileDocumentSelector = require('./selector').compileDocumentSelector
 compileSort = require('./selector').compileSort
 
+# Compile a document selector (query) to a lambda function
+exports.compileDocumentSelector = compileDocumentSelector
+
 # Select appropriate local database, prefering IndexedDb, then WebSQLDb, then LocalStorageDb, then MemoryDb
 exports.autoselectLocalDb = (options, success, error) ->
   # Here due to browserify circularity quirks
