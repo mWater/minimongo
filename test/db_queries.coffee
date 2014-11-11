@@ -9,11 +9,18 @@ error = (err) ->
 # Runs queries on @col which must be a collection (with a:<string>, b:<integer>, c:<json>, geo:<geojson>)
 # @reset(done) must truncate the collection
 module.exports = ->
+  before ->
+    # Test a filter to return specified rows (in order)
+    @testFilter = (filter, ids, done) ->
+      @col.find(filter, { sort:["_id"]}).fetch (results) =>
+        assert.deepEqual _.pluck(results, '_id'), ids
+        done()
+
   context 'With sample rows', ->
     beforeEach (done) ->
       @reset =>
         @col.upsert { _id:"1", a:"Alice", b:1, c: { d: 1, e: 2 } }, =>
-          @col.upsert { _id:"2", a:"Charlie", b:2 }, =>
+          @col.upsert { _id:"2", a:"Charlie", b:2, c: { d: 2, e: 3 } }, =>
             @col.upsert { _id:"3", a:"Bob", b:3 }, =>
               done()
 
@@ -28,9 +35,69 @@ module.exports = ->
         done()
 
     it 'filters rows by id', (done) ->
+      #@testFilter
       @col.find({ _id: "1" }).fetch (results) =>
         assert.equal 1, results.length
         assert.equal 'Alice', results[0].a
+        done()
+
+    it 'filters rows by string', (done) ->
+      @col.find({ a: "Alice" }).fetch (results) =>
+        assert.equal 1, results.length
+        assert.equal 'Alice', results[0].a
+        done()
+
+    it 'filters rows by number', (done) ->
+      @col.find({ b: 2 }).fetch (results) =>
+        assert.equal 1, results.length
+        assert.equal 'Charlie', results[0].a
+        done()
+
+    it 'filters rows by path', (done) ->
+      @col.find({ "c.d": 2 }).fetch (results) =>
+        assert.equal 1, results.length
+        assert.equal 'Charlie', results[0].a
+        done()
+
+    it 'filters rows by $ne', (done) ->
+      @col.find({ "b": { $ne: 2 }}, { sort:["_id"]}).fetch (results) =>
+        assert.deepEqual _.pluck(results, '_id'), ["1","3"]
+        done()
+
+    it 'filters rows by $gt', (done) ->
+      @col.find({ "b": { $gt: 1 }}, { sort:["_id"]}).fetch (results) =>
+        assert.deepEqual _.pluck(results, '_id'), ["2","3"]
+        done()
+
+    it 'filters rows by $lt', (done) ->
+      @col.find({ "b": { $lt: 3 }}, { sort:["_id"]}).fetch (results) =>
+        assert.deepEqual _.pluck(results, '_id'), ["1","2"]
+        done()
+
+    it 'filters rows by $gte', (done) ->
+      @col.find({ "b": { $gte: 2 }}, { sort:["_id"]}).fetch (results) =>
+        assert.deepEqual _.pluck(results, '_id'), ["2","3"]
+        done()
+
+    it 'filters rows by $lte', (done) ->
+      @col.find({ "b": { $lte: 2 }}, { sort:["_id"]}).fetch (results) =>
+        assert.equal 2, results.length
+        assert.deepEqual _.pluck(results, '_id'), ["1","2"]
+        done()
+
+    it 'filters rows by $not', (done) ->
+      @col.find({ "b": { $not: { $lt: 3 }}, { sort:["_id"]}).fetch (results) =>
+        assert.deepEqual _.pluck(results, '_id'), ["3"]
+        done()
+
+    it 'filters rows by $or', (done) ->
+      @col.find({ $or: [{b: 3},{b: 1}]}, { sort:["_id"]}).fetch (results) =>
+        assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
+        done()
+
+    it 'filters rows by $exists: true', (done) ->
+      @col.find({ c: { $exists: true }}, { sort:["_id"]}).fetch (results) =>
+        assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
         done()
 
     it 'includes fields', (done) ->
@@ -138,6 +205,20 @@ module.exports = ->
           done()
         , error
       , error
+
+  context 'With complex array rows', ->
+    beforeEach (done) ->
+      @reset =>
+        @col.upsert { _id:"1", c: [{ x: 1, y: 1 } }, =>
+          @col.upsert { _id:"2", c: [{ x: 2, y: 1 } }, =>
+            @col.upsert { _id:"3", c: [{ x: 1, y: 2 } }, =>
+              done()
+
+    it 'filters rows by id', (done) ->
+      @col.find({ _id: "1" }).fetch (results) =>
+        assert.equal 1, results.length
+        assert.equal 'Alice', results[0].a
+        done()
 
   geopoint = (lng, lat) ->
     return {
