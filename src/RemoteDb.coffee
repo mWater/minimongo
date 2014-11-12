@@ -10,11 +10,6 @@ jQueryHttpClient = (method, url, params, data, success, error) ->
 
   if method == "GET"
     req = $.getJSON(fullUrl)
-    req.done (response, textStatus, jqXHR) =>
-      success(response)
-    req.fail (jqXHR, textStatus, errorThrown) =>
-      if error
-        error(jqXHR)
   else if method == "DELETE"
     req = $.ajax(fullUrl, { type : 'DELETE'})
   else if method == "POST" or method == "PATCH"
@@ -22,11 +17,12 @@ jQueryHttpClient = (method, url, params, data, success, error) ->
       data : JSON.stringify(data),
       contentType : 'application/json',
       type : method})
-    req.done (response, textStatus, jqXHR) =>
-      success(response or null)
-    req.fail (jqXHR, textStatus, errorThrown) =>
-      if error
-        error(jqXHR)
+
+  req.done (response, textStatus, jqXHR) =>
+    success(response or null)
+  req.fail (jqXHR, textStatus, errorThrown) =>
+    if error
+      error(jqXHR)
 
 module.exports = class RemoteDb
   # Url must have trailing /
