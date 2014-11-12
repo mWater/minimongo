@@ -152,7 +152,33 @@ describe 'HybridDb', ->
             done()
         , fail
 
-      it "findOne gives results null once if remote fails", (done) ->
+      it "findOne gives local results once if remote fails", (done) ->
+        @lc.seed(_id:"1", a:1)
+
+        @rc.findOne = (selector, options = {}, success, error) ->
+          error(new Error("fail"))
+
+        @hc.findOne { _id: "1"}, (data) ->
+          assert.equal data.a, 1
+          done()
+        , fail
+
+      it "findOne gives local results selected not by _id once if remote fails", (done) ->
+        @lc.seed(_id:"1", a:1)
+
+        # We use find, not findOne when not selected by _id
+        @rc.find = (selector, options) =>
+          return { fetch: (success, error) ->
+            error()
+          }
+
+        @hc.findOne { a: 1 }, (data) ->
+          console.log data
+          assert.equal data.a, 1
+          done()
+        , fail
+
+      it "findOne gives local results once if remote fails", (done) ->
         called = 0
         @rc.findOne = (selector, options = {}, success, error) ->
           called = called + 1
@@ -181,11 +207,6 @@ describe 'HybridDb', ->
               assert.deepEqual _.pluck(data, 'a'), [3,2]
             done()
         , fail
-
-      it "exceptions if findOne doesn't include _id", (done) ->
-        assert.throw () =>
-          @hc.findOne { a: 1 }, (->), (->)
-        done()
 
     describe "interim: false", ->
       it "find gives final results only", (done) ->
@@ -573,23 +594,23 @@ describe 'HybridDb', ->
         assert.deepEqual _.pluck(data, 'a'), [4]
         done()
 
-    # it "findOne without _id selector uses remote", (done) ->
-    #   @hc.findOne {}, { cacheFind: false, interim: false, sort: ['_id'] }, (data) =>
-    #     assert.deepEqual data, { _id:"1", a:3 }
-    #     done()
+    it "findOne without _id selector uses remote", (done) ->
+      @hc.findOne {}, { cacheFindOne: false, interim: false, sort: ['_id'] }, (data) =>
+        assert.deepEqual data, { _id:"1", a:3 }
+        done()
 
-    # it "findOne without _id selector respects local upsert", (done) ->
-    #   @lc.upsert({ _id:"1", a:9 })
-    #   @hc.findOne {}, { cacheFindOne: false, interim: false, sort: ['_id'] }, (data) =>
-    #     assert.deepEqual data, { _id:"1", a:9 }
-    #     done()
+    it "findOne without _id selector respects local upsert", (done) ->
+      @lc.upsert({ _id:"1", a:9 })
+      @hc.findOne {}, { cacheFindOne: false, interim: false, sort: ['_id'] }, (data) =>
+        assert.deepEqual data, { _id:"1", a:9 }
+        done()
 
-    # it "findOne without _id selector respects local remove", (done) ->
-    #   @lc.remove("1")
+    it "findOne without _id selector respects local remove", (done) ->
+      @lc.remove("1")
 
-    #   @hc.findOne {}, { cacheFindOne: false, sort: ['_id'] }, (data) =>
-    #     assert.deepEqual data, { _id: "2", a: 4 }
-    #     done()
+      @hc.findOne {}, { cacheFindOne: false, sort: ['_id'] }, (data) =>
+        assert.deepEqual data, { _id: "2", a: 4 }
+        done()
 
     it "findOne with _id selector uses remote", (done) ->
       @hc.findOne { _id: "1" }, { cacheFindOne: false, sort: ['_id'] }, (data) =>

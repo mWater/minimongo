@@ -65,9 +65,6 @@ class HybridCollection
 
   # Finds one row. Note: Does *not* support selectors that don't include _id field
   findOne: (selector, options = {}, success, error) ->
-    # if not selector._id
-    #   throw new Error("_id required in selector")
-      
     if _.isFunction(options) 
       [options, success, error] = [{}, options, success]
 
@@ -105,6 +102,7 @@ class HybridCollection
               if not _.isEqual(localDoc, localData.doc)
                 return success(_.cloneDeep(localData.doc))
               else
+                # Success has already been called since localData is set
                 return
 
             # Check for local remove
@@ -118,12 +116,36 @@ class HybridCollection
           , error
 
       remoteError = =>
-        # Remote errored out. Return null if local did not return
-        if not localDoc
-          success(null)
+        # Remote errored out. 
+        # If no interim, do local find
+        if not options.interim
+          @localCol.findOne(selector, options).fetch(success, error)
+        else
+          # Otherwise return null if local did not return            
+          if not localDoc
+            success(null)
 
-      # Call remote
-      @remoteCol.findOne selector, remoteOptions, remoteSuccess, remoteError
+      if selector._id
+        # Call remote
+        @remoteCol.findOne selector, remoteOptions, remoteSuccess, remoteError
+      else
+        # Without _id specified, interaction between local and remote changes is complex
+        # For example, if the one result returned by remote is locally deleted, we have no fallback
+        # So instead we do a normal find and then take the first result, which is very inefficient
+        # We cache the entire find operation if the cacheFindOne is true
+        findOptions = _.cloneDeep(options)
+        findOptions.interim = false
+        findOptions.cacheFind = options.cacheFindOne
+
+        @find(selector, findOptions).fetch (findData) =>
+          # Return first entry or null
+          if findData.length > 0
+            # Check that different from existing
+            if not _.isEqual(localDoc, findData[0])
+              success(findData[0])
+          else
+            success(null)          
+        , remoteError
 
     # If interim or shortcut, get local first
     if options.interim or options.shortcut
