@@ -157,6 +157,10 @@ describe 'HybridDb', ->
 
         @rc.findOne = (selector, options = {}, success, error) ->
           error(new Error("fail"))
+        @rc.find = (selector, options) =>
+          return { fetch: (success, error) ->
+            error()
+          }
 
         @hc.findOne { _id: "1"}, (data) ->
           assert.equal data.a, 1
@@ -166,7 +170,8 @@ describe 'HybridDb', ->
       it "findOne gives local results selected not by _id once if remote fails", (done) ->
         @lc.seed(_id:"1", a:1)
 
-        # We use find, not findOne when not selected by _id
+        @rc.findOne = (selector, options = {}, success, error) ->
+          error(new Error("fail"))
         @rc.find = (selector, options) =>
           return { fetch: (success, error) ->
             error()
@@ -183,6 +188,12 @@ describe 'HybridDb', ->
         @rc.findOne = (selector, options = {}, success, error) ->
           called = called + 1
           error(new Error("fail"))
+        @rc.find = (selector, options) =>
+          return { fetch: (success, error) ->
+            called = called + 1
+            error()
+          }
+
         @hc.findOne { _id: "xyz"}, (data) ->
           assert.equal data, null
           assert.equal called, 1
@@ -259,7 +270,7 @@ describe 'HybridDb', ->
 
     describe "cacheFindOne: false", ->
       it "findOne performs partial field remote queries", (done) ->
-        sinon.spy(@rc, "findOne")
+        sinon.spy(@rc, "find")
         @rc.seed(_id:"1", a:1, b:11)
         @rc.seed(_id:"2", a:2, b:12)
 
@@ -268,8 +279,8 @@ describe 'HybridDb', ->
             return
 
           assert.isUndefined data.b
-          assert.deepEqual @rc.findOne.getCall(0).args[1].fields, { b:0 }
-          @rc.findOne.restore()
+          assert.deepEqual @rc.find.getCall(0).args[1].fields, { b:0 }
+          @rc.find.restore()
           done()
 
     context "shortcut: false (default)", ->

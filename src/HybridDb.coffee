@@ -73,79 +73,27 @@ class HybridCollection
 
     # Happens after initial find
     step2 = (localDoc) =>
-      # Setup remote options
-      remoteOptions = _.cloneDeep(options)
-
-      # If caching, get all fields
-      if options.cacheFindOne
-        delete remoteOptions.fields
-
-      remoteSuccess = (remoteDoc) =>
-        # If caching, cache
-        if options.cacheFindOne
-          cacheSuccess = =>
-            # Try query again
-            @localCol.findOne selector, options, (localDoc2) =>
-              if not _.isEqual(localDoc, localDoc2)
-                success(_.cloneDeep(localDoc2))
-              else if not localDoc
-                success(null)
-
-          docs = if remoteDoc then [remoteDoc] else []
-          @localCol.cache(docs, selector, options, cacheSuccess, error)
-        else
-          # Check for local upsert
-          @localCol.pendingUpserts (pendingUpserts) =>
-            localData = _.find(pendingUpserts, (u) -> u.doc._id == selector._id)
-            if localData
-              # Only call success if different from returned interim result
-              if not _.isEqual(localDoc, localData.doc)
-                return success(_.cloneDeep(localData.doc))
-              else
-                # Success has already been called since localData is set
-                return
-
-            # Check for local remove
-            @localCol.pendingRemoves (pendingRemoves) =>
-              if selector._id in pendingRemoves
-                # Removed, success null
-                return success(null)
-
-              success(remoteDoc)
-            , error
-          , error
-
-      remoteError = =>
-        # Remote errored out. 
-        # If no interim, do local find
-        if not options.interim
-          @localCol.findOne(selector, options).fetch(success, error)
-        else
-          # Otherwise return null if local did not return            
-          if not localDoc
-            success(null)
-
+      findOptions = _.cloneDeep(options)
+      findOptions.interim = false
+      findOptions.cacheFind = options.cacheFindOne
       if selector._id
-        # Call remote
-        @remoteCol.findOne selector, remoteOptions, remoteSuccess, remoteError
+        findOptions.limit = 1
       else
         # Without _id specified, interaction between local and remote changes is complex
         # For example, if the one result returned by remote is locally deleted, we have no fallback
-        # So instead we do a normal find and then take the first result, which is very inefficient
-        # We cache the entire find operation if the cacheFindOne is true
-        findOptions = _.cloneDeep(options)
-        findOptions.interim = false
-        findOptions.cacheFind = options.cacheFindOne
+        # So instead we do a find with no limit and then take the first result, which is very inefficient
+        delete findOptions.limit
 
-        @find(selector, findOptions).fetch (findData) =>
-          # Return first entry or null
-          if findData.length > 0
-            # Check that different from existing
-            if not _.isEqual(localDoc, findData[0])
-              success(findData[0])
-          else
-            success(null)          
-        , remoteError
+      @find(selector, findOptions).fetch (data) =>
+        # Return first entry or null
+        if data.length > 0
+          # Check that different from existing
+          if not _.isEqual(localDoc, data[0])
+            success(data[0])
+        else
+          # If nothing found, always report it, as interim find doesn't return null
+          success(null)          
+      , error
 
     # If interim or shortcut, get local first
     if options.interim or options.shortcut
@@ -214,6 +162,8 @@ class HybridCollection
               if not _.isEqual(localData, data)
                 # Send again
                 success(data)
+            , error
+          , error        
 
       remoteError = (err) =>
         # If no interim, do local find
