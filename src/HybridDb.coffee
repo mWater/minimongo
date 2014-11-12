@@ -63,7 +63,7 @@ class HybridCollection
     return fetch: (success, error) =>
       @_findFetch(selector, options, success, error)
 
-  # Finds one row. Note: Does *not* support selectors that don't include _id field
+  # Finds one row. 
   findOne: (selector, options = {}, success, error) ->
     if _.isFunction(options) 
       [options, success, error] = [{}, options, success]

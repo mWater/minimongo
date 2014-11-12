@@ -102,6 +102,8 @@ Combines results from the local database with remote data. Multiple options can 
 
 **cacheFindOne**: (default true) true to cache the `findOne` results from the remote database in the local database
 
+**shortcut**: (default false) true to return `findOne` results if any matching result is found in the local database. Useful for documents that change rarely.
+
 To keep a local database and a remote database in sync, create a HybridDb:
 
 ```
@@ -115,6 +117,8 @@ Then query the hybridDb (`find` and `findOne`) to have it get results and correc
 When upserts and removes are done on the HybridDb, they are queued up in the LocalDb until `hybridDb.upload(success, error)` is called.
 
 `upload` will go through each collection and send any upserts or removes to the remoteDb.
+
+`findOne` will not return an interim `null` result, but will only return interim results when one is present.
 
 ### RemoteDb
 
