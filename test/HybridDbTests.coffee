@@ -163,6 +163,30 @@ describe 'HybridDb', ->
           done()
         , fail
 
+      it "findOne keeps local cache updated on remote change", (done) ->
+        @lc.seed(_id:"1", a:1)
+        @lc.seed(_id:"2", a:2)
+
+        @rc.seed(_id:"1", a:3)
+        @rc.seed(_id:"2", a:4)
+
+        calls = 0
+        @hc.findOne { _id: "1"}, (data) =>
+          calls = calls + 1
+          if calls == 1
+            assert.deepEqual data, { _id : "1", a:1 }
+          if calls >= 2
+            assert.deepEqual data, { _id : "1", a:3 }
+            @lc.find({}, {}).fetch (data) =>
+              assert.deepEqual _.pluck(data, 'a'), [3,2]
+            done()
+        , fail
+
+      it "exceptions if findOne doesn't include _id", (done) ->
+        assert.throw () =>
+          @hc.findOne { a: 1 }, (->), (->)
+        done()
+
     describe "interim: false", ->
       it "find gives final results only", (done) ->
         @lc.upsert(_id:"1", a:1)

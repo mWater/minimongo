@@ -65,6 +65,9 @@ class HybridCollection
 
   # Finds one row. Note: Does *not* support selectors that don't include _id field
   findOne: (selector, options = {}, success, error) ->
+    if not selector._id
+      throw new Error("_id required in selector")
+      
     if _.isFunction(options) 
       [options, success, error] = [{}, options, success]
 
