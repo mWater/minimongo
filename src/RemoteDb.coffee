@@ -60,6 +60,8 @@ class Collection
         params.sort = JSON.stringify(options.sort)
       if options.limit
         params.limit = options.limit
+      if options.skip
+        params.skip = options.skip
       if options.fields
         params.fields = JSON.stringify(options.fields)
       if @client
