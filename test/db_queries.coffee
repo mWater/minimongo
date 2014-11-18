@@ -6,7 +6,7 @@ error = (err) ->
   console.log err
   assert.fail(JSON.stringify(err))
 
-# Runs queries on @col which must be a collection (with a:<string>, b:<integer>, c:<json>, geo:<geojson>)
+# Runs queries on @col which must be a collection (with a:<string>, b:<integer>, c:<json>, geo:<geojson>, stringarr: <json array of strings>)
 # When present:
 # c.arrstr is an array of string values
 # c.arrint is an array of integer values
@@ -129,6 +129,8 @@ module.exports = ->
           assert "1" in (result._id for result in results)
           assert "2" not in (result._id for result in results)
           done()
+        , error
+      , error
 
     it 'removes non-existent item', (done) ->
       @col.remove "999", =>
@@ -202,7 +204,7 @@ module.exports = ->
         , error
       , error
 
-  context 'With integer array rows', ->
+  context 'With integer array in json rows', ->
     beforeEach (done) ->
       @reset =>
         @col.upsert { _id:"1", c: { arrint: [1, 2] }}, =>
@@ -239,6 +241,23 @@ module.exports = ->
     it 'filters by $elemMatch', (done) ->
       @testFilter { "c": { $elemMatch: { "arrstr": { $in: ["b"]} }}}, ["1", "2"], =>
         @testFilter { "c": { $elemMatch: { "arrstr": { $in: ["d", "e"]} }}}, ["3"], done
+
+  context 'With text array rows', ->
+    beforeEach (done) ->
+      @reset =>
+        @col.upsert { _id:"1", textarr: ["a", "b"]}, =>
+          @col.upsert { _id:"2", textarr: ["b", "c"]}, =>
+            @col.upsert { _id:"3", textarr: ["c", "d"]}, =>
+              done()
+            , error
+          , error
+        , error
+
+    it 'filters by $in', (done) ->
+      @testFilter { "textarr": { $in: ["b"] }}, ["1", "2"], done
+
+    it 'filters by direct reference', (done) ->
+      @testFilter { "textarr": "b" }, ["1", "2"], done
 
   geopoint = (lng, lat) ->
     return {
