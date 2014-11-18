@@ -56,6 +56,9 @@ class Collection
         else
           item.base = @items[item.doc._id] or null
 
+      # Keep independent copies
+      item = _.cloneDeep(item)
+
       # Replace/add 
       @items[item.doc._id] = item.doc
       @upserts[item.doc._id] = item

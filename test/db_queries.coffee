@@ -164,6 +164,16 @@ module.exports = ->
           assert result1 != result2
           done()
 
+    it 'upsert keeps independent copies', (done) ->
+      doc = { _id: "2" }
+      @col.upsert doc, (item) =>
+        doc.a = "xyz"
+        item.a = "xyz"
+        @col.findOne { _id:"2" }, (doc2) =>
+          assert doc != doc2
+          assert doc2.a != "xyz"
+          done()
+
     it 'adds _id to rows', (done) ->
       @col.upsert { a: "1" }, (item) =>
         assert.property item, '_id'
