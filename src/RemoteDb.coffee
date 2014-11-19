@@ -2,27 +2,7 @@ _ = require 'lodash'
 $ = require 'jquery'
 async = require 'async'
 utils = require('./utils')
-
-# Create default JSON http client
-jQueryHttpClient = (method, url, params, data, success, error) ->
-  # Append 
-  fullUrl = url + "?" + $.param(params)
-
-  if method == "GET"
-    req = $.getJSON(fullUrl)
-  else if method == "DELETE"
-    req = $.ajax(fullUrl, { type : 'DELETE'})
-  else if method == "POST" or method == "PATCH"
-    req = $.ajax(fullUrl, {
-      data : JSON.stringify(data),
-      contentType : 'application/json',
-      type : method})
-
-  req.done (response, textStatus, jqXHR) =>
-    success(response or null)
-  req.fail (jqXHR, textStatus, errorThrown) =>
-    if error
-      error(jqXHR)
+jQueryHttpClient = require './jQueryHttpClient'
 
 module.exports = class RemoteDb
   # Url must have trailing /
