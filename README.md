@@ -104,6 +104,9 @@ Combines results from the local database with remote data. Multiple options can 
 
 **shortcut**: (default false) true to return `findOne` results if any matching result is found in the local database. Useful for documents that change rarely.
 
+**useLocalOnRemoteError**: (default true) true to use local results if the remote find fails. Only applies if interim is false.
+
+
 To keep a local database and a remote database in sync, create a HybridDb:
 
 ```

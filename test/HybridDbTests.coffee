@@ -380,6 +380,16 @@ describe 'HybridDb', ->
           assert.deepEqual _.pluck(data, 'a'), [1,2]
           done()
 
+      it "find errors if useLocalOnRemoteError:false if remote fails", (done) ->
+        @rc.find = (selector, options) =>
+          return { fetch: (success, error) ->
+            error()
+          }
+        @hc.find({}, { cacheFind: false, interim: false, useLocalOnRemoteError:false }).fetch (data) =>
+          assert.fail()
+        , (err) ->
+          done()
+
       it "find respects local upserts", (done) ->
         @lc.upsert({ _id:"1", a:9 })
 

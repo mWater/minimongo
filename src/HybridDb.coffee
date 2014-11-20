@@ -57,6 +57,8 @@ class HybridCollection
       cacheFind: true       # Cache find results in local db
       cacheFindOne: true    # Cache findOne results in local db
       interim: true         # Return interim results from local db while waiting for remote db. Return again if different
+      useLocalOnRemoteError: true  # Use local results if the remote find fails. Only applies if interim is false.
+      shortcut: false       # true to return `findOne` results if any matching result is found in the local database. Useful for documents that change rarely.
     }
 
   find: (selector, options = {}) ->
@@ -76,6 +78,7 @@ class HybridCollection
       findOptions = _.cloneDeep(options)
       findOptions.interim = false
       findOptions.cacheFind = options.cacheFindOne
+      findOptions.useLocalOnRemoteError = true
       if selector._id
         findOptions.limit = 1
       else
@@ -168,7 +171,10 @@ class HybridCollection
       remoteError = (err) =>
         # If no interim, do local find
         if not options.interim
-          @localCol.find(selector, options).fetch(success, error)
+          if options.useLocalOnRemoteError
+            @localCol.find(selector, options).fetch(success, error)
+          else
+            if error then error(err)
         else
           # Otherwise do nothing
           return
