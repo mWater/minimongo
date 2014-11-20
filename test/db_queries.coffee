@@ -61,6 +61,9 @@ module.exports = ->
     it 'filters by $regex case-insensitive', (done) ->
       @testFilter { a: { $regex: "A", $options: 'i' } }, ["1", "2"], done
 
+    it 'filters by $or', (done) ->
+      @testFilter { "$or": [{b:1}, {b:2}]}, ["1","2"], done
+
     it 'filters by path', (done) ->
       @testFilter { "c.d": 2 }, ["2"], done
 
