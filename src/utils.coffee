@@ -77,7 +77,11 @@ exports.processFind = (items, selector, options) ->
 
   return filtered
 
-exports.filterFields = (items, fields) ->
+exports.filterFields = (items, fields={}) ->
+  # Handle trivial case
+  if _.keys(fields).length == 0
+    return items
+
   # For each item
   return _.map items, (item) ->
     item = _.cloneDeep(item)
