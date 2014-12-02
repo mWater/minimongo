@@ -217,6 +217,18 @@ module.exports = ->
         , error
       , error
 
+  context 'With sample with capitalization', ->
+    beforeEach (done) ->
+      @reset =>
+        @col.upsert { _id:"1", a:"Alice", b:1, c: { d: 1, e: 2 } }, =>
+          @col.upsert { _id:"2", a:"AZ", b:2, c: { d: 2, e: 3 } }, =>
+            done()
+
+    it 'finds sorts in Javascript order', (done) ->
+      @col.find({}, {sort: ['a']}).fetch (results) =>
+        assert.deepEqual _.pluck(results, '_id'), ["2","1"]
+        done()
+
   context 'With integer array in json rows', ->
     beforeEach (done) ->
       @reset =>
@@ -299,7 +311,7 @@ module.exports = ->
       selector = geo: 
         $near: 
           $geometry: geopoint(90, 45)
-          $maxDistance: 111000
+          $maxDistance: 111190
 
       @col.find(selector).fetch (results) =>
         assert.deepEqual _.pluck(results, '_id'), ["1","3"]
@@ -309,7 +321,7 @@ module.exports = ->
       selector = geo: 
         $near: 
           $geometry: geopoint(90, 45)
-          $maxDistance: 112000
+          $maxDistance: 111200
 
       @col.find(selector).fetch (results) =>
         assert.deepEqual _.pluck(results, '_id'), ["1","3","2"]

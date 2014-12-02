@@ -201,7 +201,7 @@ pointInPolygon = (point, polygon) ->
 
 # From http://www.movable-type.co.uk/scripts/latlong.html
 getDistanceFromLatLngInM = (lat1, lng1, lat2, lng2) ->
-  R = 6371000 # Radius of the earth in m
+  R = 6370986 # Radius of the earth in m
   dLat = deg2rad(lat2 - lat1) # deg2rad below
   dLng = deg2rad(lng2 - lng1)
   a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
