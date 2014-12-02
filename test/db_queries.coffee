@@ -311,7 +311,7 @@ module.exports = ->
       selector = geo: 
         $near: 
           $geometry: geopoint(90, 45)
-          $maxDistance: 111190
+          $maxDistance: 111180
 
       @col.find(selector).fetch (results) =>
         assert.deepEqual _.pluck(results, '_id'), ["1","3"]
@@ -321,7 +321,7 @@ module.exports = ->
       selector = geo: 
         $near: 
           $geometry: geopoint(90, 45)
-          $maxDistance: 111200
+          $maxDistance: 111410
 
       @col.find(selector).fetch (results) =>
         assert.deepEqual _.pluck(results, '_id'), ["1","3","2"]
