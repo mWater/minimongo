@@ -284,6 +284,9 @@ module.exports = ->
     it 'filters by direct reference', (done) ->
       @testFilter { "textarr": "b" }, ["1", "2"], done
 
+    it 'filters by both item and complete array', (done) ->
+      @testFilter { "textarr": { $in: ["a", ["b", "c"]] } }, ["1", "2"], done
+
   geopoint = (lng, lat) ->
     return {
       type: 'Point'
