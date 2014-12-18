@@ -14,6 +14,10 @@ module.exports = (method, url, params, data, success, error) ->
       type : method})
 
   req.done (response, textStatus, jqXHR) =>
+    # Add debugging for Uganda upload issue TODO remove
+    if not response?
+      console.error("Uganda response bug: #{fullUrl}:#{method} returned " + jqXHR.responseText + " as JSON " + JSON.stringify(response))
+
     success(response or null)
   req.fail (jqXHR, textStatus, errorThrown) =>
     if error
