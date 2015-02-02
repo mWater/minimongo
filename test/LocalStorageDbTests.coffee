@@ -93,4 +93,3 @@ describe 'LocalStorageDb without local storage', ->
         db2.scratch.pendingRemoves (removes) ->
           assert.equal removes.length, 0
           done()
-

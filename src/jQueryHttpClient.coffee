@@ -1,6 +1,6 @@
 # Create default JSON http client
 module.exports = (method, url, params, data, success, error) ->
-  # Append 
+  # Append
   fullUrl = url + "?" + $.param(params)
 
   if method == "GET"

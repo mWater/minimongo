@@ -24,7 +24,7 @@ module.exports = class WebSQLDb
           col TEXT NOT NULL,
           id TEXT NOT NULL,
           state TEXT NOT NULL,
-          doc TEXT, 
+          doc TEXT,
           PRIMARY KEY (col, id));''', [], doNothing, error)
 
     migrateToV2 = (tx) =>
@@ -38,7 +38,7 @@ module.exports = class WebSQLDb
           if success then success(this)
       else if @db.version != "2.0"
         return error("Unknown db version " + @db.version)
-      else 
+      else
         if success then success(this)
 
     if @db.version == ""
@@ -53,7 +53,7 @@ module.exports = class WebSQLDb
     @[name] = collection
     @collections[name] = collection
     if success
-      success() 
+      success()
 
   removeCollection: (name, success, error) ->
     delete @[name]
@@ -75,7 +75,7 @@ class Collection
       @_findFetch(selector, options, success, error)
 
   findOne: (selector, options, success, error) ->
-    if _.isFunction(options) 
+    if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     @find(selector, options).fetch (results) ->
@@ -95,7 +95,7 @@ class Collection
           if row.state != "removed"
             docs.push JSON.parse(row.doc)
         if success? then success(processFind(docs, selector, options))
-      , error   
+      , error
     , error
 
   upsert: (docs, bases, success, error) ->
@@ -188,7 +188,7 @@ class Collection
         if options.sort
           sort = compileSort(options.sort)
 
-        # Perform query, removing rows missing in docs from local db 
+        # Perform query, removing rows missing in docs from local db
         @find(selector, options).fetch (results) =>
           @db.transaction (tx) =>
             async.eachSeries results, (result, callback) =>
@@ -199,7 +199,7 @@ class Collection
                   if options.sort and options.limit and docs.length == options.limit
                     if sort(result, _.last(docs)) >= 0
                       return callback()
-                  
+
                   # Item is gone from server, remove locally
                   tx.executeSql "DELETE FROM docs WHERE col = ? AND id = ?", [@name, result._id], =>
                     callback()
@@ -211,11 +211,11 @@ class Collection
               if err?
                 if error? then error(err)
                 return
-              if success? then success()  
+              if success? then success()
           , error
         , error
-    , error 
-    
+    , error
+
   pendingUpserts: (success, error) ->
     # Android 2.x requires error callback
     error = error or -> return
@@ -291,7 +291,7 @@ class Collection
 
     @db.transaction (tx) =>
       tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, doc._id], (tx, results) =>
-        # Only insert if not present 
+        # Only insert if not present
         if results.rows.length == 0
           tx.executeSql "INSERT INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], =>
             if success then success(doc)

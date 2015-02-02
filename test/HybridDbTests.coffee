@@ -294,7 +294,7 @@ describe 'HybridDb', ->
         calls = 0
         @hc.findOne { _id: "1" }, (data) =>
           calls += 1
-          if calls == 1 
+          if calls == 1
             assert.deepEqual data, { _id : "1", a:1 }
           else
             assert.deepEqual data, { _id : "1", a:3 }
@@ -403,7 +403,7 @@ describe 'HybridDb', ->
         @hc.find({}, { cacheFind: false, interim: false }).fetch (data) =>
           assert.deepEqual _.pluck(data, 'a'), [4]
           done()
-      
+
     it "upload applies pending upserts", (done) ->
       @lc.upsert(_id:"1", a:1)
       @lc.upsert(_id:"2", a:2)
@@ -450,7 +450,7 @@ describe 'HybridDb', ->
       @hybrid.upload(() =>
         @lc.pendingUpserts (data) =>
           assert.equal data.length, 0
-          
+
           @lc.findOne {_id:"1"}, {}, (data) =>
             assert.deepEqual data, { _id:"1", a:2 }
             done()

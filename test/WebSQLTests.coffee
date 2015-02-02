@@ -14,7 +14,7 @@ error = (err) ->
 
 describe 'WebSQLDb', ->
   @timeout(5000)
-  
+
   before (done) ->
     @reset = (done) =>
       new WebSQLDb { namespace: "db.scratch" }, (db) =>
@@ -84,7 +84,7 @@ describe 'WebSQLDb storage', ->
 
 # describe 'WebSQLDb upgrade', ->
 #   it "retains items", (done) ->
-#     new OldWebSQLDb { namespace: "db.scratch" }, (olddb) => 
+#     new OldWebSQLDb { namespace: "db.scratch" }, (olddb) =>
 #       olddb.addCollection 'scratch', =>
 #         olddb.scratch.upsert { _id:"1", a:"Alice" }, =>
 #           new WebSQLDb { namespace: "db.scratch" }, (newdb) =>

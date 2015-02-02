@@ -54,7 +54,7 @@ class Collection
 
   # error is called with jqXHR
   findOne: (selector, options = {}, success, error) ->
-    if _.isFunction(options) 
+    if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     # Create url
@@ -105,7 +105,7 @@ class Collection
   remove: (id, success, error) ->
     if not @client
       throw new Error("Client required to remove")
-      
+
     req = $.ajax(@url + "/" + id + "?client=" + @client, { type : 'DELETE'})
     req.done (data, textStatus, jqXHR) =>
       success()

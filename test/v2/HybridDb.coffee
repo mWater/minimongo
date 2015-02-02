@@ -16,7 +16,7 @@ module.exports = class HybridDb
 
   addCollection: (name, options, success, error) ->
     # Shift options over if not present
-    if _.isFunction(options) 
+    if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     collection = new HybridCollection(name, @localDb[name], @remoteDb[name], options)
@@ -28,7 +28,7 @@ module.exports = class HybridDb
     delete @[name]
     delete @collections[name]
     if success? then success()
-  
+
   upload: (success, error) ->
     cols = _.values(@collections)
 
@@ -44,7 +44,7 @@ module.exports = class HybridDb
     uploadCols(cols, success, error)
 
 class HybridCollection
-  # Options includes 
+  # Options includes
   constructor: (name, localCol, remoteCol, options) ->
     @name = name
     @localCol = localCol
@@ -76,7 +76,7 @@ class HybridCollection
   # In "remote", it gets remote and integrates local changes. Much more efficient if _id specified
   # If remote gives error, falls back to local if caching
   findOne: (selector, options = {}, success, error) ->
-    if _.isFunction(options) 
+    if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     mode = options.mode || (if @caching then "hybrid" else "remote")
@@ -89,7 +89,7 @@ class HybridCollection
           success(localDoc)
           # No need to hit remote if local
           if mode == "local"
-            return 
+            return
 
         remoteSuccess = (remoteDoc) =>
           # Cache
@@ -114,7 +114,7 @@ class HybridCollection
       , error
     else if mode == "remote"
       # If _id specified, use remote findOne
-      if selector._id 
+      if selector._id
         remoteSuccess2 = (remoteData) =>
           # Check for local upsert
           @localCol.pendingUpserts (pendingUpserts) =>
@@ -229,7 +229,7 @@ class HybridCollection
   remove: (id, success, error) ->
     @localCol.remove(id, () =>
       success() if success?
-    , error)  
+    , error)
 
   upload: (success, error) ->
     uploadUpserts = (upserts, success, error) =>
@@ -266,7 +266,7 @@ class HybridCollection
             , error
           else
             error(err)
-      else 
+      else
         success()
 
     uploadRemoves = (removes, success, error) =>
@@ -277,7 +277,7 @@ class HybridCollection
             uploadRemoves(_.rest(removes), success, error)
           , error
         , (err) =>
-          # If 403 or 410, remove document 
+          # If 403 or 410, remove document
           if err.status == 410 or err.status == 403
             @localCol.resolveRemove remove, =>
               # Continue if was 410
@@ -287,9 +287,9 @@ class HybridCollection
                 error(err)
             , error
           else
-            error(err)          
+            error(err)
         , error
-      else 
+      else
         success()
 
     # Get pending upserts

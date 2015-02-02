@@ -6,7 +6,7 @@ compileSort = require('./selector').compileSort
 module.exports = class MemoryDb
   constructor: (options, success) ->
     @collections = {}
-    
+
     if success then success(this)
 
   addCollection: (name, success, error) ->
@@ -34,7 +34,7 @@ class Collection
       @_findFetch(selector, options, success, error)
 
   findOne: (selector, options, success, error) ->
-    if _.isFunction(options) 
+    if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     @find(selector, options).fetch (results) ->
@@ -51,7 +51,7 @@ class Collection
       # Fill in base if undefined
       if item.base == undefined
         # Use existing base
-        if @upserts[item.doc._id] 
+        if @upserts[item.doc._id]
           item.base = @upserts[item.doc._id].base
         else
           item.base = @items[item.doc._id] or null
@@ -59,7 +59,7 @@ class Collection
       # Keep independent copies
       item = _.cloneDeep(item)
 
-      # Replace/add 
+      # Replace/add
       @items[item.doc._id] = item.doc
       @upserts[item.doc._id] = item
 
@@ -85,7 +85,7 @@ class Collection
     if options.sort
       sort = compileSort(options.sort)
 
-    # Perform query, removing rows missing in docs from local db 
+    # Perform query, removing rows missing in docs from local db
     @find(selector, options).fetch (results) =>
       for result in results
         if not docsMap[result._id] and not _.has(@upserts, result._id)
@@ -95,9 +95,9 @@ class Collection
               continue
           delete @items[result._id]
 
-      if success? then success()  
+      if success? then success()
     , error
-    
+
   pendingUpserts: (success) ->
     success _.values(@upserts)
 
@@ -114,7 +114,7 @@ class Collection
         else
           # Just update base
           @upserts[id].base = upsert.doc
-          
+
     if success? then success()
 
   resolveRemove: (id, success) ->

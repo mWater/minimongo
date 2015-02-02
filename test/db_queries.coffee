@@ -192,7 +192,7 @@ module.exports = ->
       @col.upsert { _id:"1", a:"1" }, (item) =>
         @col.upsert { _id:"1", a:"2", b: 1 }, (item) =>
           assert.equal item.a, "2"
-    
+
           @col.find({ _id: "1" }).fetch (results) =>
             assert.equal 1, results.length, "Should be only one document"
             done()
@@ -302,8 +302,8 @@ module.exports = ->
               done()
 
     it 'finds points near', (done) ->
-      selector = geo: 
-        $near: 
+      selector = geo:
+        $near:
           $geometry: geopoint(90, 45)
 
       @col.find(selector).fetch (results) =>
@@ -311,18 +311,18 @@ module.exports = ->
         done()
 
     it 'finds points near maxDistance', (done) ->
-      selector = geo: 
-        $near: 
+      selector = geo:
+        $near:
           $geometry: geopoint(90, 45)
           $maxDistance: 111180
 
       @col.find(selector).fetch (results) =>
         assert.deepEqual _.pluck(results, '_id'), ["1","3"]
-        done()      
+        done()
 
     it 'finds points near maxDistance just above', (done) ->
-      selector = geo: 
-        $near: 
+      selector = geo:
+        $near:
           $geometry: geopoint(90, 45)
           $maxDistance: 111410
 
@@ -331,9 +331,9 @@ module.exports = ->
         done()
 
     it 'finds points within simple box', (done) ->
-      selector = geo: 
-        $geoIntersects: 
-          $geometry: 
+      selector = geo:
+        $geoIntersects:
+          $geometry:
             type: 'Polygon'
             coordinates: [[
               [89.5, 45.5], [89.5, 46.5], [90.5, 46.5], [90.5, 45.5], [89.5, 45.5]
@@ -343,9 +343,9 @@ module.exports = ->
         done()
 
     it 'finds points within big box', (done) ->
-      selector = geo: 
-        $geoIntersects: 
-          $geometry: 
+      selector = geo:
+        $geoIntersects:
+          $geometry:
             type: 'Polygon'
             coordinates: [[
               [0, -89], [0, 89], [179, 89], [179, -89], [0, -89]
@@ -355,9 +355,9 @@ module.exports = ->
         done()
 
     it 'handles undefined', (done) ->
-      selector = geo: 
-        $geoIntersects: 
-          $geometry: 
+      selector = geo:
+        $geoIntersects:
+          $geometry:
             type: 'Polygon'
             coordinates: [[
               [89.5, 45.5], [89.5, 46.5], [90.5, 46.5], [90.5, 45.5], [89.5, 45.5]
@@ -366,5 +366,3 @@ module.exports = ->
         @col.find(selector).fetch (results) =>
           assert.deepEqual _.pluck(results, '_id'), ["2"]
           done()
-
-

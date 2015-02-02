@@ -57,4 +57,3 @@ describe 'migrated Local Db', ->
       utils.migrateLocalDb @from, @to, =>
         assert not @to.b
         done()
-

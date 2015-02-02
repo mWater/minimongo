@@ -30,7 +30,7 @@ module.exports = class IndexedDb
     @[name] = collection
     @collections[name] = collection
     if success
-      success() 
+      success()
 
   removeCollection: (name, success, error) ->
     delete @[name]
@@ -40,7 +40,7 @@ module.exports = class IndexedDb
     @store.query (matches) =>
       keys = _.map matches, (m) => [ m.col, m.doc._id ]
       if keys.length > 0
-        @store.removeBatch keys, => 
+        @store.removeBatch keys, =>
           if success? then success()
         , error
       else
@@ -58,7 +58,7 @@ class Collection
       @_findFetch(selector, options, success, error)
 
   findOne: (selector, options, success, error) ->
-    if _.isFunction(options) 
+    if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     @find(selector, options).fetch (results) ->
@@ -70,7 +70,7 @@ class Collection
     @store.query (matches) =>
       # Filter removed docs
       matches = _.filter matches, (m) => m.state != "removed"
-      if success? then success(processFind(_.pluck(matches, "doc"), selector, options))  
+      if success? then success(processFind(_.pluck(matches, "doc"), selector, options))
     , { index: "col", keyRange: @store.makeKeyRange(only: @name), onError: error }
 
   upsert: (doc, success, error) ->
@@ -90,7 +90,7 @@ class Collection
         doc: item
       }
 
-    @store.putBatch records, => 
+    @store.putBatch records, =>
       if success then success(doc)
     , error
 
@@ -120,7 +120,7 @@ class Collection
       if options.sort
         sort = compileSort(options.sort)
 
-      # Perform query, removing rows missing in docs from local db 
+      # Perform query, removing rows missing in docs from local db
       @find(selector, options).fetch (results) =>
         removes = []
         keys = _.map results, (result) => [@name, result._id]
@@ -178,7 +178,7 @@ class Collection
       else
         step2()
     , error
-  
+
   pendingUpserts: (success, error) ->
     @store.query (matches) =>
       if success? then success(_.pluck(matches, "doc"))
@@ -210,7 +210,7 @@ class Collection
       # Put all changed items
       if puts.length > 0
         @store.putBatch puts, =>
-          if success then success(doc)  
+          if success then success(doc)
         , error
       else
         if success then success(doc)

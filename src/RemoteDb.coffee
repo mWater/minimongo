@@ -53,11 +53,11 @@ class Collection
         params._ = new Date().getTime()
 
       @httpClient("GET", @url, params, null, success, error)
-      
+
   # error is called with jqXHR
   # Note that findOne is not used by HybridDb, but rather find with limit is used
   findOne: (selector, options = {}, success, error) ->
-    if _.isFunction(options) 
+    if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     # Create url
