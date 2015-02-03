@@ -18,7 +18,7 @@ module.exports = class WebSQLDb
     if not @db
       return error("Failed to create database")
 
-    migrateToV1 = (tx) =>
+    migrateToV1 = (tx) ->
       tx.executeSql('''
         CREATE TABLE docs (
           col TEXT NOT NULL,
@@ -27,14 +27,14 @@ module.exports = class WebSQLDb
           doc TEXT,
           PRIMARY KEY (col, id));''', [], doNothing, error)
 
-    migrateToV2 = (tx) =>
+    migrateToV2 = (tx) ->
       tx.executeSql('''
         ALTER TABLE docs ADD COLUMN base TEXT;''', [], doNothing, error)
 
     # Check if at v2 version
     checkV2 = =>
       if @db.version == "1.0"
-        @db.changeVersion "1.0", "2.0", migrateToV2, error, () =>
+        @db.changeVersion "1.0", "2.0", migrateToV2, error, =>
           if success then success(this)
       else if @db.version != "2.0"
         return error("Unknown db version " + @db.version)
@@ -60,7 +60,7 @@ module.exports = class WebSQLDb
     delete @collections[name]
 
     # Remove all documents of collection
-    @db.transaction (tx) =>
+    @db.transaction (tx) ->
       tx.executeSql("DELETE FROM docs WHERE col = ?", [name], success, error)
     , error
 
@@ -88,7 +88,7 @@ class Collection
 
     # Get all docs from collection
     @db.readTransaction (tx) =>
-      tx.executeSql "SELECT * FROM docs WHERE col = ?", [@name], (tx, results) =>
+      tx.executeSql "SELECT * FROM docs WHERE col = ?", [@name], (tx, results) ->
         docs = []
         for i in [0...results.rows.length]
           row = results.rows.item(i)
@@ -110,7 +110,7 @@ class Collection
       # Get bases
       bases = {}
       async.eachSeries ids, (id, callback) =>
-        tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, id], (tx2, results) =>
+        tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, id], (tx2, results) ->
           tx = tx2
           if results.rows.length > 0
             row = results.rows.item(0)
@@ -119,7 +119,7 @@ class Collection
             else if row.state == "cached"
               bases[row.id] = JSON.parse(row.doc)
           callback()
-      , () =>
+      , =>
         for item in items
           id = item.doc._id
 
@@ -132,7 +132,7 @@ class Collection
             base = null
           tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc, base) VALUES (?, ?, ?, ?, ?)",  [@name, item.doc._id, "upserted", JSON.stringify(item.doc), JSON.stringify(base)], doNothing, error
     , error
-    , =>
+    , ->
       if success then success(docs)
 
   remove: (id, success, error) ->
@@ -144,11 +144,11 @@ class Collection
       tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, id], (tx, results) =>
         if results.rows.length > 0
           # Change to removed
-          tx.executeSql 'UPDATE docs SET state="removed" WHERE col = ? AND id = ?', [@name, id], =>
+          tx.executeSql 'UPDATE docs SET state="removed" WHERE col = ? AND id = ?', [@name, id], ->
             if success then success(id)
           , error
         else
-          tx.executeSql "INSERT INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, id, "removed", JSON.stringify({_id: id})], =>
+          tx.executeSql "INSERT INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, id, "removed", JSON.stringify({_id: id})], ->
             if success then success(id)
           , error
       , error
@@ -169,7 +169,7 @@ class Collection
             # If _rev present, make sure that not overwritten by lower _rev
             if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
               # Upsert
-              tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], =>
+              tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], ->
                 callback()
               , error
             else
@@ -193,7 +193,7 @@ class Collection
           @db.transaction (tx) =>
             async.eachSeries results, (result, callback) =>
               # If not present in docs and is present locally and not upserted/deleted
-              tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, result._id], (tx, rows) =>
+              tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, result._id], (tx, rows) ->
                 if not docsMap[result._id] and rows.rows.length > 0 and rows.rows.item(0).state == "cached"
                   # If past end on sorted limited, ignore
                   if options.sort and options.limit and docs.length == options.limit
@@ -201,13 +201,13 @@ class Collection
                       return callback()
 
                   # Item is gone from server, remove locally
-                  tx.executeSql "DELETE FROM docs WHERE col = ? AND id = ?", [@name, result._id], =>
+                  tx.executeSql "DELETE FROM docs WHERE col = ? AND id = ?", [@name, result._id], ->
                     callback()
                   , error
                 else
                   callback()
               , callback, error
-            , (err) =>
+            , (err) ->
               if err?
                 if error? then error(err)
                 return
@@ -221,7 +221,7 @@ class Collection
     error = error or -> return
 
     @db.readTransaction (tx) =>
-      tx.executeSql "SELECT * FROM docs WHERE col = ? AND state = ?", [@name, "upserted"], (tx, results) =>
+      tx.executeSql "SELECT * FROM docs WHERE col = ? AND state = ?", [@name, "upserted"], (tx, results) ->
         docs = []
         for i in [0...results.rows.length]
           row = results.rows.item(i)
@@ -235,7 +235,7 @@ class Collection
     error = error or -> return
 
     @db.readTransaction (tx) =>
-      tx.executeSql "SELECT * FROM docs WHERE col = ? AND state = ?", [@name, "removed"], (tx, results) =>
+      tx.executeSql "SELECT * FROM docs WHERE col = ? AND state = ?", [@name, "removed"], (tx, results) ->
         docs = []
         for i in [0...results.rows.length]
           row = results.rows.item(i)
@@ -264,7 +264,7 @@ class Collection
             # Upsert removed, which is fine
             cb()
         , error
-      , (err) =>
+      , (err) ->
         if err
           return error(err)
 
@@ -279,7 +279,7 @@ class Collection
     # Find record
     @db.transaction (tx) =>
       # Only safely remove if removed state
-      tx.executeSql 'DELETE FROM docs WHERE state="removed" AND col = ? AND id = ?', [@name, id], =>
+      tx.executeSql 'DELETE FROM docs WHERE state="removed" AND col = ? AND id = ?', [@name, id], ->
         if success then success(id)
       , error
     , error
@@ -293,7 +293,7 @@ class Collection
       tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, doc._id], (tx, results) =>
         # Only insert if not present
         if results.rows.length == 0
-          tx.executeSql "INSERT INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], =>
+          tx.executeSql "INSERT INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], ->
             if success then success(doc)
           , error
         else
@@ -314,7 +314,7 @@ class Collection
 
           # If _rev present, make sure that not overwritten by lower _rev
           if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
-            tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], =>
+            tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], ->
               if success then success(doc)
             , error
           else

@@ -46,9 +46,9 @@ class Collection
         params._ = new Date().getTime()
 
       req = $.getJSON(@url, params)
-      req.done (data, textStatus, jqXHR) =>
+      req.done (data, textStatus, jqXHR) ->
         success(data)
-      req.fail (jqXHR, textStatus, errorThrown) =>
+      req.fail (jqXHR, textStatus, errorThrown) ->
         if error
           error(jqXHR)
 
@@ -71,9 +71,9 @@ class Collection
       params._ = new Date().getTime()
 
     req = $.getJSON(@url, params)
-    req.done (data, textStatus, jqXHR) =>
+    req.done (data, textStatus, jqXHR) ->
       success(data[0] || null)
-    req.fail (jqXHR, textStatus, errorThrown) =>
+    req.fail (jqXHR, textStatus, errorThrown) ->
       if error
         error(jqXHR)
 
@@ -95,9 +95,9 @@ class Collection
       data : JSON.stringify(doc),
       contentType : 'application/json',
       type : 'POST'})
-    req.done (data, textStatus, jqXHR) =>
+    req.done (data, textStatus, jqXHR) ->
       success(data || null)
-    req.fail (jqXHR, textStatus, errorThrown) =>
+    req.fail (jqXHR, textStatus, errorThrown) ->
       if error
         error(jqXHR)
 
@@ -107,9 +107,9 @@ class Collection
       throw new Error("Client required to remove")
 
     req = $.ajax(@url + "/" + id + "?client=" + @client, { type : 'DELETE'})
-    req.done (data, textStatus, jqXHR) =>
+    req.done (data, textStatus, jqXHR) ->
       success()
-    req.fail (jqXHR, textStatus, errorThrown) =>
+    req.fail (jqXHR, textStatus, errorThrown) ->
       # 410 means already deleted
       if jqXHR.status == 410
         success()

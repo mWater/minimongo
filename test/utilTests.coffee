@@ -10,7 +10,7 @@ describe 'autoselected Local Db', ->
   before (done) ->
     utils.autoselectLocalDb { namespace: "db.scratch" }, (db) =>
       @db = db
-      @db.addCollection 'scratch', =>
+      @db.addCollection 'scratch', ->
         done()
 
   describe "passes queries", ->
@@ -33,21 +33,21 @@ describe 'migrated Local Db', ->
       utils.migrateLocalDb @from, @to, =>
         @to.a.pendingUpserts (upserts) =>
           assert.deepEqual upserts, [{ doc: { _id: "1", x: 1 }, base: null }]
-          @from.a.pendingUpserts (upserts2) =>
+          @from.a.pendingUpserts (upserts2) ->
             assert.equal upserts2.length, 0
           done()
 
   it 'migrates removes', (done) ->
     @from.a.remove "1", =>
       utils.migrateLocalDb @from, @to, =>
-        @to.a.pendingRemoves (removes) =>
+        @to.a.pendingRemoves (removes) ->
           assert.deepEqual removes, ["1"]
           done()
 
   it 'does not migrate cached', (done) ->
     @from.a.cacheOne { _id: "1", x: 1 }, =>
       utils.migrateLocalDb @from, @to, =>
-        @to.a.pendingUpserts (upserts) =>
+        @to.a.pendingUpserts (upserts) ->
           assert.equal upserts.length, 0
           done()
 

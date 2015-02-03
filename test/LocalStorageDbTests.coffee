@@ -30,7 +30,7 @@ describe 'LocalStorageDb with local storage', ->
     done()
 
   it "retains items", (done) ->
-    @db.scratch.upsert { _id:"1", a:"Alice" }, =>
+    @db.scratch.upsert { _id:"1", a:"Alice" }, ->
       db2 = new LocalStorageDb({ namespace: "db.scratch" })
       db2.addCollection 'scratch'
       db2.scratch.find({}).fetch (results) ->
@@ -39,9 +39,9 @@ describe 'LocalStorageDb with local storage', ->
 
   it "retains upserts", (done) ->
     @db.scratch.cacheOne { _id:"1", a:"Alice" }, =>
-      @db.scratch.upsert { _id:"1", a:"Bob" }, =>
-        new LocalStorageDb { namespace: "db.scratch" }, (db2) =>
-          db2.addCollection 'scratch', =>
+      @db.scratch.upsert { _id:"1", a:"Bob" }, ->
+        new LocalStorageDb { namespace: "db.scratch" }, (db2) ->
+          db2.addCollection 'scratch', ->
             db2.scratch.find({}).fetch (results) ->
               assert.deepEqual results, [{ _id:"1", a:"Bob" }]
               db2.scratch.pendingUpserts (upserts) ->
@@ -52,7 +52,7 @@ describe 'LocalStorageDb with local storage', ->
 
   it "retains removes", (done) ->
     @db.scratch.seed { _id:"1", a:"Alice" }, =>
-      @db.scratch.remove "1", =>
+      @db.scratch.remove "1", ->
         db2 = new LocalStorageDb({ namespace: "db.scratch" })
         db2.addCollection 'scratch'
         db2.scratch.pendingRemoves (removes) ->
@@ -69,7 +69,7 @@ describe 'LocalStorageDb without local storage', ->
     done()
 
   it "does not retain items", (done) ->
-    @db.scratch.upsert { _id:"1", a:"Alice" }, =>
+    @db.scratch.upsert { _id:"1", a:"Alice" }, ->
       db2 = new LocalStorageDb()
       db2.addCollection 'scratch'
       db2.scratch.find({}).fetch (results) ->
@@ -77,7 +77,7 @@ describe 'LocalStorageDb without local storage', ->
         done()
 
   it "does not retain upserts", (done) ->
-    @db.scratch.upsert { _id:"1", a:"Alice" }, =>
+    @db.scratch.upsert { _id:"1", a:"Alice" }, ->
       db2 = new LocalStorageDb()
       db2.addCollection 'scratch'
       db2.scratch.find({}).fetch (results) ->
@@ -87,7 +87,7 @@ describe 'LocalStorageDb without local storage', ->
 
   it "does not retain removes", (done) ->
     @db.scratch.seed { _id:"1", a:"Alice" }, =>
-      @db.scratch.remove "1", =>
+      @db.scratch.remove "1", ->
         db2 = new LocalStorageDb()
         db2.addCollection 'scratch'
         db2.scratch.pendingRemoves (removes) ->

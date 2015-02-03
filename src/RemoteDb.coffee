@@ -73,7 +73,7 @@ class Collection
     if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
       params._ = new Date().getTime()
 
-    @httpClient "GET", @url, params, null, (results) =>
+    @httpClient "GET", @url, params, null, (results) ->
       if results and results.length > 0
         success(results[0])
       else
@@ -101,18 +101,18 @@ class Collection
 
       # POST if no base, PATCH otherwise
       if item.base
-        @httpClient "PATCH", @url + "/" + item.doc._id, params, item, (result) =>
+        @httpClient "PATCH", @url + "/" + item.doc._id, params, item, (result) ->
           results.push result
           cb()
-        , (err) =>
+        , (err) ->
           cb(err)
       else
-        @httpClient "POST", @url, params, item.doc, (result) =>
+        @httpClient "POST", @url, params, item.doc, (result) ->
           results.push result
           cb()
-        , (err) =>
+        , (err) ->
           cb(err)
-    , (err) =>
+    , (err) ->
       if err
         if error then error(err)
         return
@@ -129,7 +129,7 @@ class Collection
       throw new Error("Client required to remove")
 
     params = { client: @client }
-    @httpClient "DELETE", @url + "/" + id, params, null, success, (err) =>
+    @httpClient "DELETE", @url + "/" + id, params, null, success, (err) ->
       # 410 is an acceptable delete status
       if err.status == 410
         success()
