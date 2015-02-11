@@ -6,7 +6,7 @@ compileSort = require('./selector').compileSort
 module.exports = class MemoryDb
   constructor: (options, success) ->
     @collections = {}
-    
+
     if success then success(this)
 
   addCollection: (name, success, error) ->
@@ -34,7 +34,7 @@ class Collection
       @_findFetch(selector, options, success, error)
 
   findOne: (selector, options, success, error) ->
-    if _.isFunction(options) 
+    if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     @find(selector, options).fetch (results) ->
@@ -54,7 +54,7 @@ class Collection
       if not item._id
         item._id = createUid()
 
-      # Replace/add 
+      # Replace/add
       @items[item._id] = item
       @upserts[item._id] = item
 
@@ -80,7 +80,7 @@ class Collection
     if options.sort
       sort = compileSort(options.sort)
 
-    # Perform query, removing rows missing in docs from local db 
+    # Perform query, removing rows missing in docs from local db
     @find(selector, options).fetch (results) =>
       for result in results
         if not docsMap[result._id] and not _.has(@upserts, result._id)
@@ -90,9 +90,9 @@ class Collection
               continue
           delete @items[result._id]
 
-      if success? then success()  
+      if success? then success()
     , error
-    
+
   pendingUpserts: (success) ->
     success _.values(@upserts)
 

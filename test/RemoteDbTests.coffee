@@ -7,7 +7,7 @@ _ = require 'lodash'
 # "_id" as string, "a" as string, "b" as integer, "c" as JSON and "geo" as GeoJSON
 # @reset  should remove all rows from the scratch table and then call the callback
 # passed to it.
-exports.runTests = () ->
+exports.runTests = ->
   describe 'RemoteDb', ->
     @timeout(10000)
 
@@ -36,7 +36,7 @@ exports.runTests = () ->
               assert.equal doc2.b, 2, "Should merge returned document"
 
               # Should merge on server permanently
-              @col.findOne { _id: "1" }, (doc3) =>
+              @col.findOne { _id: "1" }, (doc3) ->
                 assert.equal doc2.a, "2", "Should merge documents"
                 assert.equal doc2.b, 2, "Should merge documents"
                 done()
@@ -54,7 +54,7 @@ exports.runTests = () ->
           @col.upsert change1, base, (doc1) =>
             assert.equal doc1.a, "2"
 
-            @col.upsert change2, null, (doc2) =>
+            @col.upsert change2, null, (doc2) ->
               assert.equal doc2.a, "1", "Should not merge returned document"
               assert.equal doc2.b, 2, "Should keep new value"
               done()

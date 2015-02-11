@@ -20,4 +20,3 @@ db.animals.upsert(doc, function() {
 		alert("Dog's name is: " + res.name);
 	});
 });
-

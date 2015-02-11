@@ -17,7 +17,7 @@ module.exports = class HybridDb
 
   addCollection: (name, options, success, error) ->
     # Shift options over if not present
-    if _.isFunction(options) 
+    if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     collection = new HybridCollection(name, @localDb[name], @remoteDb[name], options)
@@ -29,23 +29,23 @@ module.exports = class HybridDb
     delete @[name]
     delete @collections[name]
     if success? then success()
-  
+
   upload: (success, error) ->
     cols = _.values(@collections)
 
-    uploadCols = (cols, success, error) =>
+    uploadCols = (cols, success, error) ->
       col = _.first(cols)
       if col
-        col.upload(() =>
+        col.upload(->
           uploadCols(_.rest(cols), success, error)
-        , (err) =>
+        , (err) ->
           error(err))
       else
         success()
     uploadCols(cols, success, error)
 
 class HybridCollection
-  # Options includes 
+  # Options includes
   constructor: (name, localCol, remoteCol, options) ->
     @name = name
     @localCol = localCol
@@ -53,7 +53,7 @@ class HybridCollection
 
     # Default options
     @options = options or {}
-    _.defaults @options, { 
+    _.defaults @options, {
       cacheFind: true       # Cache find results in local db
       cacheFindOne: true    # Cache findOne results in local db
       interim: true         # Return interim results from local db while waiting for remote db. Return again if different
@@ -65,9 +65,9 @@ class HybridCollection
     return fetch: (success, error) =>
       @_findFetch(selector, options, success, error)
 
-  # Finds one row. 
+  # Finds one row.
   findOne: (selector, options = {}, success, error) ->
-    if _.isFunction(options) 
+    if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     # Merge options
@@ -87,7 +87,7 @@ class HybridCollection
         # So instead we do a find with no limit and then take the first result, which is very inefficient
         delete findOptions.limit
 
-      @find(selector, findOptions).fetch (data) =>
+      @find(selector, findOptions).fetch (data) ->
         # Return first entry or null
         if data.length > 0
           # Check that different from existing
@@ -95,12 +95,12 @@ class HybridCollection
             success(data[0])
         else
           # If nothing found, always report it, as interim find doesn't return null
-          success(null)          
+          success(null)
       , error
 
     # If interim or shortcut, get local first
     if options.interim or options.shortcut
-      @localCol.findOne selector, options, (localDoc) =>
+      @localCol.findOne selector, options, (localDoc) ->
         # If found, return
         if localDoc
           success(_.cloneDeep(localDoc))
@@ -128,9 +128,9 @@ class HybridCollection
       remoteSuccess = (remoteData) =>
         if options.cacheFind
           # Cache locally
-          cacheSuccess = () =>
+          cacheSuccess = =>
             # Get local data again
-            localSuccess2 = (localData2) =>
+            localSuccess2 = (localData2) ->
               # Check if different
               if not _.isEqual(localData, localData2)
                 # Send again
@@ -148,7 +148,7 @@ class HybridCollection
                 return not _.has(removesMap, doc._id)
 
             # Add upserts
-            @localCol.pendingUpserts (upserts) =>
+            @localCol.pendingUpserts (upserts) ->
               if upserts.length > 0
                 # Remove upserts from data
                 upsertsMap = _.object(_.map(upserts, (u) -> u.doc._id), _.map(upserts, (u) -> u.doc._id))
@@ -166,7 +166,7 @@ class HybridCollection
                 # Send again
                 success(data)
             , error
-          , error        
+          , error
 
       remoteError = (err) =>
         # If no interim, do local find
@@ -183,7 +183,7 @@ class HybridCollection
 
     # If interim, get local first
     if options.interim
-      localSuccess = (localData) =>
+      localSuccess = (localData) ->
         # Return data immediately
         success(localData)
         step2(localData)
@@ -192,14 +192,14 @@ class HybridCollection
       step2()
 
   upsert: (docs, bases, success, error) ->
-    @localCol.upsert(docs, bases, (result) =>
+    @localCol.upsert(docs, bases, (result) ->
       success(docs) if success?
     , error)
 
   remove: (id, success, error) ->
-    @localCol.remove(id, () =>
+    @localCol.remove(id, ->
       success() if success?
-    , error)  
+    , error)
 
   upload: (success, error) ->
     uploadUpserts = (upserts, success, error) =>
@@ -207,8 +207,8 @@ class HybridCollection
       if upsert
         @remoteCol.upsert upsert.doc, upsert.base, (remoteDoc) =>
           @localCol.resolveUpserts [upsert], =>
-            # Cache new value 
-            @localCol.cacheOne remoteDoc, =>
+            # Cache new value
+            @localCol.cacheOne remoteDoc, ->
               uploadUpserts(_.rest(upserts), success, error)
             , error
           , error
@@ -217,7 +217,7 @@ class HybridCollection
           if err.status == 410 or err.status == 403
             @localCol.remove upsert.doc._id, =>
               # Resolve remove
-              @localCol.resolveRemove upsert.doc._id, =>
+              @localCol.resolveRemove upsert.doc._id, ->
                 # Continue if was 410
                 if err.status == 410
                   uploadUpserts(_.rest(upserts), success, error)
@@ -227,20 +227,20 @@ class HybridCollection
             , error
           else
             error(err)
-      else 
+      else
         success()
 
     uploadRemoves = (removes, success, error) =>
       remove = _.first(removes)
       if remove
-        @remoteCol.remove remove, () =>
-          @localCol.resolveRemove remove, =>
+        @remoteCol.remove remove, =>
+          @localCol.resolveRemove remove, ->
             uploadRemoves(_.rest(removes), success, error)
           , error
         , (err) =>
-          # If 403 or 410, remove document 
+          # If 403 or 410, remove document
           if err.status == 410 or err.status == 403
-            @localCol.resolveRemove remove, =>
+            @localCol.resolveRemove remove, ->
               # Continue if was 410
               if err.status == 410
                 uploadRemoves(_.rest(removes), success, error)
@@ -248,15 +248,15 @@ class HybridCollection
                 error(err)
             , error
           else
-            error(err)          
+            error(err)
         , error
-      else 
+      else
         success()
 
     # Get pending upserts
     @localCol.pendingUpserts (upserts) =>
       uploadUpserts upserts, =>
-        @localCol.pendingRemoves (removes) =>
+        @localCol.pendingRemoves (removes) ->
           uploadRemoves(removes, success, error)
         , error
       , error

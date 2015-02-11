@@ -112,7 +112,7 @@ module.exports = ->
     it "returns pending upserts", (done) ->
       @col.cache [{ _id: "1", a: 'apple' }], {}, {}, =>
         @col.upsert { _id: "2", a: 'banana' }, =>
-          @col.pendingUpserts (results) =>
+          @col.pendingUpserts (results) ->
             assert.equal results.length, 1
             assert.equal results[0].doc.a, 'banana'
             assert.isNull results[0].base
@@ -121,14 +121,14 @@ module.exports = ->
     it "resolves pending upserts", (done) ->
       @col.upsert { _id: "2", a: 'banana' }, =>
         @col.resolveUpserts [{ doc: { _id: "2", a: 'banana' }, base: null }], =>
-          @col.pendingUpserts (results) =>
+          @col.pendingUpserts (results) ->
             assert.equal results.length, 0
             done()
 
     it "sets base of upserts", (done) ->
       @col.cacheOne { _id: "2", a: 'apple' }, =>
         @col.upsert { _id: "2", a: 'banana' }, =>
-          @col.pendingUpserts (results) =>
+          @col.pendingUpserts (results) ->
             assert.equal results.length, 1
             assert.equal results[0].doc.a, 'banana'
             assert.equal results[0].base.a, 'apple'
@@ -138,7 +138,7 @@ module.exports = ->
       @col.cacheOne { _id: "2", a: 'apple' }, =>
         @col.upsert { _id: "2", a: 'banana' }, =>
           @col.upsert { _id: "2", a: 'orange' }, =>
-            @col.pendingUpserts (results) =>
+            @col.pendingUpserts (results) ->
               assert.equal results.length, 1
               assert.equal results[0].doc.a, 'orange'
               assert.equal results[0].base.a, 'apple'
@@ -146,7 +146,7 @@ module.exports = ->
 
     it "allows setting of upsert base", (done) ->
       @col.upsert { _id: "2", a: 'banana' }, { _id: "2", a: 'apple' }, =>
-        @col.pendingUpserts (results) =>
+        @col.pendingUpserts (results) ->
           assert.equal results.length, 1
           assert.equal results[0].doc.a, 'banana'
           assert.equal results[0].base.a, 'apple'
@@ -155,7 +155,7 @@ module.exports = ->
     it "allows setting of null upsert base", (done) ->
       @col.cacheOne { _id: "2", a: 'apple' }, =>
         @col.upsert { _id: "2", a: 'banana' }, null, =>
-          @col.pendingUpserts (results) =>
+          @col.pendingUpserts (results) ->
             assert.equal results.length, 1
             assert.equal results[0].doc.a, 'banana'
             assert.equal results[0].base, null
@@ -168,7 +168,7 @@ module.exports = ->
         { _id: "3", a: 'orange' }
       ]
       @col.upsert docs, =>
-        @col.pendingUpserts (results) =>
+        @col.pendingUpserts (results) ->
           assert.deepEqual _.pluck(results, "doc"), docs
           assert.deepEqual _.pluck(results, "base"), [null, null, null]
           done()
@@ -185,7 +185,7 @@ module.exports = ->
         { _id: "3", a: 'orange2' }
       ]
       @col.upsert docs, bases, =>
-        @col.pendingUpserts (results) =>
+        @col.pendingUpserts (results) ->
           assert.deepEqual _.pluck(results, "doc"), docs
           assert.deepEqual _.pluck(results, "base"), bases
           done()
@@ -200,7 +200,7 @@ module.exports = ->
       @col.upsert docs, =>
         @col.pendingUpserts (upserts) =>
           @col.resolveUpserts upserts, =>
-            @col.pendingUpserts (results) =>
+            @col.pendingUpserts (results) ->
               assert.equal results.length, 0
               done()
 
@@ -215,7 +215,7 @@ module.exports = ->
           @col.resolveRemove 1, =>
             @col.pendingUpserts (upserts) =>
               @col.resolveUpserts upserts, =>
-                @col.pendingUpserts (results) =>
+                @col.pendingUpserts (results) ->
                   assert.equal results.length, 0
                   done()
 
@@ -223,7 +223,7 @@ module.exports = ->
       @col.upsert { _id: "2", a: 'banana' }, =>
         @col.upsert { _id: "2", a: 'banana2' }, =>
           @col.resolveUpserts [{ doc: { _id: "2", a: 'banana' }, base: null }], =>
-            @col.pendingUpserts (results) =>
+            @col.pendingUpserts (results) ->
               assert.equal results.length, 1
               assert.equal results[0].doc.a, 'banana2'
               assert.equal results[0].base.a, 'banana'
@@ -232,21 +232,21 @@ module.exports = ->
     it "removes pending upserts", (done) ->
       @col.upsert { _id: "2", a: 'banana' }, =>
         @col.remove "2", =>
-          @col.pendingUpserts (results) =>
+          @col.pendingUpserts (results) ->
             assert.equal results.length, 0
             done()
 
     it "returns pending removes", (done) ->
       @col.cache [{ _id: "1", a: 'apple' }], {}, {}, =>
         @col.remove "1", =>
-          @col.pendingRemoves (results) =>
+          @col.pendingRemoves (results) ->
             assert.equal results.length, 1
             assert.equal results[0], 1
             done()
 
     it "returns pending removes that are not present", (done) ->
       @col.remove "2", =>
-        @col.pendingRemoves (results) =>
+        @col.pendingRemoves (results) ->
           assert.equal results.length, 1
           assert.equal results[0], 2
           done()
@@ -255,7 +255,7 @@ module.exports = ->
       @col.cache [{ _id: "1", a: 'apple' }], {}, {}, =>
         @col.remove "1", =>
           @col.resolveRemove "1", =>
-            @col.pendingRemoves (results) =>
+            @col.pendingRemoves (results) ->
               assert.equal results.length, 0
               done()
 
@@ -282,7 +282,7 @@ module.exports = ->
 
     it "allows removing uncached rows", (done) ->
       @col.remove "12345", =>
-        @col.pendingRemoves (results) =>
+        @col.pendingRemoves (results) ->
           assert.equal results.length, 1
           assert.equal results[0], "12345"
           done()

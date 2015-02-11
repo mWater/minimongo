@@ -60,7 +60,7 @@ exports.processFind = (items, selector, options) ->
   filtered = processNearOperator(selector, filtered)
   filtered = processGeoIntersectsOperator(selector, filtered)
 
-  if options and options.sort 
+  if options and options.sort
     filtered.sort(compileSort(options.sort))
 
   if options and options.skip
@@ -137,7 +137,7 @@ exports.filterFields = (items, fields={}) ->
 
 
 # Creates a unique identifier string
-exports.createUid = -> 
+exports.createUid = ->
   'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, (c) ->
     r = Math.random()*16|0
     v = if c == 'x' then r else (r&0x3|0x8)
@@ -185,16 +185,16 @@ pointInPolygon = (point, polygon) ->
     throw new Error("First must equal last")
 
   # Check bounds
-  if point.coordinates[0] < Math.min.apply(this, 
+  if point.coordinates[0] < Math.min.apply(this,
       _.map(polygon.coordinates[0], (coord) -> coord[0]))
     return false
-  if point.coordinates[1] < Math.min.apply(this, 
+  if point.coordinates[1] < Math.min.apply(this,
       _.map(polygon.coordinates[0], (coord) -> coord[1]))
     return false
-  if point.coordinates[0] > Math.max.apply(this, 
+  if point.coordinates[0] > Math.max.apply(this,
       _.map(polygon.coordinates[0], (coord) -> coord[0]))
     return false
-  if point.coordinates[1] > Math.max.apply(this, 
+  if point.coordinates[1] > Math.max.apply(this,
       _.map(polygon.coordinates[0], (coord) -> coord[1]))
     return false
   return true
@@ -230,7 +230,7 @@ processGeoIntersectsOperator = (selector, list) ->
 
   return list
 
-# Tidy up upsert parameters to always be a list of { doc: <doc>, base: <base> }, 
+# Tidy up upsert parameters to always be a list of { doc: <doc>, base: <base> },
 # doing basic error checking and making sure that _id is present
 # Returns [items, success, error]
 exports.regularizeUpsert = (docs, bases, success, error) ->

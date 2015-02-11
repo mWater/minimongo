@@ -17,7 +17,7 @@ module.exports = class IndexedDb
       storeName: 'minimongo_' + options.namespace
       keyPath: ['col', 'doc._id']
       autoIncrement: false
-      onStoreReady: () => if success then success(this)
+      onStoreReady: => if success then success(this)
       onError: error
       indexes: [
         { name: 'col', keyPath: 'col', unique: false, multiEntry: false }
@@ -30,7 +30,7 @@ module.exports = class IndexedDb
     @[name] = collection
     @collections[name] = collection
     if success
-      success() 
+      success()
 
   removeCollection: (name, success, error) ->
     delete @[name]
@@ -38,9 +38,9 @@ module.exports = class IndexedDb
 
     # Remove all documents
     @store.query (matches) =>
-      keys = _.map matches, (m) => [ m.col, m.doc._id ]
+      keys = _.map matches, (m) -> [ m.col, m.doc._id ]
       if keys.length > 0
-        @store.removeBatch keys, => 
+        @store.removeBatch keys, ->
           if success? then success()
         , error
       else
@@ -58,7 +58,7 @@ class Collection
       @_findFetch(selector, options, success, error)
 
   findOne: (selector, options, success, error) ->
-    if _.isFunction(options) 
+    if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     @find(selector, options).fetch (results) ->
@@ -67,10 +67,10 @@ class Collection
 
   _findFetch: (selector, options, success, error) ->
     # Get all docs from collection
-    @store.query (matches) =>
+    @store.query (matches) ->
       # Filter removed docs
-      matches = _.filter matches, (m) => m.state != "removed"
-      if success? then success(processFind(_.pluck(matches, "doc"), selector, options))  
+      matches = _.filter matches, (m) -> m.state != "removed"
+      if success? then success(processFind(_.pluck(matches, "doc"), selector, options))
     , { index: "col", keyRange: @store.makeKeyRange(only: @name), onError: error }
 
   upsert: (doc, success, error) ->
@@ -90,7 +90,7 @@ class Collection
         doc: item
       }
 
-    @store.putBatch records, => 
+    @store.putBatch records, ->
       if success then success(doc)
     , error
 
@@ -108,7 +108,7 @@ class Collection
       record.state = "removed"
 
       # Update
-      @store.put record, =>
+      @store.put record, ->
         if success then success(id)
       , error
 
@@ -120,7 +120,7 @@ class Collection
       if options.sort
         sort = compileSort(options.sort)
 
-      # Perform query, removing rows missing in docs from local db 
+      # Perform query, removing rows missing in docs from local db
       @find(selector, options).fetch (results) =>
         removes = []
         keys = _.map results, (result) => [@name, result._id]
@@ -144,7 +144,7 @@ class Collection
 
           # If removes, handle them
           if removes.length > 0
-            @store.removeBatch removes, =>
+            @store.removeBatch removes, ->
               if success? then success()
             , error
           else
@@ -178,14 +178,14 @@ class Collection
       else
         step2()
     , error
-  
+
   pendingUpserts: (success, error) ->
-    @store.query (matches) =>
+    @store.query (matches) ->
       if success? then success(_.pluck(matches, "doc"))
     , { index: "col-state", keyRange: @store.makeKeyRange(only: [@name, "upserted"]), onError: error }
 
   pendingRemoves: (success, error) ->
-    @store.query (matches) =>
+    @store.query (matches) ->
       if success? then success(_.pluck(_.pluck(matches, "doc"), "_id"))
     , { index: "col-state", keyRange: @store.makeKeyRange(only: [@name, "removed"]), onError: error }
 
@@ -209,8 +209,8 @@ class Collection
 
       # Put all changed items
       if puts.length > 0
-        @store.putBatch puts, =>
-          if success then success(doc)  
+        @store.putBatch puts, ->
+          if success then success(doc)
         , error
       else
         if success then success(doc)
@@ -220,7 +220,7 @@ class Collection
     @store.get [@name, id], (record) =>
       # Only remove if removed
       if record.state == "removed"
-        @store.remove [@name, id], =>
+        @store.remove [@name, id], ->
           if success? then success()
         , error
 
@@ -233,7 +233,7 @@ class Collection
           state: "cached"
           doc: doc
         }
-        @store.put record, =>
+        @store.put record, ->
           if success? then success()
         , error
       else
@@ -255,7 +255,7 @@ class Collection
         }
       if record.state == "cached"
         record.doc = doc
-        @store.put record, =>
+        @store.put record, ->
           if success? then success()
         , error
       else

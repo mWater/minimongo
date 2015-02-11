@@ -74,7 +74,7 @@ class Collection
       @_findFetch(selector, options, success, error)
 
   findOne: (selector, options, success, error) ->
-    if _.isFunction(options) 
+    if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     @find(selector, options).fetch (results) ->
@@ -95,7 +95,7 @@ class Collection
       if not item._id
         item._id = createUid()
 
-      # Replace/add 
+      # Replace/add
       @_putItem(item)
       @_putUpsert(item)
 
@@ -151,7 +151,7 @@ class Collection
     if options.sort
       sort = compileSort(options.sort)
 
-    # Perform query, removing rows missing in docs from local db 
+    # Perform query, removing rows missing in docs from local db
     @find(selector, options).fetch (results) =>
       for result in results
         if not docsMap[result._id] and not _.has(@upserts, result._id)
@@ -161,9 +161,9 @@ class Collection
               continue
           @_deleteItem(result._id)
 
-      if success? then success()  
+      if success? then success()
     , error
-    
+
   pendingUpserts: (success) ->
     success _.values(@upserts)
 

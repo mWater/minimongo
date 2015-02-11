@@ -53,7 +53,7 @@ To resolve the upsert (for example once sent to central db), use resolveUpserts 
 
 `db.sometable.resolveUpserts(upserts, success, error)` takes the list of upserts to resolve
 
-`resolveUpserts` does not resolve an upsert if another upsert on the same row has taken place. Instead, the base value is updated (since the change has been accepted by the server) but the new upserted value is left alone. 
+`resolveUpserts` does not resolve an upsert if another upsert on the same row has taken place. Instead, the base value is updated (since the change has been accepted by the server) but the new upserted value is left alone.
 
 ### IndexedDb
 
@@ -133,7 +133,7 @@ The API that RemoteDb should support four HTTP methods for each collection:
 
 #### GET `/<collection>`
 
-Performs a query, returning an array of results. GET query parameters are: 
+Performs a query, returning an array of results. GET query parameters are:
 
 **selector** (optional) : JSON of query, in MongoDB format. e.g. `{"a": 1}` to find records with field `a` having value `1`
 **fields** (optional) : JSON object indicating which fields to return in MongoDB format. e.g. `{"a": 1}` to return only field `a` and `_id`
@@ -163,7 +163,7 @@ On `403` or `410`, the change is automatically discarded in the HybridDb.
 Performs a patch, returning the upserted row. PATCH value is the following structure:
 
 ```
-{ 
+{
 	doc: <the document in its new form>
 	base: <base document on which the changes were made>
 }
@@ -171,7 +171,7 @@ Performs a patch, returning the upserted row. PATCH value is the following struc
 
 For example, to change `{ x:1, y:1 }` to set x to be 2, PATCH would send
 ```
-{ 
+{
 	doc: { x:2, y: 1 }
 	base: { x:1, y: 1 }
 }
@@ -179,7 +179,7 @@ For example, to change `{ x:1, y:1 }` to set x to be 2, PATCH would send
 
 Possible HTTP response codes:
 
-**200** : document was upserted. Returns the upserted object 
+**200** : document was upserted. Returns the upserted object
 **400** : document did not pass validation
 **401** : client was invalid or not present
 **403** : permission denied to upsert
