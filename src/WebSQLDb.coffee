@@ -193,7 +193,7 @@ class Collection
           @db.transaction (tx) =>
             async.eachSeries results, (result, callback) =>
               # If not present in docs and is present locally and not upserted/deleted
-              tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, result._id], (tx, rows) ->
+              tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, result._id], (tx, rows) =>
                 if not docsMap[result._id] and rows.rows.length > 0 and rows.rows.item(0).state == "cached"
                   # If past end on sorted limited, ignore
                   if options.sort and options.limit and docs.length == options.limit
