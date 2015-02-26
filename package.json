@@ -28,10 +28,10 @@
   "devDependencies": {
     "browserify": "^3.29.1",
     "chai": "~1.9.0",
-    "coffeeify": "~0.6.0",
     "coffee-script": "~1.6.3",
+    "coffeeify": "~0.6.0",
     "glob": "^3.2.9",
-    "gulp": "^3.6.2",
+    "gulp": "^3.8.11",
     "gulp-coffee": "^1.4.2",
     "gulp-rename": "^1.2.0",
     "gulp-uglify": "^0.3.1",
