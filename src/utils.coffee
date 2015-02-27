@@ -6,6 +6,18 @@ bowser = require 'bowser'
 compileDocumentSelector = require('./selector').compileDocumentSelector
 compileSort = require('./selector').compileSort
 
+# Test window.localStorage
+isLocalStorageSupported = ->
+  if not window.localStorage
+    return false
+  try
+    window.localStorage.setItem("test", "test")
+    window.localStorage.removeItem("test")
+    return true
+  catch e
+    return false
+
+
 # Compile a document selector (query) to a lambda function
 exports.compileDocumentSelector = compileDocumentSelector
 
@@ -19,6 +31,10 @@ exports.autoselectLocalDb = (options, success, error) ->
 
   # Get browser capabilities
   browser = bowser.browser
+
+  # Browsers with no localStorage support don't deserve anything better than a MemoryDb
+  if not isLocalStorageSupported()
+    return new MemoryDb(options, success)
 
   # Always use WebSQL in cordova
   if window.cordova
