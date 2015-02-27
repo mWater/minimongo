@@ -34,7 +34,7 @@ exports.autoselectLocalDb = (options, success, error) ->
 
   # Browsers with no localStorage support don't deserve anything better than a MemoryDb
   if not isLocalStorageSupported()
-    return new MemoryDb options, success
+    return new MemoryDb(options, success)
 
   # Always use WebSQL in cordova
   if window.cordova
