@@ -33,7 +33,7 @@ exports.autoselectLocalDb = (options, success, error) ->
   browser = bowser.browser
 
   # Browsers with no localStorage support don't deserve anything better than a MemoryDb
-  if not isLocalStorageSupported
+  if not isLocalStorageSupported()
     return new MemoryDb options, success
 
   # Always use WebSQL in cordova
