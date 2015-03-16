@@ -34,26 +34,33 @@ exports.autoselectLocalDb = (options, success, error) ->
 
   # Browsers with no localStorage support don't deserve anything better than a MemoryDb
   if not isLocalStorageSupported()
-    return new MemoryDb(options, success)
+    new MemoryDb(options, success)
 
   # Always use WebSQL in cordova
   if window.cordova
     console.log "Selecting WebSQLDb for Cordova"
-    return new WebSQLDb options, success, error
+    # WebSQLDb must success in Cordova
+    new WebSQLDb options, success, error
 
   # Use WebSQL in Android, iOS, Chrome, Safari, Opera, Blackberry
   if browser.android or browser.ios or browser.chrome or browser.safari or browser.opera or browser.blackberry
     console.log "Selecting WebSQLDb for browser"
-    return new WebSQLDb options, success, error
+    new WebSQLDb options, success, (err) =>
+      console.log "Failed to create WebSQLDb: " + (if err then err.message)
+      # Create memory db instead
+      new MemoryDb(options, success)
 
   # Use IndexedDb on Firefox >= 16
   if browser.firefox and browser.version >= 16
     console.log "Selecting IndexedDb for browser"
-    return new IndexedDb options, success, error
+    new IndexedDb options, success, (err) =>
+      console.log "Failed to create IndexedDb: " + (if err then err.message)
+      # Create memory db instead
+      new MemoryDb(options, success)
 
   # Use Local Storage otherwise
   console.log "Selecting LocalStorageDb for fallback"
-  return new LocalStorageDb(options, success, error)
+  new LocalStorageDb(options, success, error)
 
 # Migrates a local database's pending upserts and removes from one database to another
 # Useful for upgrading from one type of database to another
