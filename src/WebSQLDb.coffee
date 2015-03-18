@@ -12,11 +12,16 @@ module.exports = class WebSQLDb
   constructor: (options, success, error) ->
     @collections = {}
 
-    # Create database
-    # TODO escape name
-    @db = window.openDatabase 'minimongo_' + options.namespace, '', 'Minimongo:' + options.namespace, 5 * 1024 * 1024
-    if not @db
-      return error(new Error("Failed to create database"))
+    try 
+      # Create database
+      # TODO escape name
+      @db = window.openDatabase 'minimongo_' + options.namespace, '', 'Minimongo:' + options.namespace, 5 * 1024 * 1024
+      if not @db
+        return error(new Error("Failed to create database"))
+    catch ex
+      if error
+        error(ex)
+      return
 
     migrateToV1 = (tx) ->
       tx.executeSql('''

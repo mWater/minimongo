@@ -28,6 +28,7 @@ module.exports = class IndexedDb
     catch ex
       if error
         error(ex)
+      return
 
   addCollection: (name, success, error) ->
     collection = new Collection(name, @store)
