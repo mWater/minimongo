@@ -12,18 +12,22 @@ module.exports = class IndexedDb
     @collections = {}
 
     # Create database
-    @store = new IDBStore {
-      dbVersion: 1
-      storeName: 'minimongo_' + options.namespace
-      keyPath: ['col', 'doc._id']
-      autoIncrement: false
-      onStoreReady: => if success then success(this)
-      onError: error
-      indexes: [
-        { name: 'col', keyPath: 'col', unique: false, multiEntry: false }
-        { name: 'col-state', keyPath: ['col', 'state'], unique: false, multiEntry: false}
-      ]
-    }
+    try
+      @store = new IDBStore {
+        dbVersion: 1
+        storeName: 'minimongo_' + options.namespace
+        keyPath: ['col', 'doc._id']
+        autoIncrement: false
+        onStoreReady: => if success then success(this)
+        onError: error
+        indexes: [
+          { name: 'col', keyPath: 'col', unique: false, multiEntry: false }
+          { name: 'col-state', keyPath: ['col', 'state'], unique: false, multiEntry: false}
+        ]
+      }
+    catch ex
+      if error
+        error(ex)
 
   addCollection: (name, success, error) ->
     collection = new Collection(name, @store)
