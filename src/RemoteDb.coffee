@@ -12,8 +12,14 @@ module.exports = class RemoteDb
     @collections = {}
     @httpClient = httpClient or jQueryHttpClient
 
-  addCollection: (name, success, error) ->
-    collection = new Collection(name, @url + name, @client, @httpClient)
+  # Can specify url of specific collection as option
+  addCollection: (name, options, success, error) ->
+    if _.isFunction(options)
+      [options, success, error] = [{}, options, success]
+
+    url = options.url or (@url + name)
+
+    collection = new Collection(name, url, @client, @httpClient)
     @[name] = collection
     @collections[name] = collection
     if success? then success()
