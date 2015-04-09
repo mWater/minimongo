@@ -129,6 +129,18 @@ Uses AJAX-JSON calls to an API to query a real Mongo database. API is simple and
 
 If the `client` field is passed to the constructor, it is appended as a query parameters (e.g. `?client=1234`) to each request made.
 
+Example code:
+
+```
+remoteDb = new minimongo.RemoteDb("http://someserver.com/api/", "myclientid123")
+```
+
+This would create a remote db that would make the following call to the api for a find to collection abc:
+
+`GET http://someserver.com/api/abc?client=myclientid123`
+
+The client is optional and is a string that is passed in each call only to make authentication easier.
+
 The API that RemoteDb should support four HTTP methods for each collection:
 
 #### GET `/<collection>`
