@@ -1,0 +1,22 @@
+{
+  "name": "minimongo",
+  "main": "index.js",
+  "version": "3.2.13",
+  "homepage": "https://github.com/mWater/minimongo",
+  "authors": [
+    "Clayton Grassick <clayton@claytronics.org>"
+  ],
+  "description": "Mongo database in the browser",
+  "keywords": [
+    "mongo",
+    "storage"
+  ],
+  "license": "LGPLv3",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
