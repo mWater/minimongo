@@ -260,14 +260,14 @@ module.exports = ->
               done()
 
     it "seeds", (done) ->
-      @col.seed { _id: "1", a: 'apple' }, =>
+      @col.seed [{ _id: "1", a: 'apple' }], =>
         @col.find({}).fetch (results) ->
           assert.equal results[0].a, 'apple'
           done()
 
     it "does not overwrite existing", (done) ->
       @col.cache [{ _id: "1", a: 'banana' }], {}, {}, =>
-        @col.seed { _id: "1", a: 'apple' }, =>
+        @col.seed [{ _id: "1", a: 'apple' }], =>
           @col.find({}).fetch (results) ->
             assert.equal results[0].a, 'banana'
             done()
@@ -275,7 +275,7 @@ module.exports = ->
     it "does not add removed", (done) ->
       @col.cache [{ _id: "1", a: 'apple' }], {}, {}, =>
         @col.remove "1", =>
-          @col.seed { _id: "1", a: 'apple' }, =>
+          @col.seed [{ _id: "1", a: 'apple' }], =>
             @col.find({}).fetch (results) ->
               assert.equal results.length, 0
               done()
@@ -288,7 +288,7 @@ module.exports = ->
           done()
 
     it 'seeds rows', (done) ->
-      @col.seed { _id: "1", a: 'apple' }, =>
+      @col.seed [{ _id: "1", a: 'apple' }], =>
         @col.find({}).fetch (results) ->
           assert.equal results[0].a, 'apple'
           done()

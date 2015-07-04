@@ -290,20 +290,28 @@ class Collection
     , error
 
   # Add but do not overwrite or record as upsert
-  seed: (doc, success, error) ->
+  seed: (docs, success, error) ->
     # Android 2.x requires error callback
     error = error or -> return
 
     @db.transaction (tx) =>
-      tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, doc._id], (tx, results) =>
-        # Only insert if not present
-        if results.rows.length == 0
-          tx.executeSql "INSERT INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], ->
-            if success then success(doc)
-          , error
+      # Add all non-local that are not upserted or removed
+      async.eachSeries docs, (doc, callback) =>
+        tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, doc._id], (tx, results) =>
+          # Check if present 
+          if results.rows.length == 0
+            # Upsert
+            tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], ->
+              callback()
+            , error
+          else
+            callback()
+        , callback, error
+      , (err) =>
+        if err
+          if error then error(err)
         else
-          if success then success(doc)
-      , error
+          if success then success()
     , error
 
   # Add but do not overwrite upsert/removed and do not record as upsert

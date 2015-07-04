@@ -122,9 +122,13 @@ class Collection
     if success? then success()
 
   # Add but do not overwrite or record as upsert
-  seed: (doc, success) ->
-    if not _.has(@items, doc._id) and not _.has(@removes, doc._id)
-      @items[doc._id] = doc
+  seed: (docs, success) ->
+    if not _.isArray(docs)
+      docs = [docs]
+
+    for doc in docs
+      if not _.has(@items, doc._id) and not _.has(@removes, doc._id)
+        @items[doc._id] = doc
     if success? then success()
 
   # Add but do not overwrite upserts or removes

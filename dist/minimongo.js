@@ -1032,16 +1032,33 @@ Collection = (function() {
     })(this));
   };
 
-  Collection.prototype.seed = function(doc, success, error) {
-    return this.store.get([this.name, doc._id], (function(_this) {
-      return function(record) {
-        if (record == null) {
-          record = {
-            col: _this.name,
-            state: "cached",
-            doc: doc
-          };
-          return _this.store.put(record, function() {
+  Collection.prototype.seed = function(docs, success, error) {
+    var keys, puts;
+    if (!_.isArray(docs)) {
+      docs = [docs];
+    }
+    keys = _.map(docs, (function(_this) {
+      return function(doc) {
+        return [_this.name, doc._id];
+      };
+    })(this));
+    puts = [];
+    return this.store.getBatch(keys, (function(_this) {
+      return function(records) {
+        var doc, i, record, _i, _ref;
+        for (i = _i = 0, _ref = records.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+          record = records[i];
+          doc = docs[i];
+          if (record == null) {
+            puts.push({
+              col: _this.name,
+              state: "cached",
+              doc: doc
+            });
+          }
+        }
+        if (puts.length > 0) {
+          return _this.store.putBatch(puts, function() {
             if (success != null) {
               return success();
             }
@@ -1052,7 +1069,7 @@ Collection = (function() {
           }
         }
       };
-    })(this));
+    })(this), error);
   };
 
   Collection.prototype.cacheOne = function(doc, success, error) {
@@ -1357,9 +1374,16 @@ Collection = (function() {
     }
   };
 
-  Collection.prototype.seed = function(doc, success) {
-    if (!_.has(this.items, doc._id) && !_.has(this.removes, doc._id)) {
-      this._putItem(doc);
+  Collection.prototype.seed = function(docs, success) {
+    var doc, _i, _len;
+    if (!_.isArray(docs)) {
+      docs = [docs];
+    }
+    for (_i = 0, _len = docs.length; _i < _len; _i++) {
+      doc = docs[_i];
+      if (!_.has(this.items, doc._id) && !_.has(this.removes, doc._id)) {
+        this._putItem(doc);
+      }
     }
     if (success != null) {
       return success();
@@ -1560,9 +1584,16 @@ Collection = (function() {
     }
   };
 
-  Collection.prototype.seed = function(doc, success) {
-    if (!_.has(this.items, doc._id) && !_.has(this.removes, doc._id)) {
-      this.items[doc._id] = doc;
+  Collection.prototype.seed = function(docs, success) {
+    var doc, _i, _len;
+    if (!_.isArray(docs)) {
+      docs = [docs];
+    }
+    for (_i = 0, _len = docs.length; _i < _len; _i++) {
+      doc = docs[_i];
+      if (!_.has(this.items, doc._id) && !_.has(this.removes, doc._id)) {
+        this.items[doc._id] = doc;
+      }
     }
     if (success != null) {
       return success();
@@ -2143,23 +2174,31 @@ Collection = (function() {
     })(this), error);
   };
 
-  Collection.prototype.seed = function(doc, success, error) {
+  Collection.prototype.seed = function(docs, success, error) {
     error = error || function() {};
     return this.db.transaction((function(_this) {
       return function(tx) {
-        return tx.executeSql("SELECT * FROM docs WHERE col = ? AND id = ?", [_this.name, doc._id], function(tx, results) {
-          if (results.rows.length === 0) {
-            return tx.executeSql("INSERT INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [_this.name, doc._id, "cached", JSON.stringify(doc)], function() {
-              if (success) {
-                return success(doc);
-              }
-            }, error);
+        return async.eachSeries(docs, function(doc, callback) {
+          return tx.executeSql("SELECT * FROM docs WHERE col = ? AND id = ?", [_this.name, doc._id], function(tx, results) {
+            if (results.rows.length === 0) {
+              return tx.executeSql("INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [_this.name, doc._id, "cached", JSON.stringify(doc)], function() {
+                return callback();
+              }, error);
+            } else {
+              return callback();
+            }
+          }, callback, error);
+        }, function(err) {
+          if (err) {
+            if (error) {
+              return error(err);
+            }
           } else {
             if (success) {
-              return success(doc);
+              return success();
             }
           }
-        }, error);
+        });
       };
     })(this), error);
   };

@@ -238,19 +238,33 @@ class Collection
         , error
 
   # Add but do not overwrite or record as upsert
-  seed: (doc, success, error) ->
-    @store.get [@name, doc._id], (record) =>
-      if not record?
-        record = {
-          col: @name
-          state: "cached"
-          doc: doc
-        }
-        @store.put record, ->
-          if success? then success()
+  seed: (docs, success, error) ->
+    if not _.isArray(docs)
+      docs = [docs]
+
+    # Create keys to get items
+    keys = _.map docs, (doc) => [@name, doc._id]
+
+    # Create batch of puts
+    puts = []
+    @store.getBatch keys, (records) =>
+      # Add all non-local that are not upserted or removed
+      for i in [0...records.length]
+        record = records[i]
+        doc = docs[i]
+
+        # Check if not present 
+        if not record? 
+          puts.push { col: @name, state: "cached", doc: doc }
+
+      # Put batch
+      if puts.length > 0
+        @store.putBatch puts, =>
+          if success? then success()            
         , error
       else
         if success? then success()
+    , error
 
   # Add but do not overwrite upsert/removed and do not record as upsert
   cacheOne: (doc, success, error) ->
