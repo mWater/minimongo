@@ -13,6 +13,12 @@ describe 'autoselected Local Db', ->
       @db.addCollection 'scratch', ->
         done()
 
+    @reset = (done) =>
+      @db.removeCollection 'scratch', =>
+        @db.addCollection 'scratch', =>
+          @col = @db.scratch
+          done()
+
   describe "passes queries", ->
     db_queries.call(this)
 

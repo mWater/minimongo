@@ -3146,7 +3146,7 @@ exports.filterFields = function(items, fields) {
       }
       return newItem;
     } else {
-      _ref2 = _.keys(fields).concat(["_id"]);
+      _ref2 = _.keys(fields);
       for (_l = 0, _len3 = _ref2.length; _l < _len3; _l++) {
         field = _ref2[_l];
         path = field.split(".");

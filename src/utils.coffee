@@ -141,7 +141,7 @@ exports.filterFields = (items, fields={}) ->
       return newItem
     else
       # Exclude fields
-      for field in _.keys(fields).concat(["_id"])
+      for field in _.keys(fields)
         path = field.split(".")
 
         # Go inside path
