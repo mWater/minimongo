@@ -3204,7 +3204,6 @@ processNearOperator = function(selector, list) {
           return item.distance <= value['$near']['$maxDistance'];
         });
       }
-      distances = _.first(distances, 100);
       list = _.pluck(distances, 'doc');
     }
   }

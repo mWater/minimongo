@@ -194,9 +194,6 @@ processNearOperator = (selector, list) ->
       if value['$near']['$maxDistance']
         distances = _.filter distances, (item) -> item.distance <= value['$near']['$maxDistance']
 
-      # Limit to 100
-      distances = _.first distances, 100
-
       # Extract docs
       list = _.pluck distances, 'doc'
   return list
