@@ -59,6 +59,7 @@ class HybridCollection
       interim: true         # Return interim results from local db while waiting for remote db. Return again if different
       useLocalOnRemoteError: true  # Use local results if the remote find fails. Only applies if interim is false.
       shortcut: false       # true to return `findOne` results if any matching result is found in the local database. Useful for documents that change rarely.
+      timeout: 0            # Set to ms to timeout in for remote calls
     }
 
   find: (selector, options = {}) ->
@@ -125,7 +126,19 @@ class HybridCollection
       if options.cacheFind
         delete remoteOptions.fields
 
+      # Setup timer variables
+      timer = null
+      timedOut = false
+
       remoteSuccess = (remoteData) =>
+        # Cancel timer
+        if timer
+          clearTimeout(timer)
+
+        # Ignore if timed out
+        if timedOut
+          return
+
         if options.cacheFind
           # Cache locally
           cacheSuccess = =>
@@ -178,6 +191,14 @@ class HybridCollection
         else
           # Otherwise do nothing
           return
+
+      # Start timer if remote
+      if options.timeout
+        timer = setTimeout () =>
+          timer = null
+          timedOut = true
+          remoteError(new Error("Timeout"))
+        , options.timeout
 
       @remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError)
 

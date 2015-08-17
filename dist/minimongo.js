@@ -419,7 +419,8 @@ HybridCollection = (function() {
       cacheFindOne: true,
       interim: true,
       useLocalOnRemoteError: true,
-      shortcut: false
+      shortcut: false,
+      timeout: 0
     });
   }
 
@@ -488,13 +489,21 @@ HybridCollection = (function() {
     _.defaults(options, this.options);
     step2 = (function(_this) {
       return function(localData) {
-        var remoteError, remoteOptions, remoteSuccess;
+        var remoteError, remoteOptions, remoteSuccess, timedOut, timer;
         remoteOptions = _.cloneDeep(options);
         if (options.cacheFind) {
           delete remoteOptions.fields;
         }
+        timer = null;
+        timedOut = false;
         remoteSuccess = function(remoteData) {
           var cacheSuccess, data;
+          if (timer) {
+            clearTimeout(timer);
+          }
+          if (timedOut) {
+            return;
+          }
           if (options.cacheFind) {
             cacheSuccess = function() {
               var localSuccess2;
@@ -552,6 +561,13 @@ HybridCollection = (function() {
 
           }
         };
+        if (options.timeout) {
+          timer = setTimeout(function() {
+            timer = null;
+            timedOut = true;
+            return remoteError(new Error("Timeout"));
+          }, options.timeout);
+        }
         return _this.remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError);
       };
     })(this);

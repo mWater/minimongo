@@ -235,6 +235,53 @@ describe 'HybridDb', ->
           done()
         , fail
 
+    describe "interim: false with timeout", ->
+      beforeEach ->
+        @clock = sinon.useFakeTimers()
+  
+      afterEach ->
+        @clock.restore()
+
+      it "find gives final results if in time", (done) ->
+        @lc.upsert(_id:"1", a:1)
+        @lc.seed(_id:"2", a:2)
+
+        oldFind = @rc.find
+        @rc.find = (where, params) =>
+          return {
+            fetch: (success, error) =>
+              # Wait a bit
+              @clock.tick(500)
+              success([{ _id:"1", a:3 }, { _id: "2", a: 4}])
+          }
+
+        @hc.find({}, {interim: false, timeout: 1000 }).fetch (data) ->
+          assert.equal data.length, 2
+          assert.equal data[0].a, 1
+          assert.equal data[1].a, 4
+          done()
+        , fail
+
+      it "find gives local results if out of time", (done) ->
+        @lc.upsert(_id:"1", a:1)
+        @lc.seed(_id:"2", a:2)
+
+        oldFind = @rc.find
+        @rc.find = (where, params) =>
+          return {
+            fetch: (success, error) =>
+              # Wait a bit too long
+              @clock.tick(1500)
+              success([{ _id:"1", a:3 }, { _id: "2", a: 4}])
+          }
+
+        @hc.find({}, { interim: false, timeout: 1000 }).fetch (data) ->
+          assert.equal data.length, 2
+          assert.equal data[0].a, 1
+          assert.equal data[1].a, 2
+          done()
+        , fail
+
     describe "cacheFind: false", ->
       it "find performs partial field remote queries", (done) ->
         sinon.spy(@rc, "find")
