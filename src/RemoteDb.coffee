@@ -1,5 +1,4 @@
 _ = require 'lodash'
-$ = require 'jquery'
 async = require 'async'
 utils = require('./utils')
 jQueryHttpClient = require './jQueryHttpClient'
