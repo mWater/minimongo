@@ -182,6 +182,10 @@ class HybridCollection
           , error
 
       remoteError = (err) =>
+        # Cancel timer
+        if timer
+          clearTimeout(timer)
+
         # If no interim, do local find
         if not options.interim
           if options.useLocalOnRemoteError

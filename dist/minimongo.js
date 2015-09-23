@@ -549,6 +549,9 @@ HybridCollection = (function() {
           }
         };
         remoteError = function(err) {
+          if (timer) {
+            clearTimeout(timer);
+          }
           if (!options.interim) {
             if (options.useLocalOnRemoteError) {
               return _this.localCol.find(selector, options).fetch(success, error);

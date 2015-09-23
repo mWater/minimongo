@@ -1,6 +1,6 @@
 chai = require 'chai'
 assert = chai.assert
-MemoryDb = require "../lib/MemoryDb"
+MemoryDb = require "../src/MemoryDb"
 db_queries = require "./db_queries"
 db_caching = require "./db_caching"
 _ = require 'lodash'

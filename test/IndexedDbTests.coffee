@@ -1,6 +1,6 @@
 chai = require 'chai'
 assert = chai.assert
-IndexedDb = require "../lib/IndexedDb"
+IndexedDb = require "../src/IndexedDb"
 db_queries = require "./db_queries"
 db_caching = require "./db_caching"
 _ = require 'lodash'

@@ -1,10 +1,10 @@
 chai = require 'chai'
 assert = chai.assert
-utils = require "../lib/utils"
+utils = require "../src/utils"
 db_queries = require "./db_queries"
 db_caching = require "./db_caching"
 _ = require 'lodash'
-MemoryDb = require '../lib/MemoryDb'
+MemoryDb = require '../src/MemoryDb'
 
 describe 'autoselected Local Db', ->
   before (done) ->

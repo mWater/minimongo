@@ -2,8 +2,8 @@ _ = require 'lodash'
 chai = require 'chai'
 assert = chai.assert
 sinon = require 'sinon'
-MemoryDb = require "../lib/MemoryDb"
-HybridDb = require "../lib/HybridDb"
+MemoryDb = require "../src/MemoryDb"
+HybridDb = require "../src/HybridDb"
 db_queries = require "./db_queries"
 
 # Note: Assumes local db is synchronous!
@@ -279,6 +279,33 @@ describe 'HybridDb', ->
           assert.equal data.length, 2
           assert.equal data[0].a, 1
           assert.equal data[1].a, 2
+          done()
+        , fail
+
+      it "find gives local results once if remote fails and out of time", (done) ->
+        @lc.upsert(_id:"1", a:1)
+        @lc.seed(_id:"2", a:2)
+
+        oldFind = @rc.find
+        @rc.find = (where, params) =>
+          return {
+            fetch: (success, error) =>
+              error(new Error("Fail"))
+          }
+
+        called = 0
+
+        @hc.find({}, { interim: false, timeout: 1000 }).fetch (data) =>
+          assert.equal data.length, 2
+          assert.equal data[0].a, 1
+          assert.equal data[1].a, 2
+
+          called += 1
+
+          # Wait a bit too long
+          @clock.tick(1500)
+
+          assert.equal called, 1
           done()
         , fail
 

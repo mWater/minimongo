@@ -1,5 +1,5 @@
 assert = require('chai').assert
-RemoteDb = require "../lib/RemoteDb"
+RemoteDb = require "../src/RemoteDb"
 db_queries = require "./db_queries"
 _ = require 'lodash'
 

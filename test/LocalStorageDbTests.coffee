@@ -1,6 +1,6 @@
 chai = require 'chai'
 assert = chai.assert
-LocalStorageDb = require "../lib/LocalStorageDb"
+LocalStorageDb = require "../src/LocalStorageDb"
 db_queries = require "./db_queries"
 db_caching = require "./db_caching"
 _ = require 'lodash'

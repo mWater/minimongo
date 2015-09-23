@@ -1,6 +1,6 @@
 chai = require 'chai'
 assert = chai.assert
-WebSQLDb = require "../lib/WebSQLDb"
+WebSQLDb = require "../src/WebSQLDb"
 db_queries = require "./db_queries"
 db_caching = require "./db_caching"
 _ = require 'lodash'
