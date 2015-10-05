@@ -3114,7 +3114,7 @@ exports.processFind = function(items, selector, options) {
     filtered = _.rest(filtered, options.skip);
   }
   if (options && options.limit) {
-    filtered = _.first(filtered, options.limit);
+    filtered = _.take(filtered, options.limit);
   }
   if (options && options.fields) {
     filtered = exports.filterFields(filtered, options.fields);

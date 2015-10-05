@@ -90,7 +90,7 @@ exports.processFind = (items, selector, options) ->
     filtered = _.rest filtered, options.skip
 
   if options and options.limit
-    filtered = _.first filtered, options.limit
+    filtered = _.take filtered, options.limit
 
   # Clone to prevent accidental updates, or apply fields if present
   if options and options.fields
