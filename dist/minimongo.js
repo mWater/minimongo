@@ -1499,7 +1499,7 @@ Collection = (function() {
 
   Collection.prototype._findFetch = function(selector, options, success, error) {
     if (success != null) {
-      return success(processFind(this.items, selector, options));
+      return success(processFind(_.values(this.items), selector, options));
     }
   };
 
