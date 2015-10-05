@@ -3104,7 +3104,7 @@ exports.migrateLocalDb = function(fromDb, toDb, success, error) {
 
 exports.processFind = function(items, selector, options) {
   var filtered;
-  filtered = _.filter(_.values(items), compileDocumentSelector(selector));
+  filtered = _.filter(items, compileDocumentSelector(selector));
   filtered = processNearOperator(selector, filtered);
   filtered = processGeoIntersectsOperator(selector, filtered);
   if (options && options.sort) {

@@ -77,7 +77,7 @@ exports.migrateLocalDb = (fromDb, toDb, success, error) ->
 
 # Processes a find with sorting and filtering and limiting
 exports.processFind = (items, selector, options) ->
-  filtered = _.filter(_.values(items), compileDocumentSelector(selector))
+  filtered = _.filter(items, compileDocumentSelector(selector))
 
   # Handle geospatial operators
   filtered = processNearOperator(selector, filtered)
