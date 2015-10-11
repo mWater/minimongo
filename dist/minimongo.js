@@ -552,6 +552,9 @@ HybridCollection = (function() {
           if (timer) {
             clearTimeout(timer);
           }
+          if (timedOut) {
+            return;
+          }
           if (!options.interim) {
             if (options.useLocalOnRemoteError) {
               return _this.localCol.find(selector, options).fetch(success, error);
@@ -568,7 +571,17 @@ HybridCollection = (function() {
           timer = setTimeout(function() {
             timer = null;
             timedOut = true;
-            return remoteError(new Error("Timeout"));
+            if (!options.interim) {
+              if (options.useLocalOnRemoteError) {
+                return _this.localCol.find(selector, options).fetch(success, error);
+              } else {
+                if (error) {
+                  return error(new Error("Remote timed out"));
+                }
+              }
+            } else {
+
+            }
           }, options.timeout);
         }
         return _this.remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError);
