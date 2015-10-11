@@ -178,7 +178,6 @@ describe 'HybridDb', ->
           }
 
         @hc.findOne { a: 1 }, (data) ->
-          console.log data
           assert.equal data.a, 1
           done()
         , fail
@@ -282,7 +281,7 @@ describe 'HybridDb', ->
           done()
         , fail
 
-      it "find gives local results once if remote fails and out of time", (done) ->
+      it "find gives local results once if remote fails then out of time", (done) ->
         @lc.upsert(_id:"1", a:1)
         @lc.seed(_id:"2", a:2)
 
@@ -304,6 +303,35 @@ describe 'HybridDb', ->
 
           # Wait a bit too long
           @clock.tick(1500)
+
+          if called > 1
+            console.error "Fail! Called twice"
+          assert.equal called, 1
+          done()
+        , fail
+
+      it "find gives local results once if out of time then remote fails", (done) ->
+        @lc.upsert(_id:"1", a:1)
+        @lc.seed(_id:"2", a:2)
+
+        oldFind = @rc.find
+        @rc.find = (where, params) =>
+          return {
+            fetch: (success, error) =>
+              @clock.tick(1500)
+              error(new Error("Fail"))
+          }
+
+        called = 0
+
+        @hc.find({}, { interim: false, timeout: 1000 }).fetch (data) =>
+          assert.equal data.length, 2
+          assert.equal data[0].a, 1
+          assert.equal data[1].a, 2
+
+          called += 1
+          if called > 1
+            console.error "Fail! Called twice"
 
           assert.equal called, 1
           done()

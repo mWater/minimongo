@@ -186,6 +186,9 @@ class HybridCollection
         if timer
           clearTimeout(timer)
 
+        if timedOut
+          return
+
         # If no interim, do local find
         if not options.interim
           if options.useLocalOnRemoteError
@@ -201,7 +204,16 @@ class HybridCollection
         timer = setTimeout () =>
           timer = null
           timedOut = true
-          remoteError(new Error("Timeout"))
+
+          # If no interim, do local find
+          if not options.interim
+            if options.useLocalOnRemoteError
+              @localCol.find(selector, options).fetch(success, error)
+            else
+              if error then error(new Error("Remote timed out"))
+          else
+            # Otherwise do nothing
+            return
         , options.timeout
 
       @remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError)
