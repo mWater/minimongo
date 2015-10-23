@@ -46,10 +46,10 @@
     "vinyl-source-stream": "^0.1.1"
   },
   "dependencies": {
-    "async": "^0.8.0",
+    "async": "^1.4.2",
     "bowser": "^0.7.1",
     "idb-wrapper": "^1.4.1",
     "jquery": "~2.1.0",
-    "lodash": "~2.4.1"
+    "lodash": "^3.10.1"
   }
 }
