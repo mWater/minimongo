@@ -291,6 +291,9 @@ class Collection
 
   # Add but do not overwrite or record as upsert
   seed: (docs, success, error) ->
+    if not _.isArray(docs)
+      docs = [docs]
+
     # Android 2.x requires error callback
     error = error or -> return
 

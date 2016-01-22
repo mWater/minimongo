@@ -87,7 +87,7 @@ exports.processFind = (items, selector, options) ->
     filtered.sort(compileSort(options.sort))
 
   if options and options.skip
-    filtered = _.rest filtered, options.skip
+    filtered = _.slice filtered, options.skip
 
   if options and options.limit
     filtered = _.take filtered, options.limit
