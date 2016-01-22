@@ -135,8 +135,10 @@ class HybridCollection
         if timer
           clearTimeout(timer)
 
-        # Ignore if timed out
+        # Ignore if timed out, caching asynchronously
         if timedOut
+          if options.cacheFind
+            @localCol.cache(remoteData, selector, options, (->), error)
           return
 
         if options.cacheFind

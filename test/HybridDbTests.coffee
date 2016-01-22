@@ -281,7 +281,7 @@ describe 'HybridDb', ->
           done()
         , fail
 
-      it "find gives local results but caches if out of time", (done) ->
+      it "find gives local results but still caches if out of time", (done) ->
         @lc.upsert(_id:"1", a:1)
         @lc.seed(_id:"2", a:2)
 
@@ -292,19 +292,22 @@ describe 'HybridDb', ->
               # Wait a bit too long
               @clock.tick(1500)
               success([{ _id:"1", a:3 }, { _id: "2", a: 4}])
+              @clock.tick(2000)
           }
 
-        @hc.find({}, { interim: false, timeout: 1000 }).fetch (data) =>
+        @hc.find({}, { interim: false, cacheFind: true, timeout: 1000 }).fetch (data) =>
           assert.equal data.length, 2
           assert.equal data[0].a, 1
           assert.equal data[1].a, 2
 
           # Wait longer for remote to complete
-          @lc.find({}, {}).fetch (data) =>
-            assert.equal data.length, 2
-            assert.equal data[0].a, 3
-            assert.equal data[1].a, 4
-            done()
+          setTimeout () =>
+            @lc.find({}, {}).fetch (data) =>
+              assert.equal data.length, 2
+              assert.equal data[0].a, 1, "Should not change since upsert"
+              assert.equal data[1].a, 4
+              done()
+          , 1000
         , fail
 
       it "find gives local results once if remote fails then out of time", (done) ->

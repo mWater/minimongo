@@ -502,6 +502,9 @@ HybridCollection = (function() {
             clearTimeout(timer);
           }
           if (timedOut) {
+            if (options.cacheFind) {
+              _this.localCol.cache(remoteData, selector, options, (function() {}), error);
+            }
             return;
           }
           if (options.cacheFind) {
@@ -2207,6 +2210,9 @@ Collection = (function() {
   };
 
   Collection.prototype.seed = function(docs, success, error) {
+    if (!_.isArray(docs)) {
+      docs = [docs];
+    }
     error = error || function() {};
     return this.db.transaction((function(_this) {
       return function(tx) {
@@ -3124,7 +3130,7 @@ exports.processFind = function(items, selector, options) {
     filtered.sort(compileSort(options.sort));
   }
   if (options && options.skip) {
-    filtered = _.rest(filtered, options.skip);
+    filtered = _.slice(filtered, options.skip);
   }
   if (options && options.limit) {
     filtered = _.take(filtered, options.limit);
