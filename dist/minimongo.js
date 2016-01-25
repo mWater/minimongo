@@ -452,7 +452,6 @@ HybridCollection = (function() {
         findOptions = _.cloneDeep(options);
         findOptions.interim = false;
         findOptions.cacheFind = options.cacheFindOne;
-        findOptions.useLocalOnRemoteError = true;
         if (selector._id) {
           findOptions.limit = 1;
         } else {

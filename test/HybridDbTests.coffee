@@ -295,7 +295,7 @@ describe 'HybridDb', ->
               @clock.tick(2000)
           }
 
-        @hc.find({}, { interim: false, cacheFind: true, timeout: 1000 }).fetch (data) =>
+        @hc.find({}, { interim: false, timeout: 1000 }).fetch (data) =>
           assert.equal data.length, 2
           assert.equal data[0].a, 1
           assert.equal data[1].a, 2
