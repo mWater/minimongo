@@ -45,6 +45,28 @@ db.animals.upsert(doc, function() {
 docs is the document(s) to upsert. If bases is present, it is the base version on which the update is based. It can be omitted to use the current cached value
 as the base, or put as `null` to force an overwrite (a true upsert, not a patch)
 
+### Caching
+
+A set of rows can be cached in a local database. Call 
+
+`db.sometable.cache(docs, selector, options, success, error)`
+
+selector and options are the selector and options that were used to perform the find that produced docs. The local database will add/remove/update its local copy appropriately.
+
+### Seeding
+
+A set of rows can be seeded in a local database. Seeding does not overwrite an existing row; it only makes sure that a row with that _id exists.
+
+`db.sometable.seed(docs, success, error)`
+
+### Un-caching
+
+Cached rows matching a selector can be removed with:
+
+`db.sometable.uncache(selector, success, error)`
+
+It will not affect upserted rows.
+
 ### Resolving upserts
 
 Upserts are stored in local databases in a special state to record that they are upserts, not cached rows. The base document on which the upsert is based is also stored. For example, if a row starts in cached state with `{ x:1 }` and is upserted to `{ x: 2 }`, both the upserted and the original state are stored. This allows the server to do 3-way merging and apply only the changes.

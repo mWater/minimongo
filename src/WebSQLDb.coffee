@@ -339,3 +339,33 @@ class Collection
           if success then success(doc)
       , error
     , error
+
+  uncache: (selector, success, error) ->
+    compiledSelector = utils.compileDocumentSelector(selector)
+
+    # Android 2.x requires error callback
+    error = error or -> return
+
+    @db.transaction (tx) =>
+      tx.executeSql "SELECT * FROM docs WHERE col = ? AND state = ?", [@name, "cached"], (tx, results) =>
+        # Determine which to remove
+        toRemove = []
+        for i in [0...results.rows.length]
+          row = results.rows.item(i)
+          doc = JSON.parse(row.doc)
+          if compiledSelector(doc)
+            toRemove.push(doc._id)
+
+        # Add all non-local that are not upserted or removed
+        async.eachSeries toRemove, (id, callback) =>
+          # Only safely remove if removed state
+          tx.executeSql 'DELETE FROM docs WHERE state="cached" AND col = ? AND id = ?', [@name, id], ->
+            callback()
+          , callback
+        , (err) =>
+          if err
+            if error then error(err)
+          else
+            if success then success()
+      , error
+    , error

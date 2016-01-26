@@ -109,6 +109,31 @@ module.exports = ->
               assert.deepEqual _.pluck(results, '_id'), ["1", "3", "4"]
               done()
 
+    it "uncache removes matching", (done) ->
+      @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], {}, {}, =>
+        @col.uncache { a: 'b' }, =>
+          @col.find({}, {sort:['_id']}).fetch (results) ->
+            assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
+            done()
+
+    it "uncache does not remove upserts", (done) ->
+      @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], {}, {}, =>
+        @col.upsert { _id: "2", a: 'b' }, =>
+          @col.uncache { a: 'b' }, =>
+            @col.find({}, {sort:['_id']}).fetch (results) ->
+              assert.deepEqual _.pluck(results, '_id'), ["1", "2", "3"]
+              done()
+
+    it "uncache does not remove removes", (done) ->
+      @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], {}, {}, =>
+        @col.remove "2", =>
+          @col.uncache { a: 'b' }, =>
+            @col.find({}, {sort:['_id']}).fetch (results) =>
+              assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
+              @col.pendingRemoves (results) =>
+                assert.deepEqual results, ["2"]
+                done()
+
     it "returns pending upserts", (done) ->
       @col.cache [{ _id: "1", a: 'apple' }], {}, {}, =>
         @col.upsert { _id: "2", a: 'banana' }, =>

@@ -1138,6 +1138,39 @@ Collection = (function() {
     })(this));
   };
 
+  Collection.prototype.uncache = function(selector, success, error) {
+    var compiledSelector;
+    compiledSelector = utils.compileDocumentSelector(selector);
+    return this.store.query((function(_this) {
+      return function(matches) {
+        var keys;
+        matches = _.filter(matches, function(m) {
+          return m.state === "cached" && compiledSelector(m.doc);
+        });
+        keys = _.map(matches, function(m) {
+          return [_this.name, m.doc._id];
+        });
+        if (keys.length > 0) {
+          return _this.store.removeBatch(keys, function() {
+            if (success != null) {
+              return success();
+            }
+          }, error);
+        } else {
+          if (success != null) {
+            return success();
+          }
+        }
+      };
+    })(this), {
+      index: "col",
+      keyRange: this.store.makeKeyRange({
+        only: this.name
+      }),
+      onError: error
+    });
+  };
+
   return Collection;
 
 })();
@@ -1437,6 +1470,21 @@ Collection = (function() {
     }
   };
 
+  Collection.prototype.uncache = function(selector, success, error) {
+    var compiledSelector, item, _i, _len, _ref;
+    compiledSelector = utils.compileDocumentSelector(selector);
+    _ref = _.values(this.items);
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
+      if ((this.upserts[item._id] == null) && compiledSelector(item)) {
+        this._deleteItem(item._id);
+      }
+    }
+    if (success != null) {
+      return success();
+    }
+  };
+
   return Collection;
 
 })();
@@ -1642,6 +1690,20 @@ Collection = (function() {
         this.items[doc._id] = doc;
       }
     }
+    if (success != null) {
+      return success();
+    }
+  };
+
+  Collection.prototype.uncache = function(selector, success, error) {
+    var compiledSelector, items;
+    compiledSelector = utils.compileDocumentSelector(selector);
+    items = _.filter(_.values(this.items), (function(_this) {
+      return function(item) {
+        return (_this.upserts[item._id] != null) || !compiledSelector(item);
+      };
+    })(this));
+    this.items = _.object(_.pluck(items, "_id"), items);
     if (success != null) {
       return success();
     }
@@ -2264,6 +2326,42 @@ Collection = (function() {
               return success(doc);
             }
           }
+        }, error);
+      };
+    })(this), error);
+  };
+
+  Collection.prototype.uncache = function(selector, success, error) {
+    var compiledSelector;
+    compiledSelector = utils.compileDocumentSelector(selector);
+    error = error || function() {};
+    return this.db.transaction((function(_this) {
+      return function(tx) {
+        return tx.executeSql("SELECT * FROM docs WHERE col = ? AND state = ?", [_this.name, "cached"], function(tx, results) {
+          var doc, i, row, toRemove, _i, _ref;
+          toRemove = [];
+          for (i = _i = 0, _ref = results.rows.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+            row = results.rows.item(i);
+            doc = JSON.parse(row.doc);
+            if (compiledSelector(doc)) {
+              toRemove.push(doc._id);
+            }
+          }
+          return async.eachSeries(toRemove, function(id, callback) {
+            return tx.executeSql('DELETE FROM docs WHERE state="cached" AND col = ? AND id = ?', [_this.name, id], function() {
+              return callback();
+            }, callback);
+          }, function(err) {
+            if (err) {
+              if (error) {
+                return error(err);
+              }
+            } else {
+              if (success) {
+                return success();
+              }
+            }
+          });
         }, error);
       };
     })(this), error);

@@ -140,3 +140,15 @@ class Collection
       if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
         @items[doc._id] = doc
     if success? then success()
+
+  uncache: (selector, success, error) ->
+    compiledSelector = utils.compileDocumentSelector(selector)
+
+    items = _.filter(_.values(@items), (item) =>
+      return @upserts[item._id]? or not compiledSelector(item)
+      )
+
+    @items = _.object(_.pluck(items, "_id"), items)
+    if success? then success()
+
+

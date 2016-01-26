@@ -213,3 +213,12 @@ class Collection
       if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
         @_putItem(doc)
     if success? then success()
+
+  uncache: (selector, success, error) ->
+    compiledSelector = utils.compileDocumentSelector(selector)
+
+    for item in _.values(@items)
+      if not @upserts[item._id]? and compiledSelector(item)
+        @_deleteItem(item._id)
+
+    if success? then success()

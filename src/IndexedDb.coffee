@@ -287,3 +287,19 @@ class Collection
         , error
       else
         if success? then success()
+
+  uncache: (selector, success, error) ->
+    compiledSelector = utils.compileDocumentSelector(selector)
+
+    # Get all docs from collection
+    @store.query (matches) =>
+      # Filter ones to remove
+      matches = _.filter matches, (m) -> m.state == "cached" and compiledSelector(m.doc)
+      keys = _.map(matches, (m) => [@name, m.doc._id])
+      if keys.length > 0
+        @store.removeBatch keys, =>
+          if success? then success()
+        , error
+      else
+        if success? then success()
+    , { index: "col", keyRange: @store.makeKeyRange(only: @name), onError: error }
