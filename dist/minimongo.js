@@ -625,9 +625,17 @@ HybridCollection = (function() {
         if (upsert) {
           return _this.remoteCol.upsert(upsert.doc, upsert.base, function(remoteDoc) {
             return _this.localCol.resolveUpserts([upsert], function() {
-              return _this.localCol.cacheOne(remoteDoc, function() {
-                return uploadUpserts(_.rest(upserts), success, error);
-              }, error);
+              if (remoteDoc) {
+                return _this.localCol.cacheOne(remoteDoc, function() {
+                  return uploadUpserts(_.rest(upserts), success, error);
+                }, error);
+              } else {
+                return _this.localCol.remove(upsert.doc._id, function() {
+                  return _this.localCol.resolveRemove(upsert.doc._id, function() {
+                    return uploadUpserts(_.rest(upserts), success, error);
+                  }, error);
+                }, error);
+              }
             }, error);
           }, function(err) {
             if (err.status === 410 || err.status === 403) {
@@ -2389,9 +2397,6 @@ module.exports = function(method, url, params, data, success, error) {
     });
   }
   req.done(function(response, textStatus, jqXHR) {
-    if (response == null) {
-      console.error(("Empty response: " + fullUrl + ":" + method + " returned ") + jqXHR.responseText + " as JSON " + JSON.stringify(response));
-    }
     return success(response || null);
   });
   return req.fail(function(jqXHR, textStatus, errorThrown) {
