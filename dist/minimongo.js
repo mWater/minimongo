@@ -1949,10 +1949,14 @@ module.exports = WebSQLDb = (function() {
       return;
     }
     migrateToV1 = function(tx) {
-      return tx.executeSql('CREATE TABLE docs (\n  col TEXT NOT NULL,\n  id TEXT NOT NULL,\n  state TEXT NOT NULL,\n  doc TEXT,\n  PRIMARY KEY (col, id));', [], doNothing, error);
+      return tx.executeSql('CREATE TABLE docs (\n  col TEXT NOT NULL,\n  id TEXT NOT NULL,\n  state TEXT NOT NULL,\n  doc TEXT,\n  PRIMARY KEY (col, id));', [], doNothing, (function(tx, err) {
+        return error(err);
+      }));
     };
     migrateToV2 = function(tx) {
-      return tx.executeSql('ALTER TABLE docs ADD COLUMN base TEXT;', [], doNothing, error);
+      return tx.executeSql('ALTER TABLE docs ADD COLUMN base TEXT;', [], doNothing, (function(tx, err) {
+        return error(err);
+      }));
     };
     checkV2 = (function(_this) {
       return function() {
@@ -1993,7 +1997,9 @@ module.exports = WebSQLDb = (function() {
     delete this[name];
     delete this.collections[name];
     return this.db.transaction(function(tx) {
-      return tx.executeSql("DELETE FROM docs WHERE col = ?", [name], success, error);
+      return tx.executeSql("DELETE FROM docs WHERE col = ?", [name], success, (function(tx, err) {
+        return error(err);
+      }));
     }, error);
   };
 
@@ -2045,7 +2051,9 @@ Collection = (function() {
           if (success != null) {
             return success(processFind(docs, selector, options));
           }
-        }, error);
+        }, (function(tx, err) {
+          return error(err);
+        }));
       };
     })(this), error);
   };
@@ -2074,7 +2082,9 @@ Collection = (function() {
               }
             }
             return callback();
-          });
+          }, (function(tx, err) {
+            return error(err);
+          }));
         }, function() {
           var base, id, item, _i, _len, _results;
           _results = [];
@@ -2088,7 +2098,9 @@ Collection = (function() {
             } else {
               base = null;
             }
-            _results.push(tx.executeSql("INSERT OR REPLACE INTO docs (col, id, state, doc, base) VALUES (?, ?, ?, ?, ?)", [_this.name, item.doc._id, "upserted", JSON.stringify(item.doc), JSON.stringify(base)], doNothing, error));
+            _results.push(tx.executeSql("INSERT OR REPLACE INTO docs (col, id, state, doc, base) VALUES (?, ?, ?, ?, ?)", [_this.name, item.doc._id, "upserted", JSON.stringify(item.doc), JSON.stringify(base)], doNothing, (function(tx, err) {
+              return error(err);
+            })));
           }
           return _results;
         });
@@ -2110,7 +2122,9 @@ Collection = (function() {
               if (success) {
                 return success(id);
               }
-            }, error);
+            }, (function(tx, err) {
+              return error(err);
+            }));
           } else {
             return tx.executeSql("INSERT INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [
               _this.name, id, "removed", JSON.stringify({
@@ -2120,9 +2134,13 @@ Collection = (function() {
               if (success) {
                 return success(id);
               }
-            }, error);
+            }, (function(tx, err) {
+              return error(err);
+            }));
           }
-        }, error);
+        }, (function(tx, err) {
+          return error(err);
+        }));
       };
     })(this), error);
   };
@@ -2139,14 +2157,18 @@ Collection = (function() {
               if (!existing || !doc._rev || !existing._rev || doc._rev >= existing._rev) {
                 return tx.executeSql("INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [_this.name, doc._id, "cached", JSON.stringify(doc)], function() {
                   return callback();
-                }, error);
+                }, (function(tx, err) {
+                  return error(err);
+                }));
               } else {
                 return callback();
               }
             } else {
               return callback();
             }
-          }, callback, error);
+          }, (function(tx, err) {
+            return error(err);
+          }));
         }, function(err) {
           var docsMap, sort;
           if (err) {
@@ -2171,11 +2193,15 @@ Collection = (function() {
                     }
                     return tx.executeSql("DELETE FROM docs WHERE col = ? AND id = ?", [_this.name, result._id], function() {
                       return callback();
-                    }, error);
+                    }, (function(tx, err) {
+                      return error(err);
+                    }));
                   } else {
                     return callback();
                   }
-                }, callback, error);
+                }, (function(tx, err) {
+                  return error(err);
+                }));
               }, function(err) {
                 if (err != null) {
                   if (error != null) {
@@ -2211,7 +2237,9 @@ Collection = (function() {
           if (success != null) {
             return success(docs);
           }
-        }, error);
+        }, (function(tx, err) {
+          return error(err);
+        }));
       };
     })(this), error);
   };
@@ -2230,7 +2258,9 @@ Collection = (function() {
           if (success != null) {
             return success(docs);
           }
-        }, error);
+        }, (function(tx, err) {
+          return error(err);
+        }));
       };
     })(this), error);
   };
@@ -2243,16 +2273,22 @@ Collection = (function() {
           return tx.executeSql("SELECT * FROM docs WHERE col = ? AND id = ?", [_this.name, upsert.doc._id], function(tx, results) {
             if (results.rows.length > 0 && results.rows.item(0).state === "upserted") {
               if (_.isEqual(JSON.parse(results.rows.item(0).doc), upsert.doc)) {
-                tx.executeSql('UPDATE docs SET state="cached" WHERE col = ? AND id = ?', [_this.name, upsert.doc._id], doNothing, error);
+                tx.executeSql('UPDATE docs SET state="cached" WHERE col = ? AND id = ?', [_this.name, upsert.doc._id], doNothing, (function(tx, err) {
+                  return error(err);
+                }));
                 return cb();
               } else {
-                tx.executeSql('UPDATE docs SET base=? WHERE col = ? AND id = ?', [JSON.stringify(upsert.doc), _this.name, upsert.doc._id], doNothing, error);
+                tx.executeSql('UPDATE docs SET base=? WHERE col = ? AND id = ?', [JSON.stringify(upsert.doc), _this.name, upsert.doc._id], doNothing, (function(tx, err) {
+                  return error(err);
+                }));
                 return cb();
               }
             } else {
               return cb();
             }
-          }, error);
+          }, (function(tx, err) {
+            return error(err);
+          }));
         }, function(err) {
           if (err) {
             return error(err);
@@ -2273,7 +2309,9 @@ Collection = (function() {
           if (success) {
             return success(id);
           }
-        }, error);
+        }, (function(tx, err) {
+          return error(err);
+        }));
       };
     })(this), error);
   };
@@ -2290,11 +2328,15 @@ Collection = (function() {
             if (results.rows.length === 0) {
               return tx.executeSql("INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [_this.name, doc._id, "cached", JSON.stringify(doc)], function() {
                 return callback();
-              }, error);
+              }, (function(tx, err) {
+                return error(err);
+              }));
             } else {
               return callback();
             }
-          }, callback, error);
+          }, (function(tx, err) {
+            return error(err);
+          }));
         }, function(err) {
           if (err) {
             if (error) {
@@ -2323,7 +2365,9 @@ Collection = (function() {
                 if (success) {
                   return success(doc);
                 }
-              }, error);
+              }, (function(tx, err) {
+                return error(err);
+              }));
             } else {
               if (success) {
                 return success(doc);
@@ -2334,7 +2378,9 @@ Collection = (function() {
               return success(doc);
             }
           }
-        }, error);
+        }, (function(tx, err) {
+          return error(err);
+        }));
       };
     })(this), error);
   };
@@ -2358,7 +2404,9 @@ Collection = (function() {
           return async.eachSeries(toRemove, function(id, callback) {
             return tx.executeSql('DELETE FROM docs WHERE state="cached" AND col = ? AND id = ?', [_this.name, id], function() {
               return callback();
-            }, callback);
+            }, (function(tx, err) {
+              return error(err);
+            }));
           }, function(err) {
             if (err) {
               if (error) {
@@ -2370,7 +2418,9 @@ Collection = (function() {
               }
             }
           });
-        }, error);
+        }, (function(tx, err) {
+          return error(err);
+        }));
       };
     })(this), error);
   };

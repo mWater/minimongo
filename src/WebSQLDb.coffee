@@ -30,11 +30,11 @@ module.exports = class WebSQLDb
           id TEXT NOT NULL,
           state TEXT NOT NULL,
           doc TEXT,
-          PRIMARY KEY (col, id));''', [], doNothing, error)
+          PRIMARY KEY (col, id));''', [], doNothing, ((tx, err) -> error(err)))
 
     migrateToV2 = (tx) ->
       tx.executeSql('''
-        ALTER TABLE docs ADD COLUMN base TEXT;''', [], doNothing, error)
+        ALTER TABLE docs ADD COLUMN base TEXT;''', [], doNothing, ((tx, err) -> error(err)))
 
     # Check if at v2 version
     checkV2 = =>
@@ -66,7 +66,7 @@ module.exports = class WebSQLDb
 
     # Remove all documents of collection
     @db.transaction (tx) ->
-      tx.executeSql("DELETE FROM docs WHERE col = ?", [name], success, error)
+      tx.executeSql("DELETE FROM docs WHERE col = ?", [name], success, ((tx, err) -> error(err)))
     , error
 
 # Stores data in indexeddb store
@@ -100,7 +100,7 @@ class Collection
           if row.state != "removed"
             docs.push JSON.parse(row.doc)
         if success? then success(processFind(docs, selector, options))
-      , error
+      , ((tx, err) -> error(err))
     , error
 
   upsert: (docs, bases, success, error) ->
@@ -124,6 +124,7 @@ class Collection
             else if row.state == "cached"
               bases[row.id] = JSON.parse(row.doc)
           callback()
+        , ((tx, err) -> error(err))
       , =>
         for item in items
           id = item.doc._id
@@ -135,7 +136,7 @@ class Collection
             base = bases[id]
           else
             base = null
-          tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc, base) VALUES (?, ?, ?, ?, ?)",  [@name, item.doc._id, "upserted", JSON.stringify(item.doc), JSON.stringify(base)], doNothing, error
+          tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc, base) VALUES (?, ?, ?, ?, ?)",  [@name, item.doc._id, "upserted", JSON.stringify(item.doc), JSON.stringify(base)], doNothing, ((tx, err) -> error(err))
     , error
     , ->
       if success then success(docs)
@@ -151,12 +152,12 @@ class Collection
           # Change to removed
           tx.executeSql 'UPDATE docs SET state="removed" WHERE col = ? AND id = ?', [@name, id], ->
             if success then success(id)
-          , error
+          , ((tx, err) -> error(err))
         else
           tx.executeSql "INSERT INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, id, "removed", JSON.stringify({_id: id})], ->
             if success then success(id)
-          , error
-      , error
+          , ((tx, err) -> error(err))
+      , ((tx, err) -> error(err))
     , error
 
   cache: (docs, selector, options, success, error) ->
@@ -176,12 +177,12 @@ class Collection
               # Upsert
               tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], ->
                 callback()
-              , error
+              , ((tx, err) -> error(err))
             else
               callback()
           else
             callback()
-        , callback, error
+        , ((tx, err) -> error(err))
       , (err) =>
         if err
           if error then error(err)
@@ -208,10 +209,10 @@ class Collection
                   # Item is gone from server, remove locally
                   tx.executeSql "DELETE FROM docs WHERE col = ? AND id = ?", [@name, result._id], ->
                     callback()
-                  , error
+                  , ((tx, err) -> error(err))
                 else
                   callback()
-              , callback, error
+              , ((tx, err) -> error(err))
             , (err) ->
               if err?
                 if error? then error(err)
@@ -232,7 +233,7 @@ class Collection
           row = results.rows.item(i)
           docs.push { doc: JSON.parse(row.doc), base: if row.base then JSON.parse(row.base) else null }
         if success? then success(docs)
-      , error
+      , ((tx, err) -> error(err))
     , error
 
   pendingRemoves: (success, error) ->
@@ -246,7 +247,7 @@ class Collection
           row = results.rows.item(i)
           docs.push JSON.parse(row.doc)._id
         if success? then success(docs)
-      , error
+      , ((tx, err) -> error(err))
     , error
 
   resolveUpserts: (upserts, success, error) ->
@@ -260,15 +261,15 @@ class Collection
           if results.rows.length > 0 and results.rows.item(0).state == "upserted"
             # Only safely remove upsert if doc is the same
             if _.isEqual(JSON.parse(results.rows.item(0).doc), upsert.doc)
-              tx.executeSql 'UPDATE docs SET state="cached" WHERE col = ? AND id = ?', [@name, upsert.doc._id], doNothing, error
+              tx.executeSql 'UPDATE docs SET state="cached" WHERE col = ? AND id = ?', [@name, upsert.doc._id], doNothing, ((tx, err) -> error(err))
               cb()
             else
-              tx.executeSql 'UPDATE docs SET base=? WHERE col = ? AND id = ?', [JSON.stringify(upsert.doc), @name, upsert.doc._id], doNothing, error
+              tx.executeSql 'UPDATE docs SET base=? WHERE col = ? AND id = ?', [JSON.stringify(upsert.doc), @name, upsert.doc._id], doNothing, ((tx, err) -> error(err))
               cb()
           else
             # Upsert removed, which is fine
             cb()
-        , error
+        , ((tx, err) -> error(err))
       , (err) ->
         if err
           return error(err)
@@ -286,7 +287,7 @@ class Collection
       # Only safely remove if removed state
       tx.executeSql 'DELETE FROM docs WHERE state="removed" AND col = ? AND id = ?', [@name, id], ->
         if success then success(id)
-      , error
+      , ((tx, err) -> error(err))
     , error
 
   # Add but do not overwrite or record as upsert
@@ -306,10 +307,10 @@ class Collection
             # Upsert
             tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], ->
               callback()
-            , error
+            , ((tx, err) -> error(err))
           else
             callback()
-        , callback, error
+        , ((tx, err) -> error(err))
       , (err) =>
         if err
           if error then error(err)
@@ -332,12 +333,12 @@ class Collection
           if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
             tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], ->
               if success then success(doc)
-            , error
+            , ((tx, err) -> error(err))
           else
             if success then success(doc)
         else
           if success then success(doc)
-      , error
+      , ((tx, err) -> error(err))
     , error
 
   uncache: (selector, success, error) ->
@@ -361,11 +362,11 @@ class Collection
           # Only safely remove if removed state
           tx.executeSql 'DELETE FROM docs WHERE state="cached" AND col = ? AND id = ?', [@name, id], ->
             callback()
-          , callback
+          , ((tx, err) -> error(err))
         , (err) =>
           if err
             if error then error(err)
           else
             if success then success()
-      , error
+      , ((tx, err) -> error(err))
     , error
