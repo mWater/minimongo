@@ -12,6 +12,8 @@ module.exports = (method, url, params, data, success, error) ->
       data : JSON.stringify(data),
       contentType : 'application/json',
       type : method})
+  else
+    throw new Error("Unknown method #{method}")
 
   req.done (response, textStatus, jqXHR) ->
     success(response or null)

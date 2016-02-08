@@ -2445,6 +2445,8 @@ module.exports = function(method, url, params, data, success, error) {
       contentType: 'application/json',
       type: method
     });
+  } else {
+    throw new Error("Unknown method " + method);
   }
   req.done(function(response, textStatus, jqXHR) {
     return success(response || null);
