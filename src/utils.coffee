@@ -92,11 +92,9 @@ exports.processFind = (items, selector, options) ->
   if options and options.limit
     filtered = _.take filtered, options.limit
 
-  # Clone to prevent accidental updates, or apply fields if present
+  # Apply fields if present
   if options and options.fields
     filtered = exports.filterFields(filtered, options.fields)
-  else
-    filtered = _.map filtered, (doc) -> _.cloneDeep(doc)
 
   return filtered
 
@@ -107,8 +105,6 @@ exports.filterFields = (items, fields={}) ->
 
   # For each item
   return _.map items, (item) ->
-    item = _.cloneDeep(item)
-
     newItem = {}
 
     if _.first(_.values(fields)) == 1
@@ -140,6 +136,9 @@ exports.filterFields = (items, fields={}) ->
 
       return newItem
     else
+      # Deep clone as we will be deleting keys from item to exclude fields
+      item = _.cloneDeep(item)
+
       # Exclude fields
       for field in _.keys(fields)
         path = field.split(".")

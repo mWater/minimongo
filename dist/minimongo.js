@@ -1302,7 +1302,7 @@ Collection = (function() {
 
   Collection.prototype._findFetch = function(selector, options, success, error) {
     if (success != null) {
-      return success(processFind(_.values(this.items), selector, options));
+      return success(processFind(_.cloneDeep(_.values(this.items)), selector, options));
     }
   };
 
@@ -1570,7 +1570,7 @@ Collection = (function() {
 
   Collection.prototype._findFetch = function(selector, options, success, error) {
     if (success != null) {
-      return success(processFind(_.values(this.items), selector, options));
+      return success(processFind(_.cloneDeep(_.values(this.items)), selector, options));
     }
   };
 
@@ -3291,10 +3291,6 @@ exports.processFind = function(items, selector, options) {
   }
   if (options && options.fields) {
     filtered = exports.filterFields(filtered, options.fields);
-  } else {
-    filtered = _.map(filtered, function(doc) {
-      return _.cloneDeep(doc);
-    });
   }
   return filtered;
 };
@@ -3308,7 +3304,6 @@ exports.filterFields = function(items, fields) {
   }
   return _.map(items, function(item) {
     var field, from, newItem, obj, path, pathElem, to, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3;
-    item = _.cloneDeep(item);
     newItem = {};
     if (_.first(_.values(fields)) === 1) {
       _ref = _.keys(fields).concat(["_id"]);
@@ -3338,6 +3333,7 @@ exports.filterFields = function(items, fields) {
       }
       return newItem;
     } else {
+      item = _.cloneDeep(item);
       _ref2 = _.keys(fields);
       for (_l = 0, _len3 = _ref2.length; _l < _len3; _l++) {
         field = _ref2[_l];

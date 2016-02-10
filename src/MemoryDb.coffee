@@ -42,7 +42,8 @@ class Collection
     , error
 
   _findFetch: (selector, options, success, error) ->
-    if success? then success(processFind(_.values(@items), selector, options))
+    # Deep clone to prevent modification
+    if success? then success(processFind(_.cloneDeep(_.values(@items)), selector, options))
 
   upsert: (docs, bases, success, error) ->
     [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
