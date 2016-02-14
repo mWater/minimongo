@@ -231,6 +231,11 @@ class Collection
 
   resolveRemove: (id, success, error) ->
     @store.get [@name, id], (record) =>
+      # Check if exists
+      if not record
+        if success? then success()
+        return
+
       # Only remove if removed
       if record.state == "removed"
         @store.remove [@name, id], ->

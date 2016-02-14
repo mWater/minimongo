@@ -1063,6 +1063,12 @@ Collection = (function() {
   Collection.prototype.resolveRemove = function(id, success, error) {
     return this.store.get([this.name, id], (function(_this) {
       return function(record) {
+        if (!record) {
+          if (success != null) {
+            success();
+          }
+          return;
+        }
         if (record.state === "removed") {
           return _this.store.remove([_this.name, id], function() {
             if (success != null) {
