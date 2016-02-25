@@ -231,7 +231,11 @@ class HybridCollection
 
   upsert: (docs, bases, success, error) ->
     @localCol.upsert(docs, bases, (result) ->
-      success(docs) if success?
+      # Bases is optional 
+      if _.isFunction(bases)
+        success = bases
+        
+      success?(docs)
     , error)
 
   remove: (id, success, error) ->

@@ -602,9 +602,10 @@ HybridCollection = (function() {
 
   HybridCollection.prototype.upsert = function(docs, bases, success, error) {
     return this.localCol.upsert(docs, bases, function(result) {
-      if (success != null) {
-        return success(docs);
+      if (_.isFunction(bases)) {
+        success = bases;
       }
+      return typeof success === "function" ? success(docs) : void 0;
     }, error);
   };
 
