@@ -108,3 +108,12 @@ describe 'cloneLocalDb', ->
             assert.deepEqual items[0], { _id: "1", x: 1 }
             done()
 
+  # it 'fails on error cached', (done) ->
+  #   @from.a.remove "1", =>
+  #     @to.a.remove = (id, success, error) -> error(new Error("ohoh"))
+  #     utils.cloneLocalDb @from, @to, =>
+  #       assert.fail("Should fail")
+  #     , (err) =>
+  #       assert err
+  #       done()
+

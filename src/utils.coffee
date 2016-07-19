@@ -90,7 +90,7 @@ exports.cloneLocalDb = (fromDb, toDb, success, error) ->
     # Get all items
     fromCol.find({}).fetch (items) =>
       # Seed items
-      toCol.seed(items, =>
+      toCol.seed items, =>
         # Copy upserts
         fromCol.pendingUpserts (upserts) =>
           toCol.upsert _.pluck(upserts, "doc"), _.pluck(upserts, "base"), =>
@@ -104,7 +104,7 @@ exports.cloneLocalDb = (fromDb, toDb, success, error) ->
             , cb
           , cb
         , cb
-      )
+      , cb
     , cb
   , (err) =>
     if err
