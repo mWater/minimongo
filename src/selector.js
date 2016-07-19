@@ -172,8 +172,17 @@ var VALUE_OPERATORS = {
   "$in": function (operand) {
     if (!isArray(operand))
       throw new Error("Argument to $in must be array");
+
+    // Create index if all strings
+    var index = null;
+    if (_.all(operand, _.isString))
+      index = _.indexBy(operand);
+
     return function (value) {
       return _anyIfArrayPlus(value, function (x) {
+        if (_.isString(x) && index !== null)
+          return index[x] != undefined;
+        
         return _.any(operand, function (operandElt) {
           return LocalCollection._f._equal(operandElt, x);
         });
