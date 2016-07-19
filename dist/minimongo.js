@@ -1931,9 +1931,11 @@ Collection = (function() {
 })();
 
 },{"./jQueryHttpClient":13,"./utils":15,"async":18,"jquery":"dsrzUy","lodash":"z2coUu"}],11:[function(require,module,exports){
-var Collection, ReplicatingDb, _;
+var Collection, ReplicatingDb, utils, _;
 
 _ = require('lodash');
+
+utils = require('./utils');
 
 module.exports = ReplicatingDb = (function() {
   function ReplicatingDb(masterDb, replicaDb) {
@@ -1980,9 +1982,13 @@ Collection = (function() {
   };
 
   Collection.prototype.upsert = function(docs, bases, success, error) {
-    return this.masterCol.upsert(docs, bases, (function(_this) {
+    var items, _ref;
+    _ref = utils.regularizeUpsert(docs, bases, success, error), items = _ref[0], success = _ref[1], error = _ref[2];
+    return this.masterCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), (function(_this) {
       return function() {
-        return _this.replicaCol.upsert(docs, bases, success, error);
+        return _this.replicaCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), function(results) {
+          return success(docs);
+        }, error);
       };
     })(this), error);
   };
@@ -2055,7 +2061,7 @@ Collection = (function() {
 
 })();
 
-},{"lodash":"z2coUu"}],12:[function(require,module,exports){
+},{"./utils":15,"lodash":"z2coUu"}],12:[function(require,module,exports){
 var Collection, WebSQLDb, async, compileSort, doNothing, processFind, utils, _;
 
 _ = require('lodash');
@@ -3448,7 +3454,7 @@ exports.cloneLocalDb = function(fromDb, toDb, success, error) {
               }, cb);
             }, cb);
           }, cb);
-        });
+        }, cb);
       }, cb);
     };
   })(this), (function(_this) {

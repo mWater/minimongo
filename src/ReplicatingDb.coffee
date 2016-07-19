@@ -1,4 +1,5 @@
 _ = require 'lodash'
+utils = require('./utils')
 
 # Replicates data into a both a master and a replica db. Assumes both are identical at start
 # and then only uses master for finds and does all changes to both
@@ -34,9 +35,13 @@ class Collection
     return @masterCol.findOne(selector, options, success, error)
 
   upsert: (docs, bases, success, error) ->
+    [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
+
     # Upsert does to both
-    @masterCol.upsert(docs, bases, () =>
-      @replicaCol.upsert(docs, bases, success, error)
+    @masterCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), () =>
+      @replicaCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), (results) =>
+        success(docs)
+      , error)
     , error)
 
   remove: (id, success, error) ->
