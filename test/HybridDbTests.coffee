@@ -324,6 +324,7 @@ describe 'HybridDb', ->
           return {
             fetch: (success, error) =>
               error(new Error("Fail"))
+              @clock.tick(1)
           }
 
         called = 0

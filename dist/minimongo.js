@@ -7,9 +7,10 @@ exports.IndexedDb = require('./lib/IndexedDb');
 exports.WebSQLDb = require('./lib/WebSQLDb');
 exports.RemoteDb = require('./lib/RemoteDb');
 exports.HybridDb = require('./lib/HybridDb');
+exports.ReplicatingDb = require('./lib/ReplicatingDb');
 exports.utils = require('./lib/utils');
 
-},{"./lib/HybridDb":6,"./lib/IndexedDb":7,"./lib/LocalStorageDb":8,"./lib/MemoryDb":9,"./lib/RemoteDb":10,"./lib/WebSQLDb":11,"./lib/utils":14}],"dsrzUy":[function(require,module,exports){
+},{"./lib/HybridDb":6,"./lib/IndexedDb":7,"./lib/LocalStorageDb":8,"./lib/MemoryDb":9,"./lib/RemoteDb":10,"./lib/ReplicatingDb":11,"./lib/WebSQLDb":12,"./lib/utils":15}],"dsrzUy":[function(require,module,exports){
 module.exports = window.$;
 
 },{}],"jquery":[function(require,module,exports){
@@ -700,7 +701,7 @@ HybridCollection = (function() {
 
 })();
 
-},{"./utils":14,"lodash":"z2coUu"}],7:[function(require,module,exports){
+},{"./utils":15,"lodash":"z2coUu"}],7:[function(require,module,exports){
 var Collection, IDBStore, IndexedDb, async, compileSort, processFind, utils, _;
 
 _ = require('lodash');
@@ -1190,7 +1191,7 @@ Collection = (function() {
 
 })();
 
-},{"./selector":13,"./utils":14,"async":17,"idb-wrapper":20,"lodash":"z2coUu"}],8:[function(require,module,exports){
+},{"./selector":14,"./utils":15,"async":18,"idb-wrapper":21,"lodash":"z2coUu"}],8:[function(require,module,exports){
 var Collection, LocalStorageDb, compileSort, processFind, utils, _;
 
 _ = require('lodash');
@@ -1504,7 +1505,7 @@ Collection = (function() {
 
 })();
 
-},{"./selector":13,"./utils":14,"lodash":"z2coUu"}],9:[function(require,module,exports){
+},{"./selector":14,"./utils":15,"lodash":"z2coUu"}],9:[function(require,module,exports){
 var Collection, MemoryDb, compileSort, processFind, utils, _;
 
 _ = require('lodash');
@@ -1733,7 +1734,7 @@ Collection = (function() {
 
 })();
 
-},{"./selector":13,"./utils":14,"lodash":"z2coUu"}],10:[function(require,module,exports){
+},{"./selector":14,"./utils":15,"lodash":"z2coUu"}],10:[function(require,module,exports){
 var $, Collection, RemoteDb, async, jQueryHttpClient, utils, _;
 
 _ = require('lodash');
@@ -1929,7 +1930,132 @@ Collection = (function() {
 
 })();
 
-},{"./jQueryHttpClient":12,"./utils":14,"async":17,"jquery":"dsrzUy","lodash":"z2coUu"}],11:[function(require,module,exports){
+},{"./jQueryHttpClient":13,"./utils":15,"async":18,"jquery":"dsrzUy","lodash":"z2coUu"}],11:[function(require,module,exports){
+var Collection, ReplicatingDb, _;
+
+_ = require('lodash');
+
+module.exports = ReplicatingDb = (function() {
+  function ReplicatingDb(masterDb, replicaDb) {
+    this.collections = {};
+    this.masterDb = masterDb;
+    this.replicaDb = replicaDb;
+  }
+
+  ReplicatingDb.prototype.addCollection = function(name, success, error) {
+    var collection;
+    collection = new Collection(name, this.masterDb[name], this.replicaDb[name]);
+    this[name] = collection;
+    this.collections[name] = collection;
+    if (success != null) {
+      return success();
+    }
+  };
+
+  ReplicatingDb.prototype.removeCollection = function(name, success, error) {
+    delete this[name];
+    delete this.collections[name];
+    if (success != null) {
+      return success();
+    }
+  };
+
+  return ReplicatingDb;
+
+})();
+
+Collection = (function() {
+  function Collection(name, masterCol, replicaCol) {
+    this.name = name;
+    this.masterCol = masterCol;
+    this.replicaCol = replicaCol;
+  }
+
+  Collection.prototype.find = function(selector, options) {
+    return this.masterCol.find(selector, options);
+  };
+
+  Collection.prototype.findOne = function(selector, options, success, error) {
+    return this.masterCol.findOne(selector, options, success, error);
+  };
+
+  Collection.prototype.upsert = function(docs, bases, success, error) {
+    return this.masterCol.upsert(docs, bases, (function(_this) {
+      return function() {
+        return _this.replicaCol.upsert(docs, bases, success, error);
+      };
+    })(this), error);
+  };
+
+  Collection.prototype.remove = function(id, success, error) {
+    return this.masterCol.remove(id, (function(_this) {
+      return function() {
+        return _this.replicaCol.remove(id, success, error);
+      };
+    })(this), error);
+  };
+
+  Collection.prototype.cache = function(docs, selector, options, success, error) {
+    return this.masterCol.cache(docs, selector, options, (function(_this) {
+      return function() {
+        return _this.replicaCol.cache(docs, selector, options, success, error);
+      };
+    })(this), error);
+  };
+
+  Collection.prototype.pendingUpserts = function(success, error) {
+    return this.masterCol.pendingUpserts(success, error);
+  };
+
+  Collection.prototype.pendingRemoves = function(success, error) {
+    return this.masterCol.pendingRemoves(success, error);
+  };
+
+  Collection.prototype.resolveUpserts = function(upserts, success, error) {
+    return this.masterCol.resolveUpserts(upserts, (function(_this) {
+      return function() {
+        return _this.replicaCol.resolveUpserts(upserts, success, error);
+      };
+    })(this), error);
+  };
+
+  Collection.prototype.resolveRemove = function(id, success, error) {
+    return this.masterCol.resolveRemove(id, (function(_this) {
+      return function() {
+        return _this.replicaCol.resolveRemove(id, success, error);
+      };
+    })(this), error);
+  };
+
+  Collection.prototype.seed = function(docs, success, error) {
+    return this.masterCol.seed(docs, (function(_this) {
+      return function() {
+        return _this.replicaCol.seed(docs, success, error);
+      };
+    })(this), error);
+  };
+
+  Collection.prototype.cacheOne = function(doc, success, error) {
+    return this.masterCol.cacheOne(doc, (function(_this) {
+      return function() {
+        return _this.replicaCol.cacheOne(doc, success, error);
+      };
+    })(this), error);
+  };
+
+  Collection.prototype.uncache = function(selector, success, error) {
+    return this.masterCol.uncache(selector, (function(_this) {
+      return function() {
+        return _this.replicaCol.uncache(selector, success, error);
+      };
+    })(this), error);
+  };
+
+  return Collection;
+
+})();
+
+},{"lodash":"z2coUu"}],12:[function(require,module,exports){
 var Collection, WebSQLDb, async, compileSort, doNothing, processFind, utils, _;
 
 _ = require('lodash');
@@ -2441,7 +2567,7 @@ Collection = (function() {
 
 })();
 
-},{"./selector":13,"./utils":14,"async":17,"lodash":"z2coUu"}],12:[function(require,module,exports){
+},{"./selector":14,"./utils":15,"async":18,"lodash":"z2coUu"}],13:[function(require,module,exports){
 module.exports = function(method, url, params, data, success, error) {
   var fullUrl, req;
   fullUrl = url + "?" + $.param(params);
@@ -2470,7 +2596,7 @@ module.exports = function(method, url, params, data, success, error) {
   });
 };
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 /*
 ========================================
 Meteor is licensed under the MIT License
@@ -3207,7 +3333,7 @@ LocalCollection._compileSort = function (spec) {
 exports.compileDocumentSelector = compileDocumentSelector;
 exports.compileSort = LocalCollection._compileSort;
 
-},{"./EJSON":5,"lodash":"z2coUu"}],14:[function(require,module,exports){
+},{"./EJSON":5,"lodash":"z2coUu"}],15:[function(require,module,exports){
 var async, bowser, compileDocumentSelector, compileSort, deg2rad, getDistanceFromLatLngInM, isLocalStorageSupported, pointInPolygon, processGeoIntersectsOperator, processNearOperator, _;
 
 _ = require('lodash');
@@ -3285,6 +3411,45 @@ exports.migrateLocalDb = function(fromDb, toDb, success, error) {
     }
   }
   return hybridDb.upload(success, error);
+};
+
+exports.cloneLocalDb = function(fromDb, toDb, success, error) {
+  var col, name, _ref;
+  _ref = fromDb.collections;
+  for (name in _ref) {
+    col = _ref[name];
+    if (!toDb[name]) {
+      toDb.addCollection(name);
+    }
+  }
+  return async.each(_.values(fromDb.collections), (function(_this) {
+    return function(fromCol, cb) {
+      var toCol;
+      toCol = toDb[fromCol.name];
+      return fromCol.find({}).fetch(function(items) {
+        return toCol.seed(items, function() {
+          return fromCol.pendingUpserts(function(upserts) {
+            return toCol.upsert(_.pluck(upserts, "doc"), _.pluck(upserts, "base"), function() {
+              return fromCol.pendingRemoves(function(removes) {
+                return async.eachSeries(removes, function(remove, cb2) {
+                  return toCol.remove(remove, function() {
+                    return cb2();
+                  }, cb2);
+                }, cb);
+              }, cb);
+            }, cb);
+          }, cb);
+        });
+      }, cb);
+    };
+  })(this), (function(_this) {
+    return function(err) {
+      if (err) {
+        return error(err);
+      }
+      return success();
+    };
+  })(this));
 };
 
 exports.processFind = function(items, selector, options) {
@@ -3504,12 +3669,12 @@ exports.regularizeUpsert = function(docs, bases, success, error) {
   return [items, success, error];
 };
 
-},{"./HybridDb":6,"./IndexedDb":7,"./LocalStorageDb":8,"./MemoryDb":9,"./WebSQLDb":11,"./selector":13,"async":17,"bowser":18,"lodash":"z2coUu"}],"lodash":[function(require,module,exports){
+},{"./HybridDb":6,"./IndexedDb":7,"./LocalStorageDb":8,"./MemoryDb":9,"./WebSQLDb":12,"./selector":14,"async":18,"bowser":19,"lodash":"z2coUu"}],"lodash":[function(require,module,exports){
 module.exports=require('z2coUu');
 },{}],"z2coUu":[function(require,module,exports){
 module.exports = window._;
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 (function (process,global){
 /*!
  * async
@@ -4735,7 +4900,7 @@ module.exports = window._;
 }());
 
 }).call(this,require("/home/clayton/dev/mWater/minimongo/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"/home/clayton/dev/mWater/minimongo/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":19}],18:[function(require,module,exports){
+},{"/home/clayton/dev/mWater/minimongo/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":20}],19:[function(require,module,exports){
 /*!
   * Bowser - a browser detector
   * https://github.com/ded/bowser
@@ -4976,7 +5141,7 @@ module.exports = window._;
   return bowser
 });
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -5031,7 +5196,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 /*global window:false, self:false, define:false, module:false */
 
 /**

@@ -63,3 +63,48 @@ describe 'migrated Local Db', ->
       utils.migrateLocalDb @from, @to, =>
         assert not @to.b
         done()
+
+
+describe 'cloneLocalDb', ->
+  beforeEach (done) ->
+    @from = new MemoryDb()
+    @to = new MemoryDb()
+    @from.addCollection("a")
+    done()
+
+  it 'clones upserts', (done) ->
+    @from.a.upsert { _id: "1", x: 1 }, =>
+      utils.cloneLocalDb @from, @to, =>
+        @to.a.pendingUpserts (upserts) =>
+          assert.deepEqual upserts, [{ doc: { _id: "1", x: 1 }, base: null }]
+          @from.a.pendingUpserts (upserts2) ->
+            assert.equal upserts2.length, 1
+          done()
+
+  it 'clones upserts with bases', (done) ->
+    @from.a.upsert { _id: "1", x: 1 }, { _id: "1", x: -1 }, =>
+      utils.cloneLocalDb @from, @to, =>
+        @to.a.pendingUpserts (upserts) =>
+          assert.deepEqual upserts, [{ doc: { _id: "1", x: 1 }, base: { _id: "1", x: -1 } }]
+          @from.a.pendingUpserts (upserts2) ->
+            assert.equal upserts2.length, 1
+          done()
+
+  it 'clones removes', (done) ->
+    @from.a.remove "1", =>
+      utils.cloneLocalDb @from, @to, =>
+        @to.a.pendingRemoves (removes) =>
+          assert.deepEqual removes, ["1"]
+          @from.a.pendingRemoves (removes) =>
+            assert.deepEqual removes, ["1"]
+            done()
+
+  it 'clones cached', (done) ->
+    @from.a.cacheOne { _id: "1", x: 1 }, =>
+      utils.cloneLocalDb @from, @to, =>
+        @to.a.pendingUpserts (upserts) =>
+          assert.equal upserts.length, 0
+          @to.a.find({}).fetch (items) =>
+            assert.deepEqual items[0], { _id: "1", x: 1 }
+            done()
+

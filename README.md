@@ -77,6 +77,10 @@ To resolve the upsert (for example once sent to central db), use resolveUpserts 
 
 `resolveUpserts` does not resolve an upsert if another upsert on the same row has taken place. Instead, the base value is updated (since the change has been accepted by the server) but the new upserted value is left alone.
 
+### ReplicatingDb
+
+Keeps two local databases in sync. Finds go only to master.
+
 ### IndexedDb
 
 To make a database backed by IndexedDb:

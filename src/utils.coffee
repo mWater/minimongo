@@ -75,6 +75,43 @@ exports.migrateLocalDb = (fromDb, toDb, success, error) ->
 
   hybridDb.upload(success, error)
 
+# Clone a local database's caches, pending upserts and removes from one database to another
+# Useful for making a replica
+exports.cloneLocalDb = (fromDb, toDb, success, error) ->
+  for name, col of fromDb.collections
+    # TODO Assumes synchronous addCollection
+    if not toDb[name]
+      toDb.addCollection(name)
+
+  # First cache all data
+  async.each _.values(fromDb.collections), (fromCol, cb) =>
+    toCol = toDb[fromCol.name]
+
+    # Get all items
+    fromCol.find({}).fetch (items) =>
+      # Seed items
+      toCol.seed(items, =>
+        # Copy upserts
+        fromCol.pendingUpserts (upserts) =>
+          toCol.upsert _.pluck(upserts, "doc"), _.pluck(upserts, "base"), =>
+            # Copy removes
+            fromCol.pendingRemoves (removes) =>
+              async.eachSeries removes, (remove, cb2) =>
+                toCol.remove remove, () =>
+                  cb2()
+                , cb2
+              , cb
+            , cb
+          , cb
+        , cb
+      )
+    , cb
+  , (err) =>
+    if err
+      return error(err)
+
+    success()
+
 # Processes a find with sorting and filtering and limiting
 exports.processFind = (items, selector, options) ->
   filtered = _.filter(items, compileDocumentSelector(selector))
