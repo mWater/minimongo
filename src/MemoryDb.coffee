@@ -42,8 +42,11 @@ class Collection
     , error
 
   _findFetch: (selector, options, success, error) ->
-    # Deep clone to prevent modification
-    if success? then success(processFind(_.cloneDeep(_.values(@items)), selector, options))
+    # Defer to allow other processes to run
+    setTimeout () =>
+      results = processFind(_.values(@items), selector, options)
+      if success? then success(results)
+    , 0
 
   upsert: (docs, bases, success, error) ->
     [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
@@ -56,9 +59,6 @@ class Collection
           item.base = @upserts[item.doc._id].base
         else
           item.base = @items[item.doc._id] or null
-
-      # Keep independent copies
-      item = _.cloneDeep(item)
 
       # Replace/add
       @items[item.doc._id] = item.doc
