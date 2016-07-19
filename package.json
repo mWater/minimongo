@@ -40,6 +40,7 @@
     "karma-browserify": "^4.3.0",
     "karma-chrome-launcher": "^0.2.0",
     "karma-mocha": "^0.2.0",
+    "lolex": "^1.5.0",
     "sinon": "~1.8.2",
     "testem": "~0.6.7",
     "vinyl-buffer": "0.0.0",

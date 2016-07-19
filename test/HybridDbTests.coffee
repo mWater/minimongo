@@ -2,6 +2,7 @@ _ = require 'lodash'
 chai = require 'chai'
 assert = chai.assert
 sinon = require 'sinon'
+lolex = require 'lolex'
 MemoryDb = require "../src/MemoryDb"
 HybridDb = require "../src/HybridDb"
 db_queries = require "./db_queries"
@@ -31,6 +32,8 @@ describe 'HybridDb', ->
     @reset(done)
 
   describe "passes queries", ->
+    beforeEach (done) -> @reset(done)
+
     db_queries.call(this)
 
   context "resets each time", ->
@@ -236,10 +239,10 @@ describe 'HybridDb', ->
 
     describe "interim: false with timeout", ->
       beforeEach ->
-        @clock = sinon.useFakeTimers()
+        @clock = lolex.install()
   
       afterEach ->
-        @clock.restore()
+        @clock.uninstall()
 
       it "find gives final results if in time", (done) ->
         @lc.upsert(_id:"1", a:1)
@@ -252,6 +255,7 @@ describe 'HybridDb', ->
               # Wait a bit
               @clock.tick(500)
               success([{ _id:"1", a:3 }, { _id: "2", a: 4}])
+              @clock.tick(1)
           }
 
         @hc.find({}, {interim: false, timeout: 1000 }).fetch (data) ->
@@ -272,6 +276,7 @@ describe 'HybridDb', ->
               # Wait a bit too long
               @clock.tick(1500)
               success([{ _id:"1", a:3 }, { _id: "2", a: 4}])
+              @clock.tick(1)
           }
 
         @hc.find({}, { interim: false, timeout: 1000 }).fetch (data) ->

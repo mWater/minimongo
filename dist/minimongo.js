@@ -1576,9 +1576,15 @@ Collection = (function() {
   };
 
   Collection.prototype._findFetch = function(selector, options, success, error) {
-    if (success != null) {
-      return success(processFind(_.cloneDeep(_.values(this.items)), selector, options));
-    }
+    return setTimeout((function(_this) {
+      return function() {
+        var results;
+        results = processFind(_.values(_this.items), selector, options);
+        if (success != null) {
+          return success(results);
+        }
+      };
+    })(this), 0);
   };
 
   Collection.prototype.upsert = function(docs, bases, success, error) {
@@ -1593,7 +1599,6 @@ Collection = (function() {
           item.base = this.items[item.doc._id] || null;
         }
       }
-      item = _.cloneDeep(item);
       this.items[item.doc._id] = item.doc;
       this.upserts[item.doc._id] = item;
     }
