@@ -421,7 +421,8 @@ HybridCollection = (function() {
       interim: true,
       useLocalOnRemoteError: true,
       shortcut: false,
-      timeout: 0
+      timeout: 0,
+      sortUpserts: null
     });
   }
 
@@ -688,6 +689,9 @@ HybridCollection = (function() {
     })(this);
     return this.localCol.pendingUpserts((function(_this) {
       return function(upserts) {
+        if (_this.options.sortUpserts) {
+          upserts.sort(_this.options.sortUpserts);
+        }
         return uploadUpserts(upserts, function() {
           return _this.localCol.pendingRemoves(function(removes) {
             return uploadRemoves(removes, success, error);

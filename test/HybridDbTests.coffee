@@ -554,6 +554,26 @@ describe 'HybridDb', ->
             done()
       , fail)
 
+    it "upload sorts pending upserts", (done) ->
+      @lc.upsert(_id:"1", a:1, b: 2)
+      @lc.upsert(_id:"2", a:2, b: 1)
+
+      hybrid = new HybridDb(@local, @remote)
+      hybrid.addCollection("scratch", { sortUpserts: (u1, u2) -> (if u1.b < u2.b then -1 else 1)})
+
+      upserts = []
+      @rc.upsert = (doc, base, success, error) =>
+        upserts.push(doc)
+        success()
+
+      hybrid.upload(=>
+        @lc.pendingUpserts (data) =>
+          assert.equal data.length, 0
+
+          assert.deepEqual _.pluck(upserts, 'a'), [2, 1]
+          done()
+      , fail)
+
     it "does not resolve upsert if data changed, but changes base", (done) ->
       @lc.upsert(_id:"1", a:1)
 

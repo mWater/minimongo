@@ -60,6 +60,7 @@ class HybridCollection
       useLocalOnRemoteError: true  # Use local results if the remote find fails. Only applies if interim is false.
       shortcut: false       # true to return `findOne` results if any matching result is found in the local database. Useful for documents that change rarely.
       timeout: 0            # Set to ms to timeout in for remote calls
+      sortUpserts: null     # Compare function to sort upserts sent to server
     }
 
   find: (selector, options = {}) ->
@@ -306,6 +307,10 @@ class HybridCollection
 
     # Get pending upserts
     @localCol.pendingUpserts (upserts) =>
+      # Sort upserts if sort defined
+      if @options.sortUpserts
+        upserts.sort(@options.sortUpserts)
+        
       uploadUpserts upserts, =>
         @localCol.pendingRemoves (removes) ->
           uploadRemoves(removes, success, error)
