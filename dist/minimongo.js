@@ -2123,7 +2123,7 @@ module.exports = WebSQLDb = (function() {
         }
       };
     })(this);
-    if (this.db.version === "") {
+    if (!this.db.version) {
       this.db.changeVersion("", "1.0", migrateToV1, error, checkV2);
     } else {
       checkV2();

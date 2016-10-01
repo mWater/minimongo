@@ -46,7 +46,7 @@ module.exports = class WebSQLDb
       else
         if success then success(this)
 
-    if @db.version == ""
+    if not @db.version 
       @db.changeVersion "", "1.0", migrateToV1, error, checkV2
     else
       checkV2()
