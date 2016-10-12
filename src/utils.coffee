@@ -47,6 +47,19 @@ exports.autoselectLocalDb = (options, success, error) ->
     console.log "Selecting WebSQLDb for browser"
     return new WebSQLDb options, success, (err) =>
       console.log "Failed to create WebSQLDb: " + (if err then err.message)
+
+      # Fallback to IndexedDb
+      if window.IndexedDb
+        try
+          return new IndexedDb options, success, (err) =>
+            console.log "Failed to create IndexedDb: " + (if err then err.message)
+            # Create memory db instead
+            return new MemoryDb(options, success)
+        catch e
+          console.log "Exception creating IndexedDb: #{e.message}"
+          # Create memory db instead
+          return new MemoryDb(options, success)
+        
       # Create memory db instead
       return new MemoryDb(options, success)
 
