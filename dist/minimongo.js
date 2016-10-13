@@ -3400,21 +3400,11 @@ exports.autoselectLocalDb = function(options, success, error) {
     console.log("Selecting WebSQLDb for browser");
     return new WebSQLDb(options, success, (function(_this) {
       return function(err) {
-        var e;
         console.log("Failed to create WebSQLDb: " + (err ? err.message : void 0));
-        if (window.IndexedDb) {
-          try {
-            return new IndexedDb(options, success, function(err) {
-              console.log("Failed to create IndexedDb: " + (err ? err.message : void 0));
-              return new MemoryDb(options, success);
-            });
-          } catch (_error) {
-            e = _error;
-            console.log("Exception creating IndexedDb: " + e.message);
-            return new MemoryDb(options, success);
-          }
-        }
-        return new MemoryDb(options, success);
+        return new IndexedDb(options, success, function(err) {
+          console.log("Failed to create IndexedDb: " + (err ? err.message : void 0));
+          return new MemoryDb(options, success);
+        });
       };
     })(this));
   }
