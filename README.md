@@ -6,7 +6,7 @@ Uses code from Meteor.js minimongo package, reworked to support more geospatial 
 
 It is either IndexedDb backed (IndexedDb), WebSQL backed (WebSQLDb), Local storage backed (LocalStorageDb) or in memory only (MemoryDb).
 
-Autoselection is possible with utils.autoselectLocalDb(options, success, error)
+Autoselection is possible with `utils.autoselectLocalDb(options, success, error)`. success is called with the selected database.
 
 ## Usage
 
@@ -44,6 +44,14 @@ db.animals.upsert(doc, function() {
 
 docs is the document(s) to upsert. If bases is present, it is the base version on which the update is based. It can be omitted to use the current cached value
 as the base, or put as `null` to force an overwrite (a true upsert, not a patch)
+
+### Finding
+
+`db.sometable.find(selector, options).fetch(success, error)`
+
+selector is a standard MongoDB selector, e.g. `{ x: 5, y: { $in: ['a', 'b'] } }`
+
+options are MongoDB find options: e.g. `{ limit: 10 }`, `{ sort: ["x"] }`
 
 ### Caching
 
