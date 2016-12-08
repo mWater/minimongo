@@ -28,8 +28,9 @@ module.exports = class LocalStorageDb
         keys.push(window.localStorage.key(i))
 
       for key in keys
-        if key.substring(0, @namespace.length + 1) == @namespace + "."
-          window.localStorage.removeItem(key)
+        keyToMatch = @namespace + '.' + name
+        if key.substring(0, keyToMatch.length) == keyToMatch
+            window.localStorage.removeItem(key)
 
     delete @[name]
     delete @collections[name]
