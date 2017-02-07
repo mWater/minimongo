@@ -8,6 +8,8 @@ It is either IndexedDb backed (IndexedDb), WebSQL backed (WebSQLDb), Local stora
 
 Autoselection is possible with `utils.autoselectLocalDb(options, success, error)`. success is called with the selected database.
 
+**Note**: `remove` function is non-standard! It takes an `_id` to remove, not a filter!
+
 ## Usage
 
 Minimongo is designed to be used with browserify.
