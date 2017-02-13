@@ -8,8 +8,6 @@ It is either IndexedDb backed (IndexedDb), WebSQL backed (WebSQLDb), Local stora
 
 Autoselection is possible with `utils.autoselectLocalDb(options, success, error)`. success is called with the selected database.
 
-**Note**: `remove` function is non-standard! It takes an `_id` to remove, not a filter!
-
 ## Usage
 
 Minimongo is designed to be used with browserify.
@@ -237,6 +235,10 @@ Possible HTTP response codes:
 On `403` or `410`, the change is automatically discarded in the HybridDb.
 
 #### DELETE `/<collection>/<_id>`
+
+Note: the RemoteDb does not support remove({ filter }), but only removing a single document by _id!!
+
+Removes to the local collection are converted into a series of _ids to be removed when sent to the server.
 
 Removes a document. _id of the document to remove
 
