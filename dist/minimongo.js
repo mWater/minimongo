@@ -889,6 +889,20 @@ Collection = (function() {
   };
 
   Collection.prototype.remove = function(id, success, error) {
+    if (_.isObject(id)) {
+      this.find(id).fetch((function(_this) {
+        return function(rows) {
+          return async.each(rows, function(row, cb) {
+            return _this.remove(row._id, (function() {
+              return cb();
+            }), cb);
+          }, function() {
+            return success();
+          });
+        };
+      })(this), error);
+      return;
+    }
     return this.store.get([this.name, id], (function(_this) {
       return function(record) {
         if (record == null) {
@@ -1196,9 +1210,11 @@ Collection = (function() {
 })();
 
 },{"./selector":14,"./utils":15,"async":18,"idb-wrapper":21,"lodash":"z2coUu"}],8:[function(require,module,exports){
-var Collection, LocalStorageDb, compileSort, processFind, utils, _;
+var Collection, LocalStorageDb, async, compileSort, processFind, utils, _;
 
 _ = require('lodash');
+
+async = require('async');
 
 utils = require('./utils');
 
@@ -1341,6 +1357,20 @@ Collection = (function() {
   };
 
   Collection.prototype.remove = function(id, success, error) {
+    if (_.isObject(id)) {
+      this.find(id).fetch((function(_this) {
+        return function(rows) {
+          return async.each(rows, function(row, cb) {
+            return _this.remove(row._id, (function() {
+              return cb();
+            }), cb);
+          }, function() {
+            return success();
+          });
+        };
+      })(this), error);
+      return;
+    }
     if (_.has(this.items, id)) {
       this._putRemove(this.items[id]);
       this._deleteItem(id);
@@ -1510,10 +1540,12 @@ Collection = (function() {
 
 })();
 
-},{"./selector":14,"./utils":15,"lodash":"z2coUu"}],9:[function(require,module,exports){
-var Collection, MemoryDb, compileSort, processFind, utils, _;
+},{"./selector":14,"./utils":15,"async":18,"lodash":"z2coUu"}],9:[function(require,module,exports){
+var Collection, MemoryDb, async, compileSort, processFind, utils, _;
 
 _ = require('lodash');
+
+async = require('async');
 
 utils = require('./utils');
 
@@ -1614,6 +1646,20 @@ Collection = (function() {
   };
 
   Collection.prototype.remove = function(id, success, error) {
+    if (_.isObject(id)) {
+      this.find(id).fetch((function(_this) {
+        return function(rows) {
+          return async.each(rows, function(row, cb) {
+            return _this.remove(row._id, (function() {
+              return cb();
+            }), cb);
+          }, function() {
+            return success();
+          });
+        };
+      })(this), error);
+      return;
+    }
     if (_.has(this.items, id)) {
       this.removes[id] = this.items[id];
       delete this.items[id];
@@ -1739,7 +1785,7 @@ Collection = (function() {
 
 })();
 
-},{"./selector":14,"./utils":15,"lodash":"z2coUu"}],10:[function(require,module,exports){
+},{"./selector":14,"./utils":15,"async":18,"lodash":"z2coUu"}],10:[function(require,module,exports){
 var $, Collection, RemoteDb, async, jQueryHttpClient, utils, _;
 
 _ = require('lodash');
@@ -2262,6 +2308,20 @@ Collection = (function() {
   };
 
   Collection.prototype.remove = function(id, success, error) {
+    if (_.isObject(id)) {
+      this.find(id).fetch((function(_this) {
+        return function(rows) {
+          return async.each(rows, function(row, cb) {
+            return _this.remove(row._id, (function() {
+              return cb();
+            }), cb);
+          }, function() {
+            return success();
+          });
+        };
+      })(this), error);
+      return;
+    }
     error = error || function() {};
     return this.db.transaction((function(_this) {
       return function(tx) {
@@ -2583,15 +2643,20 @@ module.exports = function(method, url, params, data, success, error) {
   var fullUrl, req;
   fullUrl = url + "?" + $.param(params);
   if (method === "GET") {
-    req = $.getJSON(fullUrl);
+    req = $.ajax(fullUrl, {
+      dataType: "json",
+      timeout: 180000
+    });
   } else if (method === "DELETE") {
     req = $.ajax(fullUrl, {
-      type: 'DELETE'
+      type: 'DELETE',
+      timeout: 60000
     });
   } else if (method === "POST" || method === "PATCH") {
     req = $.ajax(fullUrl, {
       data: JSON.stringify(data),
       contentType: 'application/json',
+      timeout: 60000,
       type: method
     });
   } else {

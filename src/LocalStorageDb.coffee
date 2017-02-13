@@ -1,4 +1,5 @@
 _ = require 'lodash'
+async = require 'async'
 utils = require('./utils')
 processFind = require('./utils').processFind
 compileSort = require('./selector').compileSort
@@ -111,6 +112,15 @@ class Collection
     if success then success(docs)
 
   remove: (id, success, error) ->
+    # Special case for filter-type remove
+    if _.isObject(id)
+      @find(id).fetch (rows) =>
+        async.each rows, (row, cb) =>
+          @remove(row._id, (=> cb()), cb)
+        , => success()
+      , error
+      return
+
     if _.has(@items, id)
       @_putRemove(@items[id])
       @_deleteItem(id)

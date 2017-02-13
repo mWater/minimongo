@@ -108,6 +108,15 @@ class Collection
     , error
 
   remove: (id, success, error) ->
+    # Special case for filter-type remove
+    if _.isObject(id)
+      @find(id).fetch (rows) =>
+        async.each rows, (row, cb) =>
+          @remove(row._id, (=> cb()), cb)
+        , => success()
+      , error
+      return
+
     # Find record
     @store.get [@name, id], (record) =>
       # If not found, create placeholder record

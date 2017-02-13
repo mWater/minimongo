@@ -254,6 +254,16 @@ module.exports = ->
               assert.equal results[0].base.a, 'banana'
               done()
 
+    it "removes by filter", (done) ->
+      @col.upsert { _id: "1", a: 'apple' }, =>
+        @col.upsert { _id: "2", a: 'banana' }, =>
+          @col.upsert { _id: "3", a: 'banana' }, =>
+            @col.remove { a: "banana" }, =>
+              @col.pendingUpserts (results) ->
+                assert.equal results.length, 1
+                assert.equal results[0].doc.a, "apple"
+                done()
+
     it "removes pending upserts", (done) ->
       @col.upsert { _id: "2", a: 'banana' }, =>
         @col.remove "2", =>
