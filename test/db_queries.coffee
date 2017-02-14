@@ -162,22 +162,22 @@ module.exports = ->
         done()
 
     # MemoryDb is much faster if we relax this constraint
-    # it 'fetches independent copies', (done) ->
-    #   @col.findOne { _id: "2" }, (result1) =>
-    #     @col.findOne { _id: "2" }, (result2) ->
-    #       assert result1 != result2
-    #       done()
+    it 'fetches independent copies', (done) ->
+      @col.findOne { _id: "2" }, (result1) =>
+        @col.findOne { _id: "2" }, (result2) ->
+          assert result1 != result2
+          done()
 
     # MemoryDb is much faster if we relax this constraint
-    # it 'upsert keeps independent copies', (done) ->
-    #   doc = { _id: "2" }
-    #   @col.upsert doc, (item) =>
-    #     doc.a = "xyz"
-    #     item.a = "xyz"
-    #     @col.findOne { _id:"2" }, (doc2) ->
-    #       assert doc != doc2
-    #       assert doc2.a != "xyz"
-    #       done()
+    it 'upsert keeps independent copies', (done) ->
+      doc = { _id: "2" }
+      @col.upsert doc, (item) =>
+        doc.a = "xyz"
+        item.a = "xyz"
+        @col.findOne { _id:"2" }, (doc2) ->
+          assert doc != doc2
+          assert doc2.a != "xyz"
+          done()
 
     it 'adds _id to rows', (done) ->
       @col.upsert { a: "1" }, (item) ->

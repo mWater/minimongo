@@ -1338,6 +1338,7 @@ Collection = (function() {
   Collection.prototype.upsert = function(docs, bases, success, error) {
     var item, items, _i, _len, _ref;
     _ref = utils.regularizeUpsert(docs, bases, success, error), items = _ref[0], success = _ref[1], error = _ref[2];
+    items = JSON.parse(JSON.stringify(items));
     for (_i = 0, _len = items.length; _i < _len; _i++) {
       item = items[_i];
       if (item.base === void 0) {
@@ -1628,6 +1629,7 @@ Collection = (function() {
   Collection.prototype.upsert = function(docs, bases, success, error) {
     var item, items, _i, _len, _ref;
     _ref = utils.regularizeUpsert(docs, bases, success, error), items = _ref[0], success = _ref[1], error = _ref[2];
+    items = JSON.parse(JSON.stringify(items));
     for (_i = 0, _len = items.length; _i < _len; _i++) {
       item = items[_i];
       if (item.base === void 0) {
@@ -3557,6 +3559,7 @@ exports.processFind = function(items, selector, options) {
   if (options && options.fields) {
     filtered = exports.filterFields(filtered, options.fields);
   }
+  filtered = JSON.parse(JSON.stringify(filtered));
   return filtered;
 };
 

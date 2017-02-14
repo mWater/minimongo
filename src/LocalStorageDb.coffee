@@ -93,6 +93,9 @@ class Collection
   upsert: (docs, bases, success, error) ->
     [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
+    # Keep independent copies to prevent modification
+    items = JSON.parse(JSON.stringify(items))
+
     for item in items
       # Fill in base
       if item.base == undefined
