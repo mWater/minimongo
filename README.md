@@ -10,7 +10,7 @@ Autoselection is possible with `utils.autoselectLocalDb(options, success, error)
 
 ## Usage
 
-Minimongo is designed to be used with browserify.
+Minimongo is designed to be used with [browserify](http://browserify.org/).
 
 ```javascript
 
