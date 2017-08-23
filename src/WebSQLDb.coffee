@@ -181,8 +181,8 @@ class Collection
           if results.rows.length == 0 or results.rows.item(0).state == "cached"
             existing = if results.rows.length > 0 then JSON.parse(results.rows.item(0).doc) else null
 
-            # If _rev present, make sure that not overwritten by lower _rev
-            if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
+            # If _rev present, make sure that not overwritten by lower or equal _rev
+            if not existing or not doc._rev or not existing._rev or doc._rev > existing._rev
               # Upsert
               tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], ->
                 callback()
@@ -329,25 +329,35 @@ class Collection
 
   # Add but do not overwrite upsert/removed and do not record as upsert
   cacheOne: (doc, success, error) ->
+    @cacheList([doc], success, error)
+
+  cacheList: (docs, success, error) ->
     # Android 2.x requires error callback
     error = error or -> return
 
     @db.transaction (tx) =>
-      tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, doc._id], (tx, results) =>
-        # Only insert if not present or cached
-        if results.rows.length == 0 or results.rows.item(0).state == "cached"
-          existing = if results.rows.length > 0 then JSON.parse(results.rows.item(0).doc) else null
+      # Add all non-local that are not upserted or removed
+      async.eachSeries docs, (doc, callback) =>
+        tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, doc._id], (tx, results) =>
+          # Only insert if not present or cached
+          if results.rows.length == 0 or results.rows.item(0).state == "cached"
+            existing = if results.rows.length > 0 then JSON.parse(results.rows.item(0).doc) else null
 
-          # If _rev present, make sure that not overwritten by lower _rev
-          if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
-            tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], ->
-              if success then success(doc)
-            , ((tx, err) -> error(err))
+            # If _rev present, make sure that not overwritten by lower or equal _rev
+            if not existing or not doc._rev or not existing._rev or doc._rev > existing._rev
+              tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], ->
+                callback()
+              , ((tx, err) -> callback(err))
+            else
+              callback()
           else
-            if success then success(doc)
+            callback()
+        , ((tx, err) -> callback(err))
+      , (err) =>
+        if err
+          if error then error(err)
         else
-          if success then success(doc)
-      , ((tx, err) -> error(err))
+          if success then success(docs)
     , error
 
   uncache: (selector, success, error) ->
@@ -378,4 +388,22 @@ class Collection
           else
             if success then success()
       , ((tx, err) -> error(err))
+    , error
+
+  uncacheList: (ids, success, error) ->
+    # Android 2.x requires error callback
+    error = error or -> return
+
+    @db.transaction (tx) =>
+      # Add all non-local that are not upserted or removed
+      async.eachSeries ids, (id, callback) =>
+        # Only safely remove if removed state
+        tx.executeSql 'DELETE FROM docs WHERE state="cached" AND col = ? AND id = ?', [@name, id], ->
+          callback()
+        , ((tx, err) -> error(err))
+      , (err) =>
+        if err
+          if error then error(err)
+        else
+          if success then success()
     , error

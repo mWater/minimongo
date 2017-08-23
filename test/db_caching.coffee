@@ -41,11 +41,11 @@ module.exports = ->
             assert.equal results[0].a, 'banana'
             done()
 
-    it 'cache with same _rev overwrite existing', (done) ->
+    it 'cache with same _rev does not overwrite existing', (done) ->
       @col.cache [{ _id: "1", a: 'apple', _rev: 2 }], {}, {}, =>
         @col.cache [{ _id: "1", a: 'banana', _rev: 2 }], {}, {}, =>
           @col.find({}).fetch (results) ->
-            assert.equal results[0].a, 'banana'
+            assert.equal results[0].a, 'apple'
             done()
 
     it 'cache with greater _rev overwrite existing', (done) ->
@@ -133,6 +133,53 @@ module.exports = ->
               @col.pendingRemoves (results) =>
                 assert.deepEqual results, ["2"]
                 done()
+
+    it "cacheList caches", (done) ->
+      @col.cacheList [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], =>
+        @col.find({}, {sort:['_id']}).fetch (results) ->
+          assert.deepEqual _.pluck(results, '_id'), ["1", "2", "3"]
+          done()
+
+    it "cacheList does not overwrite upserted", (done) ->
+      @col.upsert { _id: "1", a: 'apple' }, =>
+        @col.cacheList [{ _id: "1", a: 'banana' }], =>
+          @col.find({}).fetch (results) ->
+            assert.equal results[0].a, 'apple'
+            done()
+
+    it "cacheList doesn't overwrite remove", (done) ->
+      @col.cacheList [{ _id: "1", a: 'delete' }], =>
+        @col.remove "1", =>
+          @col.cacheList [{ _id: "1", a: 'banana' }], =>
+            @col.find({}).fetch (results) ->
+              assert.equal results.length, 0
+              done()
+
+    it "uncacheList removes ids", (done) ->
+      @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], {}, {}, =>
+        @col.uncacheList ["2"], =>
+          @col.find({}, {sort:['_id']}).fetch (results) ->
+            assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
+            done()
+
+    it "uncacheList does not remove upserts", (done) ->
+      @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], {}, {}, =>
+        @col.upsert { _id: "2", a: 'b' }, =>
+          @col.uncacheList ["2"], =>
+            @col.find({}, {sort:['_id']}).fetch (results) ->
+              assert.deepEqual _.pluck(results, '_id'), ["1", "2", "3"]
+              done()
+
+    it "uncacheList does not remove removes", (done) ->
+      @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], {}, {}, =>
+        @col.remove "2", =>
+          @col.uncacheList ["2"], =>
+            @col.find({}, {sort:['_id']}).fetch (results) =>
+              assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
+              @col.pendingRemoves (results) =>
+                assert.deepEqual results, ["2"]
+                done()
+
 
     it "returns pending upserts", (done) ->
       @col.cache [{ _id: "1", a: 'apple' }], {}, {}, =>
@@ -378,11 +425,11 @@ module.exports = ->
               assert.equal results.length, 0
               done()
 
-    it 'cache one with same _rev overwrite existing', (done) ->
+    it 'cache one with same _rev does not overwrite existing', (done) ->
       @col.cacheOne { _id: "1", a: 'apple', _rev: 2 }, =>
         @col.cacheOne { _id: "1", a: 'banana', _rev: 2 }, =>
           @col.find({}).fetch (results) ->
-            assert.equal results[0].a, 'banana'
+            assert.equal results[0].a, 'apple'
             done()
 
     it 'cache one with greater _rev overwrite existing', (done) ->
