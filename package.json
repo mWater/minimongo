@@ -1,11 +1,10 @@
 {
   "name": "minimongo",
-  "version": "4.5.0",
+  "version": "4.6.0",
   "description": "Client-side mongo database with server sync over http",
   "main": "index.js",
   "scripts": {
-    "test": "testem ci",
-    "prepublish": "gulp"
+    "test": "testem ci"
   },
   "repository": {
     "type": "git",
@@ -28,10 +27,11 @@
   "devDependencies": {
     "browserify": "^3.29.1",
     "chai": "~1.9.0",
-    "coffee-script": "~1.6.3",
+    "coffee-loader": "^0.7.3",
+    "coffee-script": "^1.12.7",
     "coffeeify": "~0.6.0",
     "glob": "^3.2.9",
-    "gulp": "^3.8.11",
+    "gulp": "git://github.com/gulpjs/gulp.git#4.0",
     "gulp-coffee": "^1.4.2",
     "gulp-rename": "^1.2.0",
     "gulp-uglify": "^0.3.1",
@@ -41,10 +41,14 @@
     "karma-chrome-launcher": "^0.2.0",
     "karma-mocha": "^0.2.0",
     "lolex": "^1.5.0",
-    "sinon": "~1.8.2",
+    "mocha": "^3.5.0",
+    "mocha-loader": "^1.1.1",
+    "sinon": "^3.2.1",
     "testem": "~0.6.7",
     "vinyl-buffer": "0.0.0",
-    "vinyl-source-stream": "^0.1.1"
+    "vinyl-source-stream": "^0.1.1",
+    "webpack": "^3.5.5",
+    "webpack-dev-server": "^2.7.1"
   },
   "dependencies": {
     "async": "^1.4.2",

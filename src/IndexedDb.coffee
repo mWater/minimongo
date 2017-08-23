@@ -190,8 +190,8 @@ class Collection
 
         # Check if not present or not upserted/deleted
         if not record? or record.state == "cached"
-          # If _rev present, make sure that not overwritten by lower _rev
-          if not record or not doc._rev or not record.doc._rev or doc._rev >= record.doc._rev
+          # If _rev present, make sure that not overwritten by lower or equal _rev
+          if not record or not doc._rev or not record.doc._rev or doc._rev > record.doc._rev
             puts.push { col: @name, state: "cached", doc: doc }
 
       # Put batch
@@ -282,25 +282,41 @@ class Collection
 
   # Add but do not overwrite upsert/removed and do not record as upsert
   cacheOne: (doc, success, error) ->
-    @store.get [@name, doc._id], (record) =>
-      # If _rev present, make sure that not overwritten by lower _rev
-      if record and doc._rev and record.doc._rev and doc._rev < record.doc._rev
-        if success? then success()
-        return
+    @cacheList([doc], success, error)
 
-      if not record?
-        record = {
-          col: @name
-          state: "cached"
-          doc: doc
-        }
-      if record.state == "cached"
-        record.doc = doc
-        @store.put record, ->
-          if success? then success()
+  cacheList: (docs, success, error) ->
+    # Create keys to get items
+    keys = _.map docs, (doc) => [@name, doc._id]
+
+    # Create batch of puts
+    puts = []
+    @store.getBatch keys, (records) =>
+      for i in [0...records.length]
+        record = records[i]
+        doc = docs[i]
+
+        # If _rev present, make sure that not overwritten by lower equal _rev
+        if record and doc._rev and record.doc._rev and doc._rev <= record.doc._rev
+          continue
+
+        if not record?
+          record = {
+            col: @name
+            state: "cached"
+            doc: doc
+          }
+        if record.state == "cached"
+          record.doc = doc
+          puts.push(record)
+
+      # Put batch
+      if puts.length > 0
+        @store.putBatch puts, =>
+          if success? then success()            
         , error
       else
         if success? then success()
+    , error
 
   uncache: (selector, success, error) ->
     compiledSelector = utils.compileDocumentSelector(selector)
@@ -309,6 +325,25 @@ class Collection
     @store.query (matches) =>
       # Filter ones to remove
       matches = _.filter matches, (m) -> m.state == "cached" and compiledSelector(m.doc)
+      keys = _.map(matches, (m) => [@name, m.doc._id])
+      if keys.length > 0
+        @store.removeBatch keys, =>
+          if success? then success()
+        , error
+      else
+        if success? then success()
+    , { index: "col", keyRange: @store.makeKeyRange(only: @name), onError: error }
+
+  uncacheList: (ids, success, error) ->
+    idIndex = _.indexBy(ids)
+
+    # Android 2.x requires error callback
+    error = error or -> return
+
+    # Get all docs from collection
+    @store.query (matches) =>
+      # Filter ones to remove
+      matches = _.filter matches, (m) -> m.state == "cached" and idIndex[m.doc._id]
       keys = _.map(matches, (m) => [@name, m.doc._id])
       if keys.length > 0
         @store.removeBatch keys, =>

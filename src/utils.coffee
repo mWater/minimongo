@@ -137,9 +137,6 @@ exports.processFind = (items, selector, options) ->
   if options and options.fields
     filtered = exports.filterFields(filtered, options.fields)
 
-  # Deep clone to prevent modification
-  filtered = JSON.parse(JSON.stringify(filtered))
-
   return filtered
 
 exports.filterFields = (items, fields={}) ->

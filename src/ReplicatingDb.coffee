@@ -1,5 +1,6 @@
 _ = require 'lodash'
 utils = require('./utils')
+compileSort = require('./selector').compileSort
 
 # Replicates data into a both a master and a replica db. Assumes both are identical at start
 # and then only uses master for finds and does all changes to both
@@ -51,10 +52,78 @@ class Collection
     , error)
 
   cache: (docs, selector, options, success, error) ->
-    # Upsert does to both
-    @masterCol.cache(docs, selector, options, () =>
-      @replicaCol.cache(docs, selector, options, success, error)
-    , error)
+    # Calculate what has to be done for cache using the master database which is faster (usually MemoryDb)
+    # then do minimum to both databases
+
+    # Index docs
+    docsMap = _.indexBy(docs, "_id")
+
+    # Compile sort
+    if options.sort
+      sort = compileSort(options.sort)
+
+    # Perform query
+    @masterCol.find(selector, options).fetch (results) =>
+      resultsMap = _.indexBy(results, "_id")
+
+      # Determine if each result needs to be cached
+      toCache = []
+      for doc in docs
+        result = resultsMap[doc._id]
+
+        # If not present locally, cache it
+        if not result
+          toCache.push(doc)
+          continue
+
+        # If both have revisions (_rev) and new one is same or lower, do not cache
+        if doc._rev and result._rev and doc._rev <= result._rev
+          continue
+
+        # Only cache if different
+        if not _.isEqual(doc, result)
+          toCache.push(doc)
+
+      toUncache = []
+      for result in results
+        # If past end on sorted limited, ignore
+        if options.sort and options.limit and docs.length == options.limit
+          if sort(result, _.last(docs)) >= 0
+            continue
+
+        # Determine which ones to uncache
+        if not docsMap[result._id] 
+          toUncache.push(result._id)
+
+      # Cache ones needing caching
+      performCaches = (next) =>
+        if toCache.length > 0
+          @masterCol.cacheList(toCache, () =>
+            @replicaCol.cacheList(toCache, () =>
+              next()
+            , error)
+          , error)
+        else
+          next()
+
+      # Uncache list
+      performUncaches = (next) =>
+        if toUncache.length > 0
+          @masterCol.uncacheList(toUncache, () =>
+            @replicaCol.uncacheList(toUncache, () =>
+              next()
+            , error)
+          , error)
+        else
+          next()
+
+      performCaches(=>
+        performUncaches(=>
+          if success? then success()
+          return
+        )
+      )
+    , error
 
   pendingUpserts: (success, error) ->
     @masterCol.pendingUpserts(success, error)
@@ -84,8 +153,18 @@ class Collection
       @replicaCol.cacheOne(doc, success, error)
     , error)
 
+  # Add but do not overwrite upserts or removes
+  cacheList: (docs, success, error) ->
+    @masterCol.cacheList(docs, () =>
+      @replicaCol.cacheList(docs, success, error)
+    , error)
+
   uncache: (selector, success, error) ->
     @masterCol.uncache(selector, () =>
       @replicaCol.uncache(selector, success, error)
     , error)
 
+  uncacheList: (ids, success, error) ->
+    @masterCol.uncacheList(ids, () =>
+      @replicaCol.uncacheList(ids, success, error)
+    , error)

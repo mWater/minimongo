@@ -220,13 +220,18 @@ class Collection
     if success? then success()
 
   # Add but do not overwrite upserts or removes
-  cacheOne: (doc, success) ->
-    if not _.has(@upserts, doc._id) and not _.has(@removes, doc._id)
-      existing = @items[doc._id]
+  cacheOne: (doc, success, error) ->
+    @cacheList([doc], success, error)
 
-      # If _rev present, make sure that not overwritten by lower _rev
-      if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
-        @_putItem(doc)
+  # Add but do not overwrite upserts or removes
+  cacheList: (docs, success) ->
+    for doc in docs
+      if not _.has(@upserts, doc._id) and not _.has(@removes, doc._id)
+        existing = @items[doc._id]
+
+        # If _rev present, make sure that not overwritten by lower or equal _rev
+        if not existing or not doc._rev or not existing._rev or doc._rev > existing._rev
+          @_putItem(doc)
     if success? then success()
 
   uncache: (selector, success, error) ->
@@ -235,5 +240,12 @@ class Collection
     for item in _.values(@items)
       if not @upserts[item._id]? and compiledSelector(item)
         @_deleteItem(item._id)
+
+    if success? then success()
+
+  uncacheList: (ids, success, error) ->
+    for id in ids
+      if not @upserts[id]?
+        @_deleteItem(id)
 
     if success? then success()

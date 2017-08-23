@@ -5,13 +5,16 @@ processFind = require('./utils').processFind
 compileSort = require('./selector').compileSort
 
 module.exports = class MemoryDb
+  # Options are:
+  #  safety: How to protect the in-memory copies: "clone" (default) returns a fresh copy but is slow. "freeze" returns a frozen version
   constructor: (options, success) ->
     @collections = {}
+    @options = _.defaults(options, { safety: "clone" })
 
     if success then success(this)
 
   addCollection: (name, success, error) ->
-    collection = new Collection(name)
+    collection = new Collection(name, @options)
     @[name] = collection
     @collections[name] = collection
     if success? then success()
@@ -23,12 +26,13 @@ module.exports = class MemoryDb
 
 # Stores data in memory
 class Collection
-  constructor: (name) ->
+  constructor: (name, options) ->
     @name = name
 
     @items = {}
     @upserts = {}  # Pending upserts by _id. Still in items
     @removes = {}  # Pending removes by _id. No longer in items
+    @options = options or {}
 
   find: (selector, options) ->
     return fetch: (success, error) =>
@@ -38,16 +42,30 @@ class Collection
     if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
-    @find(selector, options).fetch (results) ->
-      if success? then success(if results.length>0 then results[0] else null)
+    @find(selector, options).fetch (results) =>
+      if success? then success(@_applySafety(if results.length>0 then results[0] else null))
     , error
 
   _findFetch: (selector, options, success, error) ->
     # Defer to allow other processes to run
     setTimeout () =>
       results = processFind(_.values(@items), selector, options)
-      if success? then success(results)
+      if success? then success(@_applySafety(results))
     , 0
+
+  # Applies safety (either freezing or cloning to object or array)
+  _applySafety: (items) =>
+    if not items
+      return items
+    if _.isArray(items)
+      return _.map(items, @_applySafety)
+    if @options.safety == "clone" or not @options.safety
+      return JSON.parse(JSON.stringify(items))
+    if @options.safety == "freeze"
+      Object.freeze(items)
+      return items
+
+    throw new Error("Unsupported safety #{@options.safety}")
 
   upsert: (docs, bases, success, error) ->
     [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
@@ -68,7 +86,10 @@ class Collection
       @items[item.doc._id] = item.doc
       @upserts[item.doc._id] = item
 
-    if success then success(docs)
+    if _.isArray(docs)
+      if success then success(@_applySafety(_.pluck(items, "doc")))
+    else
+      if success then success(@_applySafety(_.pluck(items, "doc")[0]))
 
   remove: (id, success, error) ->
     # Special case for filter-type remove
@@ -146,13 +167,19 @@ class Collection
     if success? then success()
 
   # Add but do not overwrite upserts or removes
-  cacheOne: (doc, success) ->
-    if not _.has(@upserts, doc._id) and not _.has(@removes, doc._id)
-      existing = @items[doc._id]
+  cacheOne: (doc, success, error) ->
+    @cacheList([doc], success, error)
 
-      # If _rev present, make sure that not overwritten by lower _rev
-      if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
-        @items[doc._id] = doc
+  # Add but do not overwrite upserts or removes
+  cacheList: (docs, success) ->
+    for doc in docs
+      if not _.has(@upserts, doc._id) and not _.has(@removes, doc._id)
+        existing = @items[doc._id]
+
+        # If _rev present, make sure that not overwritten by lower or equal _rev
+        if not existing or not doc._rev or not existing._rev or doc._rev > existing._rev
+          @items[doc._id] = doc
+  
     if success? then success()
 
   uncache: (selector, success, error) ->
@@ -165,4 +192,12 @@ class Collection
     @items = _.object(_.pluck(items, "_id"), items)
     if success? then success()
 
+  uncacheList: (ids, success, error) ->
+    idIndex = _.indexBy(ids)
 
+    items = _.filter(_.values(@items), (item) =>
+      return @upserts[item._id]? or not idIndex[item._id]
+      )
+
+    @items = _.object(_.pluck(items, "_id"), items)
+    if success? then success()
