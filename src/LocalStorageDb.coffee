@@ -178,10 +178,15 @@ class Collection
     @find(selector, options).fetch (results) =>
       for result in results
         if not docsMap[result._id] and not _.has(@upserts, result._id)
-          # If past end on sorted limited, ignore
-          if options.sort and options.limit and docs.length == options.limit
-            if sort(result, _.last(docs)) >= 0
+          # If at limit
+          if options.limit and docs.length == options.limit
+            # If past end on sorted limited, ignore
+            if options.sort and sort(result, _.last(docs)) >= 0
               continue
+            # If no sort, ignore
+            if not options.sort
+              continue
+
           @_deleteItem(result._id)
 
       if success? then success()

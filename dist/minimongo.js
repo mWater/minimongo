@@ -2620,8 +2620,11 @@ Collection = (function() {
         for (_j = 0, _len1 = results.length; _j < _len1; _j++) {
           result = results[_j];
           if (!docsMap[result._id] && !_.has(_this.upserts, result._id)) {
-            if (options.sort && options.limit && docs.length === options.limit) {
-              if (sort(result, _.last(docs)) >= 0) {
+            if (options.limit && docs.length === options.limit) {
+              if (options.sort && sort(result, _.last(docs)) >= 0) {
+                continue;
+              }
+              if (!options.sort) {
                 continue;
               }
             }
@@ -3202,8 +3205,11 @@ Collection = (function() {
               record = records[i];
               result = results[i];
               if (!docsMap[result._id] && record && record.state === "cached") {
-                if (options.sort && options.limit && docs.length === options.limit) {
-                  if (sort(result, _.last(docs)) >= 0) {
+                if (options.limit && docs.length === options.limit) {
+                  if (options.sort && sort(result, _.last(docs)) >= 0) {
+                    continue;
+                  }
+                  if (!options.sort) {
                     continue;
                   }
                 }
@@ -3798,8 +3804,11 @@ Collection = (function() {
               return async.eachSeries(results, function(result, callback) {
                 return tx.executeSql("SELECT * FROM docs WHERE col = ? AND id = ?", [_this.name, result._id], function(tx, rows) {
                   if (!docsMap[result._id] && rows.rows.length > 0 && rows.rows.item(0).state === "cached") {
-                    if (options.sort && options.limit && docs.length === options.limit) {
-                      if (sort(result, _.last(docs)) >= 0) {
+                    if (options.limit && docs.length === options.limit) {
+                      if (options.sort && sort(result, _.last(docs)) >= 0) {
+                        return callback();
+                      }
+                      if (!options.sort) {
                         return callback();
                       }
                     }
@@ -4316,8 +4325,11 @@ Collection = (function() {
         for (_j = 0, _len1 = results.length; _j < _len1; _j++) {
           result = results[_j];
           if (!docsMap[result._id] && !_.has(_this.upserts, result._id)) {
-            if (options.sort && options.limit && docs.length === options.limit) {
-              if (sort(result, _.last(docs)) >= 0) {
+            if (options.limit && docs.length === options.limit) {
+              if (options.sort && sort(result, _.last(docs)) >= 0) {
+                continue;
+              }
+              if (!options.sort) {
                 continue;
               }
             }
@@ -7453,8 +7465,11 @@ Collection = (function() {
         toUncache = [];
         for (_j = 0, _len1 = results.length; _j < _len1; _j++) {
           result = results[_j];
-          if (options.sort && options.limit && docs.length === options.limit) {
-            if (sort(result, _.last(docs)) >= 0) {
+          if (options.limit && docs.length === options.limit) {
+            if (options.sort && sort(result, _.last(docs)) >= 0) {
+              continue;
+            }
+            if (!options.sort) {
               continue;
             }
           }

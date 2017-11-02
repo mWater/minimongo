@@ -109,6 +109,13 @@ module.exports = ->
               assert.deepEqual _.pluck(results, '_id'), ["1", "3", "4"]
               done()
 
+    it "cache does not remove missing unsorted limited", (done) ->
+      @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }, { _id: "4", a: 'd' }], {}, {}, =>
+        @col.cache [{ _id: "3", a: 'c' }, { _id: "4", a: 'd' }], {}, { limit: 2 }, =>
+          @col.find({}, {sort:['_id']}).fetch (results) ->
+            assert.deepEqual _.pluck(results, '_id'), ["1", "2", "3", "4"]
+            done()
+
     it "uncache removes matching", (done) ->
       @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], {}, {}, =>
         @col.uncache { a: 'b' }, =>

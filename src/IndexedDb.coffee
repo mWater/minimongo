@@ -156,9 +156,13 @@ class Collection
 
             # If not present in docs and is present locally and not upserted/deleted
             if not docsMap[result._id] and record and record.state == "cached"
-              # If past end on sorted limited, ignore
-              if options.sort and options.limit and docs.length == options.limit
-                if sort(result, _.last(docs)) >= 0
+              # If at limit
+              if options.limit and docs.length == options.limit
+                # If past end on sorted limited, ignore
+                if options.sort and sort(result, _.last(docs)) >= 0
+                  continue
+                # If no sort, ignore
+                if not options.sort
                   continue
 
               # Item is gone from server, remove locally

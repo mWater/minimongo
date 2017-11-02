@@ -210,9 +210,13 @@ class Collection
               # If not present in docs and is present locally and not upserted/deleted
               tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, result._id], (tx, rows) =>
                 if not docsMap[result._id] and rows.rows.length > 0 and rows.rows.item(0).state == "cached"
-                  # If past end on sorted limited, ignore
-                  if options.sort and options.limit and docs.length == options.limit
-                    if sort(result, _.last(docs)) >= 0
+                  # If at limit
+                  if options.limit and docs.length == options.limit
+                    # If past end on sorted limited, ignore
+                    if options.sort and sort(result, _.last(docs)) >= 0
+                      return callback()
+                    # If no sort, ignore
+                    if not options.sort
                       return callback()
 
                   # Item is gone from server, remove locally
