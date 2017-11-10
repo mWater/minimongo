@@ -24,6 +24,8 @@ module.exports = class MemoryDb
     delete @collections[name]
     if success? then success()
 
+  getCollectionNames: -> _.keys(@collections)
+
 # Stores data in memory
 class Collection
   constructor: (name, options) ->

@@ -9,6 +9,8 @@ _ = require 'lodash'
 processFind = require('./utils').processFind
 utils = require('./utils')
 
+# Bridges a local and remote database, querying from the local first and then 
+# getting the remote. Also uploads changes from local to remote.
 module.exports = class HybridDb
   constructor: (localDb, remoteDb) ->
     @localDb = localDb
@@ -43,6 +45,8 @@ module.exports = class HybridDb
       else
         success()
     uploadCols(cols, success, error)
+
+  getCollectionNames: -> _.keys(@collections)
 
 class HybridCollection
   # Options includes

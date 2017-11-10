@@ -29,6 +29,8 @@ module.exports = class RemoteDb
     delete @collections[name]
     if success? then success()
 
+  getCollectionNames: -> _.keys(@collections)
+
 # Remote collection on server
 class Collection
   constructor: (name, url, client, httpClient) ->

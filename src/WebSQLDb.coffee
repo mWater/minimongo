@@ -69,6 +69,8 @@ module.exports = class WebSQLDb
       tx.executeSql("DELETE FROM docs WHERE col = ?", [name], success, ((tx, err) -> error(err)))
     , error
 
+  getCollectionNames: -> _.keys(@collections)
+
 # Stores data in indexeddb store
 class Collection
   constructor: (name, db) ->

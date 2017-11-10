@@ -4,6 +4,7 @@ compileSort = require('./selector').compileSort
 
 # Replicates data into a both a master and a replica db. Assumes both are identical at start
 # and then only uses master for finds and does all changes to both
+# Warning: removing a collection removes it from the underlying master and replica!
 module.exports = class ReplicatingDb
   constructor: (masterDb, replicaDb) ->
     @collections = {}
@@ -21,6 +22,8 @@ module.exports = class ReplicatingDb
     delete @[name]
     delete @collections[name]
     if success? then success()
+
+  getCollectionNames: -> _.keys(@collections)
 
 # Replicated collection.
 class Collection

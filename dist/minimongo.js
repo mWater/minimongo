@@ -2481,6 +2481,10 @@ module.exports = MemoryDb = (function() {
     }
   };
 
+  MemoryDb.prototype.getCollectionNames = function() {
+    return _.keys(this.collections);
+  };
+
   return MemoryDb;
 
 })();
@@ -3056,6 +3060,10 @@ module.exports = IndexedDb = (function() {
     });
   };
 
+  IndexedDb.prototype.getCollectionNames = function() {
+    return _.keys(this.collections);
+  };
+
   return IndexedDb;
 
 })();
@@ -3607,6 +3615,10 @@ module.exports = WebSQLDb = (function() {
     }, error);
   };
 
+  WebSQLDb.prototype.getCollectionNames = function() {
+    return _.keys(this.collections);
+  };
+
   return WebSQLDb;
 
 })();
@@ -4148,6 +4160,10 @@ module.exports = LocalStorageDb = (function() {
     }
   };
 
+  LocalStorageDb.prototype.getCollectionNames = function() {
+    return _.keys(this.collections);
+  };
+
   return LocalStorageDb;
 
 })();
@@ -4508,6 +4524,10 @@ module.exports = HybridDb = (function() {
       }
     };
     return uploadCols(cols, success, error);
+  };
+
+  HybridDb.prototype.getCollectionNames = function() {
+    return _.keys(this.collections);
   };
 
   return HybridDb;
@@ -7166,6 +7186,10 @@ module.exports = RemoteDb = (function() {
     }
   };
 
+  RemoteDb.prototype.getCollectionNames = function() {
+    return _.keys(this.collections);
+  };
+
   return RemoteDb;
 
 })();
@@ -7396,6 +7420,10 @@ module.exports = ReplicatingDb = (function() {
     if (success != null) {
       return success();
     }
+  };
+
+  ReplicatingDb.prototype.getCollectionNames = function() {
+    return _.keys(this.collections);
   };
 
   return ReplicatingDb;

@@ -52,6 +52,8 @@ module.exports = class IndexedDb
         if success? then success()
     , { index: "col", keyRange: @store.makeKeyRange(only: name), onError: error }
 
+  getCollectionNames: -> _.keys(@collections)
+
 # Stores data in indexeddb store
 class Collection
   constructor: (name, store) ->

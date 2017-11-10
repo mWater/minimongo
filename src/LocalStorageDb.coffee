@@ -37,6 +37,8 @@ module.exports = class LocalStorageDb
     delete @collections[name]
     if success? then success()
 
+  getCollectionNames: -> _.keys(@collections)
+
 
 # Stores data in memory, optionally backed by local storage
 class Collection
