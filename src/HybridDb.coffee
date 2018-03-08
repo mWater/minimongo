@@ -150,8 +150,8 @@ class HybridCollection
           cacheSuccess = =>
             # Get local data again
             localSuccess2 = (localData2) ->
-              # Check if different
-              if not _.isEqual(localData, localData2)
+              # Check if different or not interim
+              if not options.interim or not _.isEqual(localData, localData2)
                 # Send again
                 success(localData2)
             @localCol.find(selector, options).fetch(localSuccess2, error)
@@ -180,8 +180,8 @@ class HybridCollection
                 # Refilter/sort/limit
                 data = processFind(data, selector, options)
 
-              # Check if different
-              if not _.isEqual(localData, data)
+              # Check if different or not interim
+              if not options.interim or not _.isEqual(localData, data)
                 # Send again
                 success(data)
             , error
@@ -224,15 +224,14 @@ class HybridCollection
 
       @remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError)
 
-    # If interim, get local first
-    if options.interim
-      localSuccess = (localData) ->
-        # Return data immediately
+    localSuccess = (localData) ->
+      # If interim, return data immediately
+      if options.interim
         success(localData)
-        step2(localData)
-      @localCol.find(selector, options).fetch(localSuccess, error)
-    else
-      step2()
+      step2(localData)
+
+    # Always get local data first
+    @localCol.find(selector, options).fetch(localSuccess, error)
 
   upsert: (docs, bases, success, error) ->
     @localCol.upsert(docs, bases, (result) ->

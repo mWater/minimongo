@@ -264,6 +264,7 @@ describe 'HybridDb', ->
           assert.equal data[1].a, 4
           done()
         , fail
+        @clock.tick(1)  # Tick for setTimeout 0
 
       it "find gives local results if out of time", (done) ->
         @lc.upsert(_id:"1", a:1)
@@ -285,6 +286,7 @@ describe 'HybridDb', ->
           assert.equal data[1].a, 2
           done()
         , fail
+        @clock.tick(1)  # Tick for setTimeout 0
 
       it "find gives local results but still caches if out of time", (done) ->
         @lc.upsert(_id:"1", a:1)
@@ -314,6 +316,7 @@ describe 'HybridDb', ->
               done()
           , 1000
         , fail
+        @clock.tick(1)  # Tick for setTimeout 0
 
       it "find gives local results once if remote fails then out of time", (done) ->
         @lc.upsert(_id:"1", a:1)
@@ -344,6 +347,7 @@ describe 'HybridDb', ->
           assert.equal called, 1
           done()
         , fail
+        @clock.tick(1)  # Tick for setTimeout 0
 
       it "find gives local results once if out of time then remote fails", (done) ->
         @lc.upsert(_id:"1", a:1)
@@ -371,6 +375,7 @@ describe 'HybridDb', ->
           assert.equal called, 1
           done()
         , fail
+        @clock.tick(1)  # Tick for setTimeout 0
 
     describe "cacheFind: false", ->
       it "find performs partial field remote queries", (done) ->
