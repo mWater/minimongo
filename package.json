@@ -27,9 +27,9 @@
   "devDependencies": {
     "browserify": "^3.29.1",
     "chai": "~1.9.0",
-    "coffee-loader": "^0.7.3",
-    "coffee-script": "^1.12.7",
+    "coffee-loader": "^0.9.0",
     "coffeeify": "~0.6.0",
+    "coffeescript": "^1.12.7",
     "glob": "^3.2.9",
     "gulp": "git://github.com/gulpjs/gulp.git#4.0",
     "gulp-coffee": "^1.4.2",
@@ -54,7 +54,7 @@
     "async": "^1.4.2",
     "bowser": "^0.7.1",
     "idb-wrapper": "^1.4.1",
-    "jquery": "~2.1.0",
+    "jquery": "^3.3.1",
     "lodash": "^3.10.1"
   }
 }
