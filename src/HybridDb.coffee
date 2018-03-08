@@ -130,6 +130,9 @@ class HybridCollection
       if options.cacheFind
         delete remoteOptions.fields
 
+      # Add localData to options for remote find for quickfind protocol
+      remoteOptions.localData = localData
+
       # Setup timer variables
       timer = null
       timedOut = false
@@ -198,7 +201,7 @@ class HybridCollection
         # If no interim, do local find
         if not options.interim
           if options.useLocalOnRemoteError
-            @localCol.find(selector, options).fetch(success, error)
+            success(localData)
           else
             if error then error(err)
         else
