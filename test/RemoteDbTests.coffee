@@ -1,60 +1,91 @@
-assert = require('chai').assert
+chai = require 'chai'
+assert = chai.assert
 RemoteDb = require "../src/RemoteDb"
-db_queries = require "./db_queries"
 _ = require 'lodash'
 
-# @col should be a collection called with fields:
-# "_id" as string, "a" as string, "b" as integer, "c" as JSON and "geo" as GeoJSON
-# @reset  should remove all rows from the scratch table and then call the callback
-# passed to it.
-exports.runTests = ->
-  describe 'RemoteDb', ->
-    @timeout(10000)
+describe 'RemoteDb', ->
+  beforeEach () ->
+    @httpCall = null
+    @callSuccessWith = null
 
-    # Check that it passes all normal queries
-    describe "passes queries", ->
-      db_queries.call(this)
+    @mockHttpClient = (method, url, params, data, success, error) =>
+      @httpCall = {
+        method: method
+        url: url
+        params: params
+        data: data
+        success: success
+        error: error
+      }
+      if @callSuccessWith
+        success(@callSuccessWith)
 
-    describe "merging", ->
-      beforeEach (done) -> @reset(done)
+    @db = new RemoteDb("http://someserver.com/", "clientid", @mockHttpClient, true)
+    @db.addCollection("scratch")
+    @col = @db.scratch
 
-      it "merges changes with base specified", (done) ->
-        base = { _id: "1", a: "1", b: 1 }
+  it "calls GET for find", (done) ->
+    success = (data) =>
+      assert.equal @httpCall.method, "GET"
+      assert.equal @httpCall.url, "http://someserver.com/scratch"
+      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert not @httpCall.data
 
-        @col.upsert base, (baseDoc) =>
-          change1 = _.cloneDeep(baseDoc)
-          change1.a = "2"
+      assert.deepEqual data, [{ x: 1 }]
+      done()
+    @callSuccessWith = [{ x: 1 }]
 
-          change2 = _.cloneDeep(baseDoc)
-          change2.b = 2
+    @col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () -> assert.fail())
 
-          @col.upsert change1, base, (doc1) =>
-            assert.equal doc1.a, "2"
+  it "calls GET for findOne", (done) ->
+    success = (data) =>
+      assert.equal @httpCall.method, "GET"
+      assert.equal @httpCall.url, "http://someserver.com/scratch"
+      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 1, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert not @httpCall.data
 
-            @col.upsert change2, base, (doc2) =>
-              assert.equal doc2.a, "2", "Should merge returned document"
-              assert.equal doc2.b, 2, "Should merge returned document"
+      assert.deepEqual data, { x: 1 }
+      done()
+    @callSuccessWith = [{ x: 1 }]
 
-              # Should merge on server permanently
-              @col.findOne { _id: "1" }, (doc3) ->
-                assert.equal doc2.a, "2", "Should merge documents"
-                assert.equal doc2.b, 2, "Should merge documents"
-                done()
+    @col.findOne({ a: 1 }, { sort: ["b"] }, success, () -> assert.fail())
 
-      it "overrides changes with no base specified", (done) ->
-        base = { _id: "1", a: "1", b: 1 }
+  it "calls POST for new upsert", (done) ->
+    success = (data) =>
+      assert.equal @httpCall.method, "POST"
+      assert.equal @httpCall.url, "http://someserver.com/scratch"
 
-        @col.upsert base, (baseDoc) =>
-          change1 = _.cloneDeep(baseDoc)
-          change1.a = "2"
+      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert.deepEqual @httpCall.data, { _id: "0", x: 1 }
+      assert.deepEqual data, { _id: "0", _rev: 1, x: 1 }
+      done()
+    @callSuccessWith = { _id: "0", _rev: 1, x: 1 }
 
-          change2 = _.cloneDeep(baseDoc)
-          change2.b = 2
+    @col.upsert({ _id: "0", x: 1 }, success, () -> assert.fail())
 
-          @col.upsert change1, base, (doc1) =>
-            assert.equal doc1.a, "2"
+  it "calls POST quickfind for find if localData passed", (done) ->
+    success = (data) =>
+      assert.equal @httpCall.method, "POST"
+      assert.equal @httpCall.url, "http://someserver.com/scratch/quickfind"
+      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert.deepEqual @httpCall.data, {
+        "00": "6636b33e1be7df314feab1b481e9a1a86d369867"
+      }
 
-            @col.upsert change2, null, (doc2) ->
-              assert.equal doc2.a, "1", "Should not merge returned document"
-              assert.equal doc2.b, 2, "Should keep new value"
-              done()
+      assert.deepEqual data, [
+        { _id: "0002", _rev: 1, a: 2, b: 1 }
+        { _id: "0001", _rev: 2, a: 2, b: 2 }
+      ], JSON.stringify(data)
+      done()
+
+    @callSuccessWith = { "00": [
+      { _id: "0001", _rev: 2, a: 2, b: 2 }
+      { _id: "0002", _rev: 1, a: 2, b: 1 }
+    ]}
+
+    localData = [
+      { _id: "0001", _rev: 1, a: 1 }
+    ]
+
+    @col.find({ a: 1 }, { limit: 10, sort: ["b"], localData: localData }).fetch(success, () -> assert.fail())
+

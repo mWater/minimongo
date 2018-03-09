@@ -3,14 +3,17 @@ $ = require 'jquery'
 async = require 'async'
 utils = require('./utils')
 jQueryHttpClient = require './jQueryHttpClient'
+quickfind = require './quickfind'
 
 module.exports = class RemoteDb
   # Url must have trailing /
-  constructor: (url, client, httpClient) ->
+  # useQuickFind enables the quickfind protocol for finds
+  constructor: (url, client, httpClient, useQuickFind = false) ->
     @url = url
     @client = client
     @collections = {}
-    @httpClient = httpClient or jQueryHttpClient
+    @httpClient = httpClient
+    @useQuickFind = useQuickFind
 
   # Can specify url of specific collection as option
   addCollection: (name, options={}, success, error) ->
@@ -19,7 +22,7 @@ module.exports = class RemoteDb
 
     url = options.url or (@url + name)
 
-    collection = new Collection(name, url, @client, @httpClient)
+    collection = new Collection(name, url, @client, @httpClient, @useQuickFind)
     @[name] = collection
     @collections[name] = collection
     if success? then success()
@@ -33,11 +36,12 @@ module.exports = class RemoteDb
 
 # Remote collection on server
 class Collection
-  constructor: (name, url, client, httpClient) ->
+  constructor: (name, url, client, httpClient, useQuickFind) ->
     @name = name
     @url = url
     @client = client
-    @httpClient = httpClient
+    @httpClient = httpClient or jQueryHttpClient
+    @useQuickFind = useQuickFind
 
   # error is called with jqXHR
   find: (selector, options = {}) ->
@@ -60,7 +64,13 @@ class Collection
       if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
         params._ = new Date().getTime()
 
-      @httpClient("GET", @url, params, null, success, error)
+      # If in quickfind and localData present and no fields option and not (limit with no sort), use quickfind
+      if @useQuickFind and options.localData and not options.fields and not (options.limit and not options.sort)
+        @httpClient("POST", @url + "/quickfind", params, quickfind.encodeRequest(options.localData), (encodedResponse) =>
+          success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort))
+        , error)
+      else
+        @httpClient("GET", @url, params, null, success, error)
 
   # error is called with jqXHR
   # Note that findOne is not used by HybridDb, but rather find with limit is used
