@@ -74,4 +74,4 @@ hashRows = (rows) ->
   for row in _.sortBy(rows, "_id")
     hash.update(row._id + ":" + (row._rev or "") + "|")
   
-  return hash.hex()
+  return hash.hex().substr(0, 20)

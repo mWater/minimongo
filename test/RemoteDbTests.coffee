@@ -69,7 +69,7 @@ describe 'RemoteDb', ->
       assert.equal @httpCall.url, "http://someserver.com/scratch/quickfind"
       assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
       assert.deepEqual @httpCall.data, {
-        "00": "6636b33e1be7df314feab1b481e9a1a86d369867"
+        "00": "6636b33e1be7df314fea"
       }
 
       assert.deepEqual data, [

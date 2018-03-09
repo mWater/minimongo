@@ -21,8 +21,8 @@ describe 'quickfind', ->
   it "encodes as expected", ->
     request = quickfind.encodeRequest([@row3, @row2, @row1])
     assert.equal _.keys(request).length, 2
-    assert.equal request["00"], sha1("0000:1|0001:2|")
-    assert.equal request["01"], sha1("0100:1|")
+    assert.equal request["00"], sha1("0000:1|0001:2|").substr(0, 20)
+    assert.equal request["01"], sha1("0100:1|").substr(0, 20)
 
   it "only includes changes", ->
     request = quickfind.encodeRequest([@row3, @row2, @row1])
