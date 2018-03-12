@@ -4850,8 +4850,8 @@ network traffic.
 
 Protocal has 3 phases:
 
-encodeRequest: Done on client. Summarize which rows are already present locally by sharding and then hashing _id:_rev
-encodeResponse: Done on server. Given complete server list and results of encodeRequest, create list of changes
+encodeRequest: Done on client. Summarize which rows are already present locally by sharding and then hashing _id:_rev|
+encodeResponse: Done on server. Given complete server list and results of encodeRequest, create list of changes, sharded by first two characters of _id
 decodeResponse: Done on client. Given encoded response and local list, recreate complete list from server.
 
 Interaction of sort, limit and fields:
