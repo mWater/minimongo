@@ -9,8 +9,8 @@ network traffic.
 
 Protocal has 3 phases:
 
-encodeRequest: Done on client. Summarize which rows are already present locally by sharding and then hashing _id:_rev
-encodeResponse: Done on server. Given complete server list and results of encodeRequest, create list of changes
+encodeRequest: Done on client. Summarize which rows are already present locally by sharding and then hashing _id:_rev|
+encodeResponse: Done on server. Given complete server list and results of encodeRequest, create list of changes, sharded by first two characters of _id
 decodeResponse: Done on client. Given encoded response and local list, recreate complete list from server.
 
 Interaction of sort, limit and fields:
@@ -74,4 +74,5 @@ hashRows = (rows) ->
   for row in _.sortBy(rows, "_id")
     hash.update(row._id + ":" + (row._rev or "") + "|")
   
+  # 80 bits is enough for uniqueness
   return hash.hex().substr(0, 20)
