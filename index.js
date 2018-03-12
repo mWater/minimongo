@@ -5,4 +5,5 @@ exports.WebSQLDb = require('./lib/WebSQLDb');
 exports.RemoteDb = require('./lib/RemoteDb');
 exports.HybridDb = require('./lib/HybridDb');
 exports.ReplicatingDb = require('./lib/ReplicatingDb');
+exports.quickfind = require('./lib/quickfind');
 exports.utils = require('./lib/utils');

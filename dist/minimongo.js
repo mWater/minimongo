@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 11);
+/******/ 	return __webpack_require__(__webpack_require__.s = 12);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -73,7 +73,7 @@ _ = __webpack_require__(1);
 
 async = __webpack_require__(3);
 
-bowser = __webpack_require__(15);
+bowser = __webpack_require__(16);
 
 compileDocumentSelector = __webpack_require__(2).compileDocumentSelector;
 
@@ -101,7 +101,7 @@ exports.autoselectLocalDb = function(options, success, error) {
   IndexedDb = __webpack_require__(7);
   WebSQLDb = __webpack_require__(8);
   LocalStorageDb = __webpack_require__(9);
-  MemoryDb = __webpack_require__(4);
+  MemoryDb = __webpack_require__(6);
   browser = bowser.browser;
   if (!isLocalStorageSupported()) {
     return new MemoryDb(options, success);
@@ -439,7 +439,7 @@ licenses, included below:
 */
 
 LocalCollection = {};
-EJSON = __webpack_require__(16);
+EJSON = __webpack_require__(17);
 var _ = __webpack_require__(1);
 
 
@@ -2433,10 +2433,227 @@ exports.compileSort = LocalCollection._compileSort;
 
 }());
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5), __webpack_require__(13).setImmediate, __webpack_require__(6)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4), __webpack_require__(14).setImmediate, __webpack_require__(5)))
 
 /***/ }),
 /* 4 */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1,eval)("this");
+} catch(e) {
+	// This works if the window reference is available
+	if(typeof window === "object")
+		g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports) {
+
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+
+/***/ }),
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Collection, MemoryDb, async, compileSort, processFind, utils, _,
@@ -2745,223 +2962,6 @@ Collection = (function() {
 
 
 /***/ }),
-/* 5 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1,eval)("this");
-} catch(e) {
-	// This works if the window reference is available
-	if(typeof window === "object")
-		g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports) {
-
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
-        }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-process.prependListener = noop;
-process.prependOnceListener = noop;
-
-process.listeners = function (name) { return [] }
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
-
-/***/ }),
 /* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -2971,7 +2971,7 @@ _ = __webpack_require__(1);
 
 async = __webpack_require__(3);
 
-IDBStore = __webpack_require__(17);
+IDBStore = __webpack_require__(18);
 
 utils = __webpack_require__(0);
 
@@ -4620,6 +4620,7 @@ HybridCollection = (function() {
         if (options.cacheFind) {
           delete remoteOptions.fields;
         }
+        remoteOptions.localData = localData;
         timer = null;
         timedOut = false;
         remoteSuccess = function(remoteData) {
@@ -4637,7 +4638,7 @@ HybridCollection = (function() {
             cacheSuccess = function() {
               var localSuccess2;
               localSuccess2 = function(localData2) {
-                if (!_.isEqual(localData, localData2)) {
+                if (!options.interim || !_.isEqual(localData, localData2)) {
                   return success(localData2);
                 }
               };
@@ -4670,7 +4671,7 @@ HybridCollection = (function() {
                   data = data.concat(_.pluck(upserts, "doc"));
                   data = processFind(data, selector, options);
                 }
-                if (!_.isEqual(localData, data)) {
+                if (!options.interim || !_.isEqual(localData, data)) {
                   return success(data);
                 }
               }, error);
@@ -4686,7 +4687,7 @@ HybridCollection = (function() {
           }
           if (!options.interim) {
             if (options.useLocalOnRemoteError) {
-              return _this.localCol.find(selector, options).fetch(success, error);
+              return success(localData);
             } else {
               if (error) {
                 return error(err);
@@ -4716,15 +4717,13 @@ HybridCollection = (function() {
         return _this.remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError);
       };
     })(this);
-    if (options.interim) {
-      localSuccess = function(localData) {
+    localSuccess = function(localData) {
+      if (options.interim) {
         success(localData);
-        return step2(localData);
-      };
-      return this.localCol.find(selector, options).fetch(localSuccess, error);
-    } else {
-      return step2();
-    }
+      }
+      return step2(localData);
+    };
+    return this.localCol.find(selector, options).fetch(localSuccess, error);
   };
 
   HybridCollection.prototype.upsert = function(docs, bases, success, error) {
@@ -4835,28 +4834,118 @@ HybridCollection = (function() {
 /* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(12);
+var compileSort, hashRows, sha1, shardLength, _;
+
+_ = __webpack_require__(1);
+
+sha1 = __webpack_require__(22);
+
+compileSort = __webpack_require__(2).compileSort;
+
+
+/*
+
+Quickfind protocol allows sending information about which rows are already present locally to minimize 
+network traffic.
+
+Protocal has 3 phases:
+
+encodeRequest: Done on client. Summarize which rows are already present locally by sharding and then hashing _id:_rev
+encodeResponse: Done on server. Given complete server list and results of encodeRequest, create list of changes
+decodeResponse: Done on client. Given encoded response and local list, recreate complete list from server.
+
+Interaction of sort, limit and fields:
+
+- fields present: _rev might be missing. Do not use quickfind
+- limit with no sort: This gives unstable results. Do not use quickfind
+- sort: final rows need to be re-sorted. Since fields not present, is possible.
+- no sort, no limit: always sort by _id
+ */
+
+shardLength = 2;
+
+exports.encodeRequest = function(clientRows) {
+  var request;
+  clientRows = _.groupBy(clientRows, function(row) {
+    return row._id.substr(0, shardLength);
+  });
+  request = _.mapValues(clientRows, function(rows) {
+    return hashRows(rows);
+  });
+  return request;
+};
+
+exports.encodeResponse = function(serverRows, encodedRequest) {
+  var key, response, value;
+  serverRows = _.groupBy(serverRows, function(row) {
+    return row._id.substr(0, shardLength);
+  });
+  for (key in encodedRequest) {
+    value = encodedRequest[key];
+    if (!serverRows[key]) {
+      serverRows[key] = [];
+    }
+  }
+  response = _.pick(serverRows, function(rows, key) {
+    return hashRows(rows) !== encodedRequest[key];
+  });
+  return response;
+};
+
+exports.decodeResponse = function(encodedResponse, clientRows, sort) {
+  var serverRows;
+  clientRows = _.groupBy(clientRows, function(row) {
+    return row._id.substr(0, shardLength);
+  });
+  serverRows = _.extend(clientRows, encodedResponse);
+  serverRows = _.flatten(_.values(serverRows));
+  if (sort) {
+    serverRows.sort(compileSort(sort));
+  } else {
+    serverRows = _.sortBy(serverRows, "_id");
+  }
+  return serverRows;
+};
+
+hashRows = function(rows) {
+  var hash, row, _i, _len, _ref;
+  hash = sha1.create();
+  _ref = _.sortBy(rows, "_id");
+  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+    row = _ref[_i];
+    hash.update(row._id + ":" + (row._rev || "") + "|");
+  }
+  return hash.hex().substr(0, 20);
+};
 
 
 /***/ }),
 /* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports.MemoryDb = __webpack_require__(4);
-exports.LocalStorageDb = __webpack_require__(9);
-exports.IndexedDb = __webpack_require__(7);
-exports.WebSQLDb = __webpack_require__(8);
-exports.RemoteDb = __webpack_require__(18);
-exports.HybridDb = __webpack_require__(10);
-exports.ReplicatingDb = __webpack_require__(21);
-exports.utils = __webpack_require__(0);
+module.exports = __webpack_require__(13);
 
 
 /***/ }),
 /* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var apply = Function.prototype.apply;
+exports.MemoryDb = __webpack_require__(6);
+exports.LocalStorageDb = __webpack_require__(9);
+exports.IndexedDb = __webpack_require__(7);
+exports.WebSQLDb = __webpack_require__(8);
+exports.RemoteDb = __webpack_require__(19);
+exports.HybridDb = __webpack_require__(10);
+exports.ReplicatingDb = __webpack_require__(24);
+exports.quickfind = __webpack_require__(11);
+exports.utils = __webpack_require__(0);
+
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global) {var apply = Function.prototype.apply;
 
 // DOM APIs, for completeness
 
@@ -4906,13 +4995,21 @@ exports._unrefActive = exports.active = function(item) {
 };
 
 // setimmediate attaches itself to the global object
-__webpack_require__(14);
-exports.setImmediate = setImmediate;
-exports.clearImmediate = clearImmediate;
+__webpack_require__(15);
+// On some exotic environments, it's not clear which object `setimmeidate` was
+// able to install onto.  Search each possibility in the same order as the
+// `setimmediate` library.
+exports.setImmediate = (typeof self !== "undefined" && self.setImmediate) ||
+                       (typeof global !== "undefined" && global.setImmediate) ||
+                       (this && this.setImmediate);
+exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
+                         (typeof global !== "undefined" && global.clearImmediate) ||
+                         (this && this.clearImmediate);
 
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
@@ -5102,10 +5199,10 @@ exports.clearImmediate = clearImmediate;
     attachTo.clearImmediate = clearImmediate;
 }(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5), __webpack_require__(6)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4), __webpack_require__(5)))
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -5391,7 +5488,7 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
 
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _ = __webpack_require__(1);
@@ -5723,7 +5820,7 @@ module.exports = EJSON;
 
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*global window:false, self:false, define:false, module:false */
@@ -7138,27 +7235,33 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*global windo
 
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var $, Collection, RemoteDb, async, jQueryHttpClient, utils, _;
+var $, Collection, RemoteDb, async, jQueryHttpClient, quickfind, utils, _;
 
 _ = __webpack_require__(1);
 
-$ = __webpack_require__(19);
+$ = __webpack_require__(20);
 
 async = __webpack_require__(3);
 
 utils = __webpack_require__(0);
 
-jQueryHttpClient = __webpack_require__(20);
+jQueryHttpClient = __webpack_require__(21);
+
+quickfind = __webpack_require__(11);
 
 module.exports = RemoteDb = (function() {
-  function RemoteDb(url, client, httpClient) {
+  function RemoteDb(url, client, httpClient, useQuickFind) {
+    if (useQuickFind == null) {
+      useQuickFind = false;
+    }
     this.url = url;
     this.client = client;
     this.collections = {};
-    this.httpClient = httpClient || jQueryHttpClient;
+    this.httpClient = httpClient;
+    this.useQuickFind = useQuickFind;
   }
 
   RemoteDb.prototype.addCollection = function(name, options, success, error) {
@@ -7170,7 +7273,7 @@ module.exports = RemoteDb = (function() {
       _ref = [{}, options, success], options = _ref[0], success = _ref[1], error = _ref[2];
     }
     url = options.url || (this.url + name);
-    collection = new Collection(name, url, this.client, this.httpClient);
+    collection = new Collection(name, url, this.client, this.httpClient, this.useQuickFind);
     this[name] = collection;
     this.collections[name] = collection;
     if (success != null) {
@@ -7195,11 +7298,12 @@ module.exports = RemoteDb = (function() {
 })();
 
 Collection = (function() {
-  function Collection(name, url, client, httpClient) {
+  function Collection(name, url, client, httpClient, useQuickFind) {
     this.name = name;
     this.url = url;
     this.client = client;
-    this.httpClient = httpClient;
+    this.httpClient = httpClient || jQueryHttpClient;
+    this.useQuickFind = useQuickFind;
   }
 
   Collection.prototype.find = function(selector, options) {
@@ -7230,7 +7334,13 @@ Collection = (function() {
           if ((typeof navigator !== "undefined" && navigator !== null) && navigator.userAgent.toLowerCase().indexOf('android 2.3') !== -1) {
             params._ = new Date().getTime();
           }
-          return _this.httpClient("GET", _this.url, params, null, success, error);
+          if (_this.useQuickFind && options.localData && (!options.fields || options.fields._rev) && !(options.limit && !options.sort)) {
+            return _this.httpClient("POST", _this.url + "/quickfind", params, quickfind.encodeRequest(options.localData), function(encodedResponse) {
+              return success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort));
+            }, error);
+          } else {
+            return _this.httpClient("GET", _this.url, params, null, success, error);
+          }
         };
       })(this)
     };
@@ -7342,13 +7452,13 @@ Collection = (function() {
 
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports) {
 
 module.exports = $;
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports) {
 
 module.exports = function(method, url, params, data, success, error) {
@@ -7386,7 +7496,395 @@ module.exports = function(method, url, params, data, success, error) {
 
 
 /***/ }),
-/* 21 */
+/* 22 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(process, global) {var __WEBPACK_AMD_DEFINE_RESULT__;/*
+ * [js-sha1]{@link https://github.com/emn178/js-sha1}
+ *
+ * @version 0.6.0
+ * @author Chen, Yi-Cyuan [emn178@gmail.com]
+ * @copyright Chen, Yi-Cyuan 2014-2017
+ * @license MIT
+ */
+/*jslint bitwise: true */
+(function() {
+  'use strict';
+
+  var root = typeof window === 'object' ? window : {};
+  var NODE_JS = !root.JS_SHA1_NO_NODE_JS && typeof process === 'object' && process.versions && process.versions.node;
+  if (NODE_JS) {
+    root = global;
+  }
+  var COMMON_JS = !root.JS_SHA1_NO_COMMON_JS && typeof module === 'object' && module.exports;
+  var AMD = "function" === 'function' && __webpack_require__(23);
+  var HEX_CHARS = '0123456789abcdef'.split('');
+  var EXTRA = [-2147483648, 8388608, 32768, 128];
+  var SHIFT = [24, 16, 8, 0];
+  var OUTPUT_TYPES = ['hex', 'array', 'digest', 'arrayBuffer'];
+
+  var blocks = [];
+
+  var createOutputMethod = function (outputType) {
+    return function (message) {
+      return new Sha1(true).update(message)[outputType]();
+    };
+  };
+
+  var createMethod = function () {
+    var method = createOutputMethod('hex');
+    if (NODE_JS) {
+      method = nodeWrap(method);
+    }
+    method.create = function () {
+      return new Sha1();
+    };
+    method.update = function (message) {
+      return method.create().update(message);
+    };
+    for (var i = 0; i < OUTPUT_TYPES.length; ++i) {
+      var type = OUTPUT_TYPES[i];
+      method[type] = createOutputMethod(type);
+    }
+    return method;
+  };
+
+  var nodeWrap = function (method) {
+    var crypto = eval("require('crypto')");
+    var Buffer = eval("require('buffer').Buffer");
+    var nodeMethod = function (message) {
+      if (typeof message === 'string') {
+        return crypto.createHash('sha1').update(message, 'utf8').digest('hex');
+      } else if (message.constructor === ArrayBuffer) {
+        message = new Uint8Array(message);
+      } else if (message.length === undefined) {
+        return method(message);
+      }
+      return crypto.createHash('sha1').update(new Buffer(message)).digest('hex');
+    };
+    return nodeMethod;
+  };
+
+  function Sha1(sharedMemory) {
+    if (sharedMemory) {
+      blocks[0] = blocks[16] = blocks[1] = blocks[2] = blocks[3] =
+      blocks[4] = blocks[5] = blocks[6] = blocks[7] =
+      blocks[8] = blocks[9] = blocks[10] = blocks[11] =
+      blocks[12] = blocks[13] = blocks[14] = blocks[15] = 0;
+      this.blocks = blocks;
+    } else {
+      this.blocks = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    }
+
+    this.h0 = 0x67452301;
+    this.h1 = 0xEFCDAB89;
+    this.h2 = 0x98BADCFE;
+    this.h3 = 0x10325476;
+    this.h4 = 0xC3D2E1F0;
+
+    this.block = this.start = this.bytes = this.hBytes = 0;
+    this.finalized = this.hashed = false;
+    this.first = true;
+  }
+
+  Sha1.prototype.update = function (message) {
+    if (this.finalized) {
+      return;
+    }
+    var notString = typeof(message) !== 'string';
+    if (notString && message.constructor === root.ArrayBuffer) {
+      message = new Uint8Array(message);
+    }
+    var code, index = 0, i, length = message.length || 0, blocks = this.blocks;
+
+    while (index < length) {
+      if (this.hashed) {
+        this.hashed = false;
+        blocks[0] = this.block;
+        blocks[16] = blocks[1] = blocks[2] = blocks[3] =
+        blocks[4] = blocks[5] = blocks[6] = blocks[7] =
+        blocks[8] = blocks[9] = blocks[10] = blocks[11] =
+        blocks[12] = blocks[13] = blocks[14] = blocks[15] = 0;
+      }
+
+      if(notString) {
+        for (i = this.start; index < length && i < 64; ++index) {
+          blocks[i >> 2] |= message[index] << SHIFT[i++ & 3];
+        }
+      } else {
+        for (i = this.start; index < length && i < 64; ++index) {
+          code = message.charCodeAt(index);
+          if (code < 0x80) {
+            blocks[i >> 2] |= code << SHIFT[i++ & 3];
+          } else if (code < 0x800) {
+            blocks[i >> 2] |= (0xc0 | (code >> 6)) << SHIFT[i++ & 3];
+            blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT[i++ & 3];
+          } else if (code < 0xd800 || code >= 0xe000) {
+            blocks[i >> 2] |= (0xe0 | (code >> 12)) << SHIFT[i++ & 3];
+            blocks[i >> 2] |= (0x80 | ((code >> 6) & 0x3f)) << SHIFT[i++ & 3];
+            blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT[i++ & 3];
+          } else {
+            code = 0x10000 + (((code & 0x3ff) << 10) | (message.charCodeAt(++index) & 0x3ff));
+            blocks[i >> 2] |= (0xf0 | (code >> 18)) << SHIFT[i++ & 3];
+            blocks[i >> 2] |= (0x80 | ((code >> 12) & 0x3f)) << SHIFT[i++ & 3];
+            blocks[i >> 2] |= (0x80 | ((code >> 6) & 0x3f)) << SHIFT[i++ & 3];
+            blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT[i++ & 3];
+          }
+        }
+      }
+
+      this.lastByteIndex = i;
+      this.bytes += i - this.start;
+      if (i >= 64) {
+        this.block = blocks[16];
+        this.start = i - 64;
+        this.hash();
+        this.hashed = true;
+      } else {
+        this.start = i;
+      }
+    }
+    if (this.bytes > 4294967295) {
+      this.hBytes += this.bytes / 4294967296 << 0;
+      this.bytes = this.bytes % 4294967296;
+    }
+    return this;
+  };
+
+  Sha1.prototype.finalize = function () {
+    if (this.finalized) {
+      return;
+    }
+    this.finalized = true;
+    var blocks = this.blocks, i = this.lastByteIndex;
+    blocks[16] = this.block;
+    blocks[i >> 2] |= EXTRA[i & 3];
+    this.block = blocks[16];
+    if (i >= 56) {
+      if (!this.hashed) {
+        this.hash();
+      }
+      blocks[0] = this.block;
+      blocks[16] = blocks[1] = blocks[2] = blocks[3] =
+      blocks[4] = blocks[5] = blocks[6] = blocks[7] =
+      blocks[8] = blocks[9] = blocks[10] = blocks[11] =
+      blocks[12] = blocks[13] = blocks[14] = blocks[15] = 0;
+    }
+    blocks[14] = this.hBytes << 3 | this.bytes >>> 29;
+    blocks[15] = this.bytes << 3;
+    this.hash();
+  };
+
+  Sha1.prototype.hash = function () {
+    var a = this.h0, b = this.h1, c = this.h2, d = this.h3, e = this.h4;
+    var f, j, t, blocks = this.blocks;
+
+    for(j = 16; j < 80; ++j) {
+      t = blocks[j - 3] ^ blocks[j - 8] ^ blocks[j - 14] ^ blocks[j - 16];
+      blocks[j] =  (t << 1) | (t >>> 31);
+    }
+
+    for(j = 0; j < 20; j += 5) {
+      f = (b & c) | ((~b) & d);
+      t = (a << 5) | (a >>> 27);
+      e = t + f + e + 1518500249 + blocks[j] << 0;
+      b = (b << 30) | (b >>> 2);
+
+      f = (a & b) | ((~a) & c);
+      t = (e << 5) | (e >>> 27);
+      d = t + f + d + 1518500249 + blocks[j + 1] << 0;
+      a = (a << 30) | (a >>> 2);
+
+      f = (e & a) | ((~e) & b);
+      t = (d << 5) | (d >>> 27);
+      c = t + f + c + 1518500249 + blocks[j + 2] << 0;
+      e = (e << 30) | (e >>> 2);
+
+      f = (d & e) | ((~d) & a);
+      t = (c << 5) | (c >>> 27);
+      b = t + f + b + 1518500249 + blocks[j + 3] << 0;
+      d = (d << 30) | (d >>> 2);
+
+      f = (c & d) | ((~c) & e);
+      t = (b << 5) | (b >>> 27);
+      a = t + f + a + 1518500249 + blocks[j + 4] << 0;
+      c = (c << 30) | (c >>> 2);
+    }
+
+    for(; j < 40; j += 5) {
+      f = b ^ c ^ d;
+      t = (a << 5) | (a >>> 27);
+      e = t + f + e + 1859775393 + blocks[j] << 0;
+      b = (b << 30) | (b >>> 2);
+
+      f = a ^ b ^ c;
+      t = (e << 5) | (e >>> 27);
+      d = t + f + d + 1859775393 + blocks[j + 1] << 0;
+      a = (a << 30) | (a >>> 2);
+
+      f = e ^ a ^ b;
+      t = (d << 5) | (d >>> 27);
+      c = t + f + c + 1859775393 + blocks[j + 2] << 0;
+      e = (e << 30) | (e >>> 2);
+
+      f = d ^ e ^ a;
+      t = (c << 5) | (c >>> 27);
+      b = t + f + b + 1859775393 + blocks[j + 3] << 0;
+      d = (d << 30) | (d >>> 2);
+
+      f = c ^ d ^ e;
+      t = (b << 5) | (b >>> 27);
+      a = t + f + a + 1859775393 + blocks[j + 4] << 0;
+      c = (c << 30) | (c >>> 2);
+    }
+
+    for(; j < 60; j += 5) {
+      f = (b & c) | (b & d) | (c & d);
+      t = (a << 5) | (a >>> 27);
+      e = t + f + e - 1894007588 + blocks[j] << 0;
+      b = (b << 30) | (b >>> 2);
+
+      f = (a & b) | (a & c) | (b & c);
+      t = (e << 5) | (e >>> 27);
+      d = t + f + d - 1894007588 + blocks[j + 1] << 0;
+      a = (a << 30) | (a >>> 2);
+
+      f = (e & a) | (e & b) | (a & b);
+      t = (d << 5) | (d >>> 27);
+      c = t + f + c - 1894007588 + blocks[j + 2] << 0;
+      e = (e << 30) | (e >>> 2);
+
+      f = (d & e) | (d & a) | (e & a);
+      t = (c << 5) | (c >>> 27);
+      b = t + f + b - 1894007588 + blocks[j + 3] << 0;
+      d = (d << 30) | (d >>> 2);
+
+      f = (c & d) | (c & e) | (d & e);
+      t = (b << 5) | (b >>> 27);
+      a = t + f + a - 1894007588 + blocks[j + 4] << 0;
+      c = (c << 30) | (c >>> 2);
+    }
+
+    for(; j < 80; j += 5) {
+      f = b ^ c ^ d;
+      t = (a << 5) | (a >>> 27);
+      e = t + f + e - 899497514 + blocks[j] << 0;
+      b = (b << 30) | (b >>> 2);
+
+      f = a ^ b ^ c;
+      t = (e << 5) | (e >>> 27);
+      d = t + f + d - 899497514 + blocks[j + 1] << 0;
+      a = (a << 30) | (a >>> 2);
+
+      f = e ^ a ^ b;
+      t = (d << 5) | (d >>> 27);
+      c = t + f + c - 899497514 + blocks[j + 2] << 0;
+      e = (e << 30) | (e >>> 2);
+
+      f = d ^ e ^ a;
+      t = (c << 5) | (c >>> 27);
+      b = t + f + b - 899497514 + blocks[j + 3] << 0;
+      d = (d << 30) | (d >>> 2);
+
+      f = c ^ d ^ e;
+      t = (b << 5) | (b >>> 27);
+      a = t + f + a - 899497514 + blocks[j + 4] << 0;
+      c = (c << 30) | (c >>> 2);
+    }
+
+    this.h0 = this.h0 + a << 0;
+    this.h1 = this.h1 + b << 0;
+    this.h2 = this.h2 + c << 0;
+    this.h3 = this.h3 + d << 0;
+    this.h4 = this.h4 + e << 0;
+  };
+
+  Sha1.prototype.hex = function () {
+    this.finalize();
+
+    var h0 = this.h0, h1 = this.h1, h2 = this.h2, h3 = this.h3, h4 = this.h4;
+
+    return HEX_CHARS[(h0 >> 28) & 0x0F] + HEX_CHARS[(h0 >> 24) & 0x0F] +
+           HEX_CHARS[(h0 >> 20) & 0x0F] + HEX_CHARS[(h0 >> 16) & 0x0F] +
+           HEX_CHARS[(h0 >> 12) & 0x0F] + HEX_CHARS[(h0 >> 8) & 0x0F] +
+           HEX_CHARS[(h0 >> 4) & 0x0F] + HEX_CHARS[h0 & 0x0F] +
+           HEX_CHARS[(h1 >> 28) & 0x0F] + HEX_CHARS[(h1 >> 24) & 0x0F] +
+           HEX_CHARS[(h1 >> 20) & 0x0F] + HEX_CHARS[(h1 >> 16) & 0x0F] +
+           HEX_CHARS[(h1 >> 12) & 0x0F] + HEX_CHARS[(h1 >> 8) & 0x0F] +
+           HEX_CHARS[(h1 >> 4) & 0x0F] + HEX_CHARS[h1 & 0x0F] +
+           HEX_CHARS[(h2 >> 28) & 0x0F] + HEX_CHARS[(h2 >> 24) & 0x0F] +
+           HEX_CHARS[(h2 >> 20) & 0x0F] + HEX_CHARS[(h2 >> 16) & 0x0F] +
+           HEX_CHARS[(h2 >> 12) & 0x0F] + HEX_CHARS[(h2 >> 8) & 0x0F] +
+           HEX_CHARS[(h2 >> 4) & 0x0F] + HEX_CHARS[h2 & 0x0F] +
+           HEX_CHARS[(h3 >> 28) & 0x0F] + HEX_CHARS[(h3 >> 24) & 0x0F] +
+           HEX_CHARS[(h3 >> 20) & 0x0F] + HEX_CHARS[(h3 >> 16) & 0x0F] +
+           HEX_CHARS[(h3 >> 12) & 0x0F] + HEX_CHARS[(h3 >> 8) & 0x0F] +
+           HEX_CHARS[(h3 >> 4) & 0x0F] + HEX_CHARS[h3 & 0x0F] +
+           HEX_CHARS[(h4 >> 28) & 0x0F] + HEX_CHARS[(h4 >> 24) & 0x0F] +
+           HEX_CHARS[(h4 >> 20) & 0x0F] + HEX_CHARS[(h4 >> 16) & 0x0F] +
+           HEX_CHARS[(h4 >> 12) & 0x0F] + HEX_CHARS[(h4 >> 8) & 0x0F] +
+           HEX_CHARS[(h4 >> 4) & 0x0F] + HEX_CHARS[h4 & 0x0F];
+  };
+
+  Sha1.prototype.toString = Sha1.prototype.hex;
+
+  Sha1.prototype.digest = function () {
+    this.finalize();
+
+    var h0 = this.h0, h1 = this.h1, h2 = this.h2, h3 = this.h3, h4 = this.h4;
+
+    return [
+      (h0 >> 24) & 0xFF, (h0 >> 16) & 0xFF, (h0 >> 8) & 0xFF, h0 & 0xFF,
+      (h1 >> 24) & 0xFF, (h1 >> 16) & 0xFF, (h1 >> 8) & 0xFF, h1 & 0xFF,
+      (h2 >> 24) & 0xFF, (h2 >> 16) & 0xFF, (h2 >> 8) & 0xFF, h2 & 0xFF,
+      (h3 >> 24) & 0xFF, (h3 >> 16) & 0xFF, (h3 >> 8) & 0xFF, h3 & 0xFF,
+      (h4 >> 24) & 0xFF, (h4 >> 16) & 0xFF, (h4 >> 8) & 0xFF, h4 & 0xFF
+    ];
+  };
+
+  Sha1.prototype.array = Sha1.prototype.digest;
+
+  Sha1.prototype.arrayBuffer = function () {
+    this.finalize();
+
+    var buffer = new ArrayBuffer(20);
+    var dataView = new DataView(buffer);
+    dataView.setUint32(0, this.h0);
+    dataView.setUint32(4, this.h1);
+    dataView.setUint32(8, this.h2);
+    dataView.setUint32(12, this.h3);
+    dataView.setUint32(16, this.h4);
+    return buffer;
+  };
+
+  var exports = createMethod();
+
+  if (COMMON_JS) {
+    module.exports = exports;
+  } else {
+    root.sha1 = exports;
+    if (AMD) {
+      !(__WEBPACK_AMD_DEFINE_RESULT__ = function () {
+        return exports;
+      }.call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+    }
+  }
+})();
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5), __webpack_require__(4)))
+
+/***/ }),
+/* 23 */
+/***/ (function(module, exports) {
+
+/* WEBPACK VAR INJECTION */(function(__webpack_amd_options__) {/* globals __webpack_amd_options__ */
+module.exports = __webpack_amd_options__;
+
+/* WEBPACK VAR INJECTION */}.call(exports, {}))
+
+/***/ }),
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Collection, ReplicatingDb, compileSort, utils, _;

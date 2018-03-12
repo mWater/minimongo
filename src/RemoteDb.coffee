@@ -64,8 +64,8 @@ class Collection
       if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
         params._ = new Date().getTime()
 
-      # If in quickfind and localData present and no fields option and not (limit with no sort), use quickfind
-      if @useQuickFind and options.localData and not options.fields and not (options.limit and not options.sort)
+      # If in quickfind and localData present and (no fields option or _rev included) and not (limit with no sort), use quickfind
+      if @useQuickFind and options.localData and (not options.fields or options.fields._rev) and not (options.limit and not options.sort)
         @httpClient("POST", @url + "/quickfind", params, quickfind.encodeRequest(options.localData), (encodedResponse) =>
           success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort))
         , error)
