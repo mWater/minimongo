@@ -7382,7 +7382,7 @@ Collection = (function() {
       throw new Error("Client required to upsert");
     }
     results = [];
-    return async.eachLimit(items, 8, (function(_this) {
+    return async.eachSeries(items, (function(_this) {
       return function(item, cb) {
         var params;
         if (!item.doc._id) {

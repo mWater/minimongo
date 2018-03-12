@@ -107,7 +107,7 @@ class Collection
 
     results = []
 
-    async.eachLimit items, 8, (item, cb) =>
+    async.eachSeries items, (item, cb) =>
       if not item.doc._id
         item.doc._id = utils.createUid()
 
