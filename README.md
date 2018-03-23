@@ -10,7 +10,7 @@ Autoselection is possible with `utils.autoselectLocalDb(options, success, error)
 
 ## Usage
 
-Minimongo is designed to be used with [browserify](http://browserify.org/).
+Minimongo is designed to be used with [browserify](http://browserify.org/) or Webpack
 
 ```javascript
 
@@ -204,14 +204,16 @@ Performs a single upsert, returning the upserted row. POST value is the document
 
 On `403` or `410`, the change is automatically discarded in the HybridDb.
 
-#### PATCH `/<collection>/<_id>`
+If array is POSTed, upsert each one and return array of upserted documents
+
+#### PATCH `/<collection>`
 
 Performs a patch, returning the upserted row. PATCH value is the following structure:
 
 ```
 {
-	doc: <the document in its new form>
-	base: <base document on which the changes were made>
+	doc: <the document in its new form. Can also be array of documents>
+	base: <base document on which the changes were made. Can also be array of base documents, which match length of doc array>
 }
 ```
 
@@ -259,4 +261,4 @@ It can also be used with a simple server that just overwrites documents complete
 
 To test, run `testem` in the main directory.
 
-To test a RemoteDb implementation, use `test/RemoteDbTests.coffee`. Server must have a collection called scratch with fields as specified at top of tests file.
+To test a RemoteDb implementation, use `test/LiveRemoteDbTests.coffee`. Server must have a collection called scratch with fields as specified at top of tests file.
