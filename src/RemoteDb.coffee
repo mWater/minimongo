@@ -107,39 +107,47 @@ class Collection
 
     results = []
 
-    async.eachSeries items, (item, cb) =>
-      if not item.doc._id
-        item.doc._id = utils.createUid()
+    # Check if bases present
+    basesPresent = _.compact(_.pluck(items, "base")).length > 0
 
-      params = { client: @client }
+    params = { client: @client }
 
-      # Add timestamp for Android 2.3.6 bug with caching
-      if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
-        params._ = new Date().getTime()
+    # Add timestamp for Android 2.3.6 bug with caching
+    if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
+      params._ = new Date().getTime()
 
+    # Handle single case
+    if items.length == 1
       # POST if no base, PATCH otherwise
-      if item.base
-        @httpClient "PATCH", @url + "/" + item.doc._id, params, item, (result) ->
-          results.push result
-          cb()
+      if basesPresent
+        @httpClient "PATCH", @url, params, items[0], (result) ->
+          if _.isArray(docs)
+            success([result])
+          else
+            success(result)
         , (err) ->
-          cb(err)
+          if error then error(err)
       else
-        @httpClient "POST", @url, params, item.doc, (result) ->
-          results.push result
-          cb()
+        @httpClient "POST", @url, params, items[0].doc, (result) ->
+          if _.isArray(docs)
+            success([result])
+          else
+            success(result)
         , (err) ->
-          cb(err)
-    , (err) ->
-      if err
-        if error then error(err)
-        return
+          if error then error(err)
+    else
+      # POST if no base, PATCH otherwise
+      if basesPresent
+        @httpClient "PATCH", @url, params, { doc: _.pluck(items, "doc"), base: _.pluck(items, "base") }, (result) ->
+          success(result)
+        , (err) ->
+          if error then error(err)
+      else
+        @httpClient "POST", @url, params, _.pluck(items, "doc"), (result) ->
+          success(result)
+        , (err) ->
+          if error then error(err)
 
-      # Call back differently depending on orig parameters
-      if _.isArray(docs)
-        if success then success(results)
-      else
-        if success then success(results[0])
 
   # error is called with jqXHR
   remove: (id, success, error) ->

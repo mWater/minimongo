@@ -57,11 +57,76 @@ describe 'RemoteDb', ->
 
       assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
       assert.deepEqual @httpCall.data, { _id: "0", x: 1 }
-      assert.deepEqual data, { _id: "0", _rev: 1, x: 1 }
+      assert.deepEqual data, { _id: "0", _rev: 1, x: 1 }, "success data wrong"
       done()
     @callSuccessWith = { _id: "0", _rev: 1, x: 1 }
 
     @col.upsert({ _id: "0", x: 1 }, success, () -> assert.fail())
+
+  it "calls POST for new single bulk upsert", (done) ->
+    success = (data) =>
+      assert.equal @httpCall.method, "POST"
+      assert.equal @httpCall.url, "http://someserver.com/scratch"
+
+      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert.deepEqual @httpCall.data, { _id: "0", x: 1 }
+      assert.deepEqual data, [{ _id: "0", _rev: 1, x: 1 }]
+      done()
+    @callSuccessWith = { _id: "0", _rev: 1, x: 1 }
+
+    @col.upsert([{ _id: "0", x: 1 }], success, () -> assert.fail())
+
+  it "calls POST for new multiple bulk upsert", (done) ->
+    success = (data) =>
+      assert.equal @httpCall.method, "POST"
+      assert.equal @httpCall.url, "http://someserver.com/scratch"
+
+      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert.deepEqual @httpCall.data, [{ _id: "0", x: 1 }, { _id: "1", x: 2 }]
+      assert.deepEqual data, [{ _id: "0", _rev: 1, x: 1 }, { _id: "1", _rev: 1, x: 2 }]
+      done()
+    @callSuccessWith = [{ _id: "0", _rev: 1, x: 1 }, { _id: "1", _rev: 1, x: 2 }]
+
+    @col.upsert([{ _id: "0", x: 1 }, { _id: "1", x: 2 }], success, () -> assert.fail())
+
+  it "calls PATCH for upsert with base", (done) ->
+    success = (data) =>
+      assert.equal @httpCall.method, "PATCH"
+      assert.equal @httpCall.url, "http://someserver.com/scratch"
+
+      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert.deepEqual @httpCall.data, { doc: { _id: "0", _rev: 1, x: 2 }, base: { _id: "0", _rev: 1, x: 1 } }
+      assert.deepEqual data, { _id: "0", _rev: 1, x: 2 }, "success data wrong"
+      done()
+    @callSuccessWith = { _id: "0", _rev: 1, x: 2 }
+
+    @col.upsert({ _id: "0", _rev: 1, x: 2 }, { _id: "0", _rev: 1, x: 1 }, success, () -> assert.fail())
+
+  it "calls PATCH for new single bulk upsert with base", (done) ->
+    success = (data) =>
+      assert.equal @httpCall.method, "PATCH"
+      assert.equal @httpCall.url, "http://someserver.com/scratch"
+
+      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert.deepEqual @httpCall.data, { doc: { _id: "0", _rev: 1, x: 2 }, base: { _id: "0", _rev: 1, x: 1 } }
+      assert.deepEqual data, [{ _id: "0", _rev: 2, x: 2 }]
+      done()
+    @callSuccessWith = { _id: "0", _rev: 2, x: 2 }
+
+    @col.upsert([{ _id: "0", _rev: 1, x: 2 }], [{ _id: "0", _rev: 1, x: 1 }], success, () -> assert.fail())
+
+  it "calls PATCH for new multiple bulk upsert", (done) ->
+    success = (data) =>
+      assert.equal @httpCall.method, "PATCH"
+      assert.equal @httpCall.url, "http://someserver.com/scratch"
+
+      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert.deepEqual @httpCall.data, { doc: [{ _id: "0", _rev: 1, x: 2 }, { _id: "1", _rev: 1, x: 3 }], base: [{ _id: "0", _rev: 1, x: 1 }, { _id: "1", _rev: 1, x: 2 }] }
+      assert.deepEqual data, [{ _id: "0", _rev: 2, x: 2 }, { _id: "1", _rev: 2, x: 3 }]
+      done()
+    @callSuccessWith = [{ _id: "0", _rev: 2, x: 2 }, { _id: "1", _rev: 2, x: 3 }]
+
+    @col.upsert([{ _id: "0", _rev: 1, x: 2 }, { _id: "1", _rev: 1, x: 3 }], [{ _id: "0", _rev: 1, x: 1 }, { _id: "1", _rev: 1, x: 2 }], success, () -> assert.fail())
 
   it "calls POST quickfind for find if localData passed", (done) ->
     success = (data) =>

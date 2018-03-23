@@ -7376,57 +7376,67 @@ Collection = (function() {
   };
 
   Collection.prototype.upsert = function(docs, bases, success, error) {
-    var items, results, _ref;
+    var basesPresent, items, params, results, _ref;
     _ref = utils.regularizeUpsert(docs, bases, success, error), items = _ref[0], success = _ref[1], error = _ref[2];
     if (!this.client) {
       throw new Error("Client required to upsert");
     }
     results = [];
-    return async.eachSeries(items, (function(_this) {
-      return function(item, cb) {
-        var params;
-        if (!item.doc._id) {
-          item.doc._id = utils.createUid();
-        }
-        params = {
-          client: _this.client
-        };
-        if ((typeof navigator !== "undefined" && navigator !== null) && navigator.userAgent.toLowerCase().indexOf('android 2.3') !== -1) {
-          params._ = new Date().getTime();
-        }
-        if (item.base) {
-          return _this.httpClient("PATCH", _this.url + "/" + item.doc._id, params, item, function(result) {
-            results.push(result);
-            return cb();
-          }, function(err) {
-            return cb(err);
-          });
-        } else {
-          return _this.httpClient("POST", _this.url, params, item.doc, function(result) {
-            results.push(result);
-            return cb();
-          }, function(err) {
-            return cb(err);
-          });
-        }
-      };
-    })(this), function(err) {
-      if (err) {
-        if (error) {
-          error(err);
-        }
-        return;
-      }
-      if (_.isArray(docs)) {
-        if (success) {
-          return success(results);
-        }
+    basesPresent = _.compact(_.pluck(items, "base")).length > 0;
+    params = {
+      client: this.client
+    };
+    if ((typeof navigator !== "undefined" && navigator !== null) && navigator.userAgent.toLowerCase().indexOf('android 2.3') !== -1) {
+      params._ = new Date().getTime();
+    }
+    if (items.length === 1) {
+      if (basesPresent) {
+        return this.httpClient("PATCH", this.url, params, items[0], function(result) {
+          if (_.isArray(docs)) {
+            return success([result]);
+          } else {
+            return success(result);
+          }
+        }, function(err) {
+          if (error) {
+            return error(err);
+          }
+        });
       } else {
-        if (success) {
-          return success(results[0]);
-        }
+        return this.httpClient("POST", this.url, params, items[0].doc, function(result) {
+          if (_.isArray(docs)) {
+            return success([result]);
+          } else {
+            return success(result);
+          }
+        }, function(err) {
+          if (error) {
+            return error(err);
+          }
+        });
       }
-    });
+    } else {
+      if (basesPresent) {
+        return this.httpClient("PATCH", this.url, params, {
+          doc: _.pluck(items, "doc"),
+          base: _.pluck(items, "base")
+        }, function(result) {
+          return success(result);
+        }, function(err) {
+          if (error) {
+            return error(err);
+          }
+        });
+      } else {
+        return this.httpClient("POST", this.url, params, _.pluck(items, "doc"), function(result) {
+          return success(result);
+        }, function(err) {
+          if (error) {
+            return error(err);
+          }
+        });
+      }
+    }
   };
 
   Collection.prototype.remove = function(id, success, error) {
