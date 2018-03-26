@@ -4,16 +4,18 @@ async = require 'async'
 utils = require('./utils')
 jQueryHttpClient = require './jQueryHttpClient'
 quickfind = require './quickfind'
+pako = require 'pako'
 
 module.exports = class RemoteDb
   # Url must have trailing /
   # useQuickFind enables the quickfind protocol for finds
-  constructor: (url, client, httpClient, useQuickFind = false) ->
+  constructor: (url, client, httpClient, useQuickFind = false, compressPayload = false) ->
     @url = url
     @client = client
     @collections = {}
     @httpClient = httpClient
     @useQuickFind = useQuickFind
+    @compressPayload = compressPayload
 
   # Can specify url of specific collection as option
   addCollection: (name, options={}, success, error) ->
@@ -22,7 +24,7 @@ module.exports = class RemoteDb
 
     url = options.url or (@url + name)
 
-    collection = new Collection(name, url, @client, @httpClient, @useQuickFind)
+    collection = new Collection(name, url, @client, @httpClient, @useQuickFind, @compressPayload)
     @[name] = collection
     @collections[name] = collection
     if success? then success()
@@ -36,12 +38,13 @@ module.exports = class RemoteDb
 
 # Remote collection on server
 class Collection
-  constructor: (name, url, client, httpClient, useQuickFind) ->
+  constructor: (name, url, client, httpClient, useQuickFind, compressPayload) ->
     @name = name
     @url = url
     @client = client
     @httpClient = httpClient or jQueryHttpClient
     @useQuickFind = useQuickFind
+    @compressPayload = compressPayload
 
   # error is called with jqXHR
   find: (selector, options = {}) ->
@@ -59,6 +62,9 @@ class Collection
       if @client
         params.client = @client
       params.selector = JSON.stringify(selector || {})
+
+      if @compressPayload
+        params.selector = pako.deflate(JSON.stringify(selector || {}));
 
       # Add timestamp for Android 2.3.6 bug with caching
       if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1

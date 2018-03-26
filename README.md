@@ -55,7 +55,7 @@ options are MongoDB find options: e.g. `{ limit: 10 }`, `{ sort: ["x"] }`
 
 ### Caching
 
-A set of rows can be cached in a local database. Call 
+A set of rows can be cached in a local database. Call
 
 `db.sometable.cache(docs, selector, options, success, error)`
 
@@ -156,6 +156,8 @@ When upserts and removes are done on the HybridDb, they are queued up in the Loc
 `upload` will go through each collection and send any upserts or removes to the remoteDb.
 
 `findOne` will not return an interim `null` result, but will only return interim results when one is present.
+
+`compress` will compress the payload to server using pako
 
 ### RemoteDb
 

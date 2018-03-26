@@ -2,6 +2,7 @@ chai = require 'chai'
 assert = chai.assert
 RemoteDb = require "../src/RemoteDb"
 _ = require 'lodash'
+pako = require 'pako'
 
 describe 'RemoteDb', ->
   beforeEach () ->
@@ -154,3 +155,22 @@ describe 'RemoteDb', ->
 
     @col.find({ a: 1 }, { limit: 10, sort: ["b"], localData: localData }).fetch(success, () -> assert.fail())
 
+  it "compresses the payload to server when using compressPayload", (done) ->
+
+    @db = new RemoteDb("http://someserver.com/", "clientid", @mockHttpClient, true, true)
+    @db.addCollection("scratch")
+    @col = @db.scratch
+
+    expectedSelector = pako.deflate('{"a":1}')
+    success = (data) =>
+      assert.equal @httpCall.method, "GET"
+      assert.equal @httpCall.url, "http://someserver.com/scratch"
+      assert.deepEqual @httpCall.params, { selector: expectedSelector, limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert not @httpCall.data
+
+      assert.deepEqual data, [{ x: 1 }]
+      assert.equal pako.inflate(@httpCall.params.selector, { to: 'string' }), '{"a":1}'
+      done()
+    @callSuccessWith = [{ x: 1 }]
+
+    @col.find({ a: 1 }, { limit: 10, sort: ["b"]}).fetch(success, () -> assert.fail())
