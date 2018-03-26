@@ -157,8 +157,6 @@ When upserts and removes are done on the HybridDb, they are queued up in the Loc
 
 `findOne` will not return an interim `null` result, but will only return interim results when one is present.
 
-`compress` will compress the payload to server using pako
-
 ### RemoteDb
 
 Uses AJAX-JSON calls to an API to query a real Mongo database. API is simple and contains only query, upsert, patch and remove commands.
