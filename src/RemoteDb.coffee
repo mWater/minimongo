@@ -64,7 +64,7 @@ class Collection
       params.selector = JSON.stringify(selector || {})
 
       if @compressPayload
-        params.selector = pako.deflate(JSON.stringify(selector || {}));
+        params.selector = pako.deflate(JSON.stringify(selector || {}), { to: 'string' })
 
       # Add timestamp for Android 2.3.6 bug with caching
       if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
@@ -92,6 +92,9 @@ class Collection
     if @client
       params.client = @client
     params.selector = JSON.stringify(selector || {})
+
+    if @compressPayload
+      params.selector = pako.deflate(JSON.stringify(selector || {}), { to: 'string' })
 
     # Add timestamp for Android 2.3.6 bug with caching
     if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
