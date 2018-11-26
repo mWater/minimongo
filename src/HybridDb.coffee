@@ -315,7 +315,7 @@ class HybridCollection
     @localCol.pendingUpserts (upserts) =>
       # Sort upserts if sort defined
       if @options.sortUpserts
-        upserts.sort(@options.sortUpserts)
+        upserts.sort((u1, u2) => @options.sortUpserts(u1.doc, u2.doc))
         
       uploadUpserts upserts, =>
         @localCol.pendingRemoves (removes) ->
