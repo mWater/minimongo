@@ -6,6 +6,9 @@ bowser = require 'bowser'
 compileDocumentSelector = require('./selector').compileDocumentSelector
 compileSort = require('./selector').compileSort
 
+booleanPointInPolygon = require("@turf/boolean-point-in-polygon").default
+intersect = require("@turf/intersect").default
+
 # Test window.localStorage
 isLocalStorageSupported = ->
   if not window.localStorage
@@ -238,26 +241,11 @@ processNearOperator = (selector, list) ->
       list = _.pluck distances, 'doc'
   return list
 
-# Very simple polygon check. Assumes that is a square
 pointInPolygon = (point, polygon) ->
-  # Check that first == last
-  if not _.isEqual(_.first(polygon.coordinates[0]), _.last(polygon.coordinates[0]))
-    throw new Error("First must equal last")
+  return booleanPointInPolygon(point, polygon)
 
-  # Check bounds
-  if point.coordinates[0] < Math.min.apply(this,
-      _.map(polygon.coordinates[0], (coord) -> coord[0]))
-    return false
-  if point.coordinates[1] < Math.min.apply(this,
-      _.map(polygon.coordinates[0], (coord) -> coord[1]))
-    return false
-  if point.coordinates[0] > Math.max.apply(this,
-      _.map(polygon.coordinates[0], (coord) -> coord[0]))
-    return false
-  if point.coordinates[1] > Math.max.apply(this,
-      _.map(polygon.coordinates[0], (coord) -> coord[1]))
-    return false
-  return true
+polygonIntersection = (polygon1, polygon2) ->
+  return intersect(polygon1, polygon2)?
 
 # From http://www.movable-type.co.uk/scripts/latlong.html
 getDistanceFromLatLngInM = (lat1, lng1, lat2, lng2) ->
@@ -276,17 +264,21 @@ processGeoIntersectsOperator = (selector, list) ->
   for key, value of selector
     if value? and value['$geoIntersects']
       geo = value['$geoIntersects']['$geometry']
+      # Can only test intersection with polygon
       if geo.type != 'Polygon'
         break
 
       # Check within for each
       list = _.filter list, (doc) ->
-        # Reject non-points
-        if not doc[key] or doc[key].type != 'Point'
+        # Ignore if null
+        if not doc[key]
           return false
 
-        # Check polygon
-        return pointInPolygon(doc[key], geo)
+        # Check point or polygon
+        if doc[key].type == 'Point'
+          return pointInPolygon(doc[key], geo)
+        else  
+          return polygonIntersection(doc[key], geo)
 
   return list
 

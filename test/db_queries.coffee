@@ -368,3 +368,31 @@ module.exports = ->
         @col.find(selector).fetch (results) ->
           assert.deepEqual _.pluck(results, '_id'), ["2"]
           done()
+
+  context 'With polygon rows', ->
+    polygon = (coords) => {
+      type: 'Polygon'
+      coordinates: coords
+    }
+
+    beforeEach (done) ->
+      @col.upsert { _id:"1", geo: polygon([[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]) }, =>
+        @col.upsert { _id:"2", geo: polygon([[[10, 10], [11, 10], [11, 11], [10, 11], [10, 10]]]) }, =>
+          done()
+
+    it 'finds polygons that intersect simple box', (done) ->
+      selector = geo:
+        $geoIntersects:
+          $geometry: polygon([[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]])
+      @col.find(selector).fetch (results) ->
+        assert.deepEqual _.pluck(results, '_id'), ["1"]
+        done()
+
+    it 'finds polygons that intersect large box', (done) ->
+      selector = geo:
+        $geoIntersects:
+          $geometry: polygon([[[0, 0], [12, 0], [12, 12], [0, 12], [0, 0]]])
+      @col.find(selector).fetch (results) ->
+        assert.deepEqual _.pluck(results, '_id'), ["1", "2"]
+        done()
+
