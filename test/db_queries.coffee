@@ -396,3 +396,67 @@ module.exports = ->
         assert.deepEqual _.pluck(results, '_id'), ["1", "2"]
         done()
 
+  context 'With multipolygon rows', ->
+    polygon = (coords) => {
+      type: 'Polygon'
+      coordinates: coords
+    }
+
+    multipolygon = (coords) => {
+      type: 'MultiPolygon'
+      coordinates: coords
+    }
+
+    beforeEach (done) ->
+      @col.upsert { _id:"1", geo: multipolygon([[[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]]) }, =>
+        @col.upsert { _id:"2", geo: multipolygon([[[[10, 10], [11, 10], [11, 11], [10, 11], [10, 10]]]]) }, =>
+          done()
+
+    it 'finds polygons that intersect simple box', (done) ->
+      selector = geo:
+        $geoIntersects:
+          $geometry: polygon([[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]])
+      @col.find(selector).fetch (results) ->
+        assert.deepEqual _.pluck(results, '_id'), ["1"]
+        done()
+
+    it 'finds polygons that intersect large box', (done) ->
+      selector = geo:
+        $geoIntersects:
+          $geometry: polygon([[[0, 0], [12, 0], [12, 12], [0, 12], [0, 0]]])
+      @col.find(selector).fetch (results) ->
+        assert.deepEqual _.pluck(results, '_id'), ["1", "2"]
+        done()
+
+  context 'With multilinestring rows', ->
+    polygon = (coords) => {
+      type: 'Polygon'
+      coordinates: coords
+    }
+
+    beforeEach (done) ->
+      linestring = {
+        type: "MultiLineString"
+        coordinates: [
+          [[0, 0], [0, 1]]
+          [[0, 0], [1, 0]]
+        ]
+      }
+      @col.upsert { _id:"1", geo: linestring }, =>
+        done()
+
+    it 'finds that that intersect simple box', (done) ->
+      selector = geo:
+        $geoIntersects:
+          $geometry: polygon([[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]])
+      @col.find(selector).fetch (results) ->
+        assert.deepEqual _.pluck(results, '_id'), ["1"]
+        done()
+
+    it 'finds that that doesn\'t intersect simple box', (done) ->
+      selector = geo:
+        $geoIntersects:
+          $geometry: polygon([[[2, 2], [3, 2], [3, 3], [2, 3], [2, 2]]])
+      @col.find(selector).fetch (results) ->
+        assert.deepEqual _.pluck(results, '_id'), []
+        done()

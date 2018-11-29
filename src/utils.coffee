@@ -8,6 +8,8 @@ compileSort = require('./selector').compileSort
 
 booleanPointInPolygon = require("@turf/boolean-point-in-polygon").default
 intersect = require("@turf/intersect").default
+booleanCrosses = require("@turf/boolean-crosses").default
+booleanWithin = require("@turf/boolean-within").default
 
 # Test window.localStorage
 isLocalStorageSupported = ->
@@ -19,7 +21,6 @@ isLocalStorageSupported = ->
     return true
   catch e
     return false
-
 
 # Compile a document selector (query) to a lambda function
 exports.compileDocumentSelector = compileDocumentSelector
@@ -277,8 +278,17 @@ processGeoIntersectsOperator = (selector, list) ->
         # Check point or polygon
         if doc[key].type == 'Point'
           return pointInPolygon(doc[key], geo)
-        else  
+        else if doc[key].type in ["Polygon", "MultiPolygon"]
           return polygonIntersection(doc[key], geo)
+        else if doc[key].type == "LineString"
+          return booleanCrosses(doc[key], geo) or booleanWithin(doc[key], geo)
+        else if doc[key].type == "MultiLineString"
+          # Bypass deficiencies in turf.js by splitting it up
+          for line in doc[key].coordinates
+            lineGeo = { type: "LineString", coordinates: line }
+            if booleanCrosses(lineGeo, geo) or booleanWithin(lineGeo, geo)
+              return true
+          return false
 
   return list
 
