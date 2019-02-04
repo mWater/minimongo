@@ -1,3 +1,4 @@
+$ = require 'jquery'
 # Create default JSON http client
 module.exports = (method, url, params, data, success, error) ->
   # Append

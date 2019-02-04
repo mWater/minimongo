@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 17);
+/******/ 	return __webpack_require__(__webpack_require__.s = 18);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -73,7 +73,7 @@ _ = __webpack_require__(1);
 
 async = __webpack_require__(5);
 
-bowser = __webpack_require__(21);
+bowser = __webpack_require__(22);
 
 compileDocumentSelector = __webpack_require__(2).compileDocumentSelector;
 
@@ -81,11 +81,11 @@ compileSort = __webpack_require__(2).compileSort;
 
 booleanPointInPolygon = __webpack_require__(9)["default"];
 
-intersect = __webpack_require__(23)["default"];
+intersect = __webpack_require__(24)["default"];
 
-booleanCrosses = __webpack_require__(25)["default"];
+booleanCrosses = __webpack_require__(26)["default"];
 
-booleanWithin = __webpack_require__(32)["default"];
+booleanWithin = __webpack_require__(33)["default"];
 
 isLocalStorageSupported = function() {
   var e;
@@ -448,7 +448,7 @@ licenses, included below:
 */
 
 LocalCollection = {};
-EJSON = __webpack_require__(22);
+EJSON = __webpack_require__(23);
 var _ = __webpack_require__(1);
 
 
@@ -3400,7 +3400,7 @@ exports.convertDistance = convertDistance;
 
 }());
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6), __webpack_require__(19).setImmediate, __webpack_require__(8)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6), __webpack_require__(20).setImmediate, __webpack_require__(8)))
 
 /***/ }),
 /* 6 */
@@ -5246,7 +5246,7 @@ _ = __webpack_require__(1);
 
 async = __webpack_require__(5);
 
-IDBStore = __webpack_require__(34);
+IDBStore = __webpack_require__(35);
 
 utils = __webpack_require__(0);
 
@@ -7109,6 +7109,12 @@ HybridCollection = (function() {
 
 /***/ }),
 /* 16 */
+/***/ (function(module, exports) {
+
+module.exports = $;
+
+/***/ }),
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var compileSort, hashRows, sha1, shardLength, _;
@@ -7197,29 +7203,29 @@ hashRows = function(rows) {
 
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(18);
+module.exports = __webpack_require__(19);
 
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports.MemoryDb = __webpack_require__(10);
 exports.LocalStorageDb = __webpack_require__(14);
 exports.IndexedDb = __webpack_require__(12);
 exports.WebSQLDb = __webpack_require__(13);
-exports.RemoteDb = __webpack_require__(35);
+exports.RemoteDb = __webpack_require__(36);
 exports.HybridDb = __webpack_require__(15);
 exports.ReplicatingDb = __webpack_require__(40);
-exports.quickfind = __webpack_require__(16);
+exports.quickfind = __webpack_require__(17);
 exports.utils = __webpack_require__(0);
 
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {var apply = Function.prototype.apply;
@@ -7272,7 +7278,7 @@ exports._unrefActive = exports.active = function(item) {
 };
 
 // setimmediate attaches itself to the global object
-__webpack_require__(20);
+__webpack_require__(21);
 // On some exotic environments, it's not clear which object `setimmeidate` was
 // able to install onto.  Search each possibility in the same order as the
 // `setimmediate` library.
@@ -7286,7 +7292,7 @@ exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6)))
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
@@ -7479,7 +7485,7 @@ exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6), __webpack_require__(8)))
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -7765,7 +7771,7 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
 
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _ = __webpack_require__(1);
@@ -8097,7 +8103,7 @@ module.exports = EJSON;
 
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8112,7 +8118,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var helpers_1 = __webpack_require__(4);
 var invariant_1 = __webpack_require__(3);
-var martinez = __importStar(__webpack_require__(24));
+var martinez = __importStar(__webpack_require__(25));
 /**
  * Takes two {@link Polygon|polygon} or {@link MultiPolygon|multi-polygon} geometries and
  * finds their polygonal intersection. If they don't intersect, returns null.
@@ -8213,7 +8219,7 @@ exports.default = intersect;
 
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /**
@@ -9935,14 +9941,14 @@ exports.default = intersect;
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var line_intersect_1 = __webpack_require__(26);
-var polygon_to_line_1 = __webpack_require__(31);
+var line_intersect_1 = __webpack_require__(27);
+var polygon_to_line_1 = __webpack_require__(32);
 var boolean_point_in_polygon_1 = __webpack_require__(9);
 var invariant_1 = __webpack_require__(3);
 var helpers_1 = __webpack_require__(4);
@@ -10104,7 +10110,7 @@ exports.default = booleanCrosses;
 
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10115,9 +10121,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var helpers_1 = __webpack_require__(4);
 var invariant_1 = __webpack_require__(3);
-var line_segment_1 = __importDefault(__webpack_require__(27));
+var line_segment_1 = __importDefault(__webpack_require__(28));
 var meta_1 = __webpack_require__(7);
-var geojson_rbush_1 = __importDefault(__webpack_require__(28));
+var geojson_rbush_1 = __importDefault(__webpack_require__(29));
 /**
  * Takes any LineString or Polygon GeoJSON and returns the intersecting point(s).
  *
@@ -10223,7 +10229,7 @@ exports.default = lineIntersect;
 
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10325,10 +10331,10 @@ exports.default = lineSegment;
 
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var rbush = __webpack_require__(29);
+var rbush = __webpack_require__(30);
 var helpers = __webpack_require__(4);
 var meta = __webpack_require__(7);
 var turfBBox = __webpack_require__(11).default;
@@ -10539,7 +10545,7 @@ module.exports.default = geojsonRbush;
 
 
 /***/ }),
-/* 29 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10548,7 +10554,7 @@ module.exports.default = geojsonRbush;
 module.exports = rbush;
 module.exports.default = rbush;
 
-var quickselect = __webpack_require__(30);
+var quickselect = __webpack_require__(31);
 
 function rbush(maxEntries, format) {
     if (!(this instanceof rbush)) return new rbush(maxEntries, format);
@@ -11108,7 +11114,7 @@ function multiSelect(arr, left, right, n, compare) {
 
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 (function (global, factory) {
@@ -11177,7 +11183,7 @@ return quickselect;
 
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11257,14 +11263,14 @@ exports.coordsToLine = coordsToLine;
 
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var bbox_1 = __webpack_require__(11);
-var boolean_point_on_line_1 = __webpack_require__(33);
+var boolean_point_on_line_1 = __webpack_require__(34);
 var boolean_point_in_polygon_1 = __webpack_require__(9);
 var invariant_1 = __webpack_require__(3);
 /**
@@ -11476,7 +11482,7 @@ exports.default = booleanWithin;
 
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11579,7 +11585,7 @@ exports.default = booleanPointOnLine;
 
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*global window:false, self:false, define:false, module:false */
@@ -12994,14 +13000,14 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*global windo
 
 
 /***/ }),
-/* 35 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var $, Collection, RemoteDb, async, jQueryHttpClient, quickfind, utils, _;
 
 _ = __webpack_require__(1);
 
-$ = __webpack_require__(36);
+$ = __webpack_require__(16);
 
 async = __webpack_require__(5);
 
@@ -13009,7 +13015,7 @@ utils = __webpack_require__(0);
 
 jQueryHttpClient = __webpack_require__(37);
 
-quickfind = __webpack_require__(16);
+quickfind = __webpack_require__(17);
 
 module.exports = RemoteDb = (function() {
   function RemoteDb(url, client, httpClient, useQuickFind) {
@@ -13221,14 +13227,12 @@ Collection = (function() {
 
 
 /***/ }),
-/* 36 */
-/***/ (function(module, exports) {
-
-module.exports = $;
-
-/***/ }),
 /* 37 */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
+
+var $;
+
+$ = __webpack_require__(16);
 
 module.exports = function(method, url, params, data, success, error) {
   var fullUrl, req;
