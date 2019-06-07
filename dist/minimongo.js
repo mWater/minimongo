@@ -105,7 +105,7 @@ isLocalStorageSupported = function() {
 exports.compileDocumentSelector = compileDocumentSelector;
 
 exports.autoselectLocalDb = function(options, success, error) {
-  var IndexedDb, LocalStorageDb, MemoryDb, WebSQLDb, browser;
+  var IndexedDb, LocalStorageDb, MemoryDb, WebSQLDb, browser, db, ex, _ref;
   IndexedDb = __webpack_require__(12);
   WebSQLDb = __webpack_require__(13);
   LocalStorageDb = __webpack_require__(14);
@@ -115,8 +115,30 @@ exports.autoselectLocalDb = function(options, success, error) {
     return new MemoryDb(options, success);
   }
   if (window.cordova) {
-    console.log("Selecting WebSQLDb for Cordova");
-    return new WebSQLDb(options, success, error);
+    if (((_ref = window.device) != null ? _ref.platform : void 0) === "iOS" && window.sqlitePlugin) {
+      try {
+        db = window.sqlitePlugin.openDatabase({
+          name: 'minimongo_' + options.namespace
+        });
+        if (!db) {
+          console.log("Failover WebSQLDb for Cordova");
+          return new WebSQLDb(options, success, error);
+        } else {
+          console.log("Selecting WebSQLDb(sqlite) for Cordova");
+          options.db = db;
+          return new WebSQLDb(options, success, error);
+        }
+      } catch (_error) {
+        ex = _error;
+        if (error) {
+          error(ex);
+        }
+        return;
+      }
+    } else {
+      console.log("Selecting WebSQLDb for Cordova");
+      return new WebSQLDb(options, success, error);
+    }
   }
   if (browser.android || browser.ios || browser.chrome || browser.safari || browser.opera || browser.blackberry) {
     console.log("Selecting WebSQLDb for browser");
@@ -5823,6 +5845,10 @@ module.exports = WebSQLDb = (function() {
   function WebSQLDb(options, success, error) {
     var checkV2, ex, migrateToV1, migrateToV2;
     this.collections = {};
+    if (options.db) {
+      this.db = options.db;
+      return;
+    }
     try {
       this.db = window.openDatabase('minimongo_' + options.namespace, '', 'Minimongo:' + options.namespace, 5 * 1024 * 1024);
       if (!this.db) {

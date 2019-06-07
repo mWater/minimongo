@@ -12,7 +12,11 @@ module.exports = class WebSQLDb
   constructor: (options, success, error) ->
     @collections = {}
 
-    try 
+    if options.db
+      @db = options.db
+      return
+
+    try
       # Create database
       # TODO escape name
       @db = window.openDatabase 'minimongo_' + options.namespace, '', 'Minimongo:' + options.namespace, 5 * 1024 * 1024
@@ -46,7 +50,7 @@ module.exports = class WebSQLDb
       else
         if success then success(this)
 
-    if not @db.version 
+    if not @db.version
       @db.changeVersion "", "1.0", migrateToV1, error, checkV2
     else
       checkV2()
@@ -317,7 +321,7 @@ class Collection
       # Add all non-local that are not upserted or removed
       async.eachSeries docs, (doc, callback) =>
         tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, doc._id], (tx, results) =>
-          # Check if present 
+          # Check if present
           if results.rows.length == 0
             # Upsert
             tx.executeSql "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [@name, doc._id, "cached", JSON.stringify(doc)], ->
