@@ -7219,7 +7219,7 @@ exports.IndexedDb = __webpack_require__(12);
 exports.WebSQLDb = __webpack_require__(13);
 exports.RemoteDb = __webpack_require__(36);
 exports.HybridDb = __webpack_require__(15);
-exports.ReplicatingDb = __webpack_require__(40);
+exports.ReplicatingDb = __webpack_require__(41);
 exports.quickfind = __webpack_require__(17);
 exports.utils = __webpack_require__(0);
 
@@ -13003,7 +13003,7 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*global windo
 /* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var $, Collection, RemoteDb, async, jQueryHttpClient, quickfind, utils, _;
+var $, Collection, RemoteDb, async, compressJson, jQueryHttpClient, quickfind, utils, _;
 
 _ = __webpack_require__(1);
 
@@ -13016,6 +13016,8 @@ utils = __webpack_require__(0);
 jQueryHttpClient = __webpack_require__(37);
 
 quickfind = __webpack_require__(17);
+
+compressJson = __webpack_require__(40);
 
 module.exports = RemoteDb = (function() {
   function RemoteDb(url, client, httpClient, useQuickFind) {
@@ -13038,7 +13040,7 @@ module.exports = RemoteDb = (function() {
       _ref = [{}, options, success], options = _ref[0], success = _ref[1], error = _ref[2];
     }
     url = options.url || (this.url + name);
-    collection = new Collection(name, url, this.client, this.httpClient, this.useQuickFind);
+    collection = new Collection(name, url, this.client, this.httpClient, this.useQuickFind, options.compressedJson || false);
     this[name] = collection;
     this.collections[name] = collection;
     if (success != null) {
@@ -13063,12 +13065,13 @@ module.exports = RemoteDb = (function() {
 })();
 
 Collection = (function() {
-  function Collection(name, url, client, httpClient, useQuickFind) {
+  function Collection(name, url, client, httpClient, useQuickFind, compressedJson) {
     this.name = name;
     this.url = url;
     this.client = client;
     this.httpClient = httpClient || jQueryHttpClient;
     this.useQuickFind = useQuickFind;
+    this.compressedJson = compressedJson;
   }
 
   Collection.prototype.find = function(selector, options) {
@@ -13081,7 +13084,7 @@ Collection = (function() {
           var params;
           params = {};
           if (options.sort) {
-            params.sort = JSON.stringify(options.sort);
+            params.sort = _this.compressedJson ? compressJson(options.sort) : JSON.stringify(options.sort);
           }
           if (options.limit) {
             params.limit = options.limit;
@@ -13090,12 +13093,12 @@ Collection = (function() {
             params.skip = options.skip;
           }
           if (options.fields) {
-            params.fields = JSON.stringify(options.fields);
+            params.fields = _this.compressedJson ? compressJson(options.fields) : JSON.stringify(options.fields);
           }
           if (_this.client) {
             params.client = _this.client;
           }
-          params.selector = JSON.stringify(selector || {});
+          params.selector = _this.compressedJson ? compressJson(selector || {}) : JSON.stringify(selector || {});
           if ((typeof navigator !== "undefined" && navigator !== null) && navigator.userAgent.toLowerCase().indexOf('android 2.3') !== -1) {
             params._ = new Date().getTime();
           }
@@ -13658,6 +13661,13 @@ module.exports = __webpack_amd_options__;
 
 /***/ }),
 /* 40 */
+/***/ (function(module, exports) {
+
+
+
+
+/***/ }),
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Collection, ReplicatingDb, compileSort, utils, _;

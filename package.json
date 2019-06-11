@@ -4,7 +4,7 @@
   "description": "Client-side mongo database with server sync over http",
   "main": "index.js",
   "scripts": {
-    "test": "testem ci"
+    "test": "gulp test"
   },
   "repository": {
     "type": "git",
@@ -60,6 +60,7 @@
     "idb-wrapper": "^1.4.1",
     "jquery": "^3.3.1",
     "js-sha1": "^0.6.0",
-    "lodash": "^3.10.1"
+    "lodash": "^3.10.1",
+    "pako": "^1.0.10"
   }
 }

@@ -4,6 +4,7 @@ async = require 'async'
 utils = require('./utils')
 jQueryHttpClient = require './jQueryHttpClient'
 quickfind = require './quickfind'
+compressJson = require './compressJson'
 
 module.exports = class RemoteDb
   # Url must have trailing /
@@ -15,14 +16,14 @@ module.exports = class RemoteDb
     @httpClient = httpClient
     @useQuickFind = useQuickFind
 
-  # Can specify url of specific collection as option
+  # Can specify url of specific collection as option. compressedJson option compresses JSON as base64ed gzip for shorter URLs
   addCollection: (name, options={}, success, error) ->
     if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     url = options.url or (@url + name)
 
-    collection = new Collection(name, url, @client, @httpClient, @useQuickFind)
+    collection = new Collection(name, url, @client, @httpClient, @useQuickFind, options.compressedJson or false)
     @[name] = collection
     @collections[name] = collection
     if success? then success()
@@ -36,12 +37,14 @@ module.exports = class RemoteDb
 
 # Remote collection on server
 class Collection
-  constructor: (name, url, client, httpClient, useQuickFind) ->
+  # compressedJson means to gzip + base64 long JSON objects
+  constructor: (name, url, client, httpClient, useQuickFind, compressedJson) ->
     @name = name
     @url = url
     @client = client
     @httpClient = httpClient or jQueryHttpClient
     @useQuickFind = useQuickFind
+    @compressedJson = compressedJson
 
   # error is called with jqXHR
   find: (selector, options = {}) ->
@@ -49,16 +52,16 @@ class Collection
       # Create url
       params = {}
       if options.sort
-        params.sort = JSON.stringify(options.sort)
+        params.sort = if @compressedJson then compressJson(options.sort) else JSON.stringify(options.sort)
       if options.limit
         params.limit = options.limit
       if options.skip
         params.skip = options.skip
       if options.fields
-        params.fields = JSON.stringify(options.fields)
+        params.fields = if @compressedJson then compressJson(options.fields) else JSON.stringify(options.fields)
       if @client
         params.client = @client
-      params.selector = JSON.stringify(selector || {})
+      params.selector = if @compressedJson then compressJson(selector || {}) else JSON.stringify(selector || {})
 
       # Add timestamp for Android 2.3.6 bug with caching
       if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
