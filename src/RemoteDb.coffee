@@ -4,26 +4,27 @@ async = require 'async'
 utils = require('./utils')
 jQueryHttpClient = require './jQueryHttpClient'
 quickfind = require './quickfind'
-compressJson = require './compressJson'
 
 module.exports = class RemoteDb
   # Url must have trailing /
   # useQuickFind enables the quickfind protocol for finds
-  constructor: (url, client, httpClient, useQuickFind = false) ->
+  # usePostFind enables POST for find
+  constructor: (url, client, httpClient, useQuickFind = false, usePostFind = false) ->
     @url = url
     @client = client
     @collections = {}
     @httpClient = httpClient
     @useQuickFind = useQuickFind
+    @usePostFind = usePostFind
 
-  # Can specify url of specific collection as option. compressedJson option compresses JSON as base64ed gzip for shorter URLs
+  # Can specify url of specific collection as option. 
   addCollection: (name, options={}, success, error) ->
     if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
     url = options.url or (@url + name)
 
-    collection = new Collection(name, url, @client, @httpClient, @useQuickFind, options.compressedJson or false)
+    collection = new Collection(name, url, @client, @httpClient, @useQuickFind, @usePostFind)
     @[name] = collection
     @collections[name] = collection
     if success? then success()
@@ -37,43 +38,78 @@ module.exports = class RemoteDb
 
 # Remote collection on server
 class Collection
-  # compressedJson means to gzip + base64 long JSON objects
-  constructor: (name, url, client, httpClient, useQuickFind, compressedJson) ->
+  # usePostFind allows POST to <collection>/find for long selectors
+  constructor: (name, url, client, httpClient, useQuickFind, usePostFind) ->
     @name = name
     @url = url
     @client = client
     @httpClient = httpClient or jQueryHttpClient
     @useQuickFind = useQuickFind
-    @compressedJson = compressedJson
+    @usePostFind = usePostFind
 
   # error is called with jqXHR
   find: (selector, options = {}) ->
     return fetch: (success, error) =>
-      # Create url
-      params = {}
-      if options.sort
-        params.sort = if @compressedJson then compressJson(options.sort) else JSON.stringify(options.sort)
-      if options.limit
-        params.limit = options.limit
-      if options.skip
-        params.skip = options.skip
-      if options.fields
-        params.fields = if @compressedJson then compressJson(options.fields) else JSON.stringify(options.fields)
-      if @client
-        params.client = @client
-      params.selector = if @compressedJson then compressJson(selector || {}) else JSON.stringify(selector || {})
-
-      # Add timestamp for Android 2.3.6 bug with caching
-      if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
-        params._ = new Date().getTime()
-
+      # Determine method: "get", "post" or "quickfind"
       # If in quickfind and localData present and (no fields option or _rev included) and not (limit with no sort), use quickfind
       if @useQuickFind and options.localData and (not options.fields or options.fields._rev) and not (options.limit and not options.sort)
-        @httpClient("POST", @url + "/quickfind", params, quickfind.encodeRequest(options.localData), (encodedResponse) =>
+        method = "quickfind"
+      # If selector or fields or sort is too big, use post
+      else if @usePostFind and JSON.stringify({ selector: selector, sort: options.sort, fields: options.fields }).length > 500
+        method = "post"
+      else  
+        method = "get"
+
+      if method == "get"
+        # Create url
+        params = {}
+        params.selector = JSON.stringify(selector || {})
+        if options.sort
+          params.sort = JSON.stringify(options.sort)
+        if options.limit
+          params.limit = options.limit
+        if options.skip
+          params.skip = options.skip
+        if options.fields
+          params.fields = JSON.stringify(options.fields)
+        if @client
+          params.client = @client
+        # Add timestamp for Android 2.3.6 bug with caching
+        if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
+          params._ = new Date().getTime()
+        @httpClient("GET", @url, params, null, success, error)
+        return
+
+      # Create body + params for quickfind and post
+      body = {
+        selector: selector or {}
+      }
+      if options.sort
+        body.sort = options.sort
+      if options.limit?
+        body.limit = options.limit
+      if options.skip?
+        body.skip = options.skip
+      if options.fields
+        body.fields = options.fields
+
+      params = {}
+      if @client
+        params.client = @client
+
+      if method == "quickfind"
+        # Send quickfind data
+        body.quickfind = quickfind.encodeRequest(options.localData)
+
+        @httpClient("POST", @url + "/quickfind", params, body, (encodedResponse) =>
           success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort))
         , error)
-      else
-        @httpClient("GET", @url, params, null, success, error)
+        return
+      
+      # POST method
+      @httpClient("POST", @url + "/find", params, body, (encodedResponse) =>
+        success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort))
+      , error)
 
   # error is called with jqXHR
   # Note that findOne is not used by HybridDb, but rather find with limit is used

@@ -20,7 +20,7 @@ describe 'RemoteDb', ->
       if @callSuccessWith
         success(@callSuccessWith)
 
-    @db = new RemoteDb("http://someserver.com/", "clientid", @mockHttpClient, true)
+    @db = new RemoteDb("http://someserver.com/", "clientid", @mockHttpClient, true, true)
     @db.addCollection("scratch")
     @col = @db.scratch
 
@@ -36,6 +36,27 @@ describe 'RemoteDb', ->
     @callSuccessWith = [{ x: 1 }]
 
     @col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () -> assert.fail())
+
+  it "calls POST for find that is too big", (done) ->
+    longStr = ""
+    for i in [0...1000]
+      longStr += "x"
+
+    success = (data) =>
+      assert.equal @httpCall.method, "POST"
+      assert.equal @httpCall.url, "http://someserver.com/scratch/find"
+      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert.deepEqual @httpCall.data, {
+        selector: {"a": longStr}
+        limit: 10
+        sort: ["b"]
+      }
+
+      assert.deepEqual data, [{ x: 1 }]
+      done()
+    @callSuccessWith = [{ x: 1 }]
+
+    @col.find({ a: longStr }, { limit: 10, sort: ["b"] }).fetch(success, () -> assert.fail())
 
   it "calls GET for findOne", (done) ->
     success = (data) =>
@@ -132,11 +153,16 @@ describe 'RemoteDb', ->
     success = (data) =>
       assert.equal @httpCall.method, "POST"
       assert.equal @httpCall.url, "http://someserver.com/scratch/quickfind"
-      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
       assert.deepEqual @httpCall.data, {
-        "00": "6636b33e1be7df314fea"
+        quickfind: {
+          "00": "6636b33e1be7df314fea"
+        }
+        selector: {"a":1}
+        limit: 10
+        sort: ["b"], 
       }
-
+    
       assert.deepEqual data, [
         { _id: "0002", _rev: 1, a: 2, b: 1 }
         { _id: "0001", _rev: 2, a: 2, b: 2 }

@@ -191,6 +191,20 @@ Possible HTTP response codes:
 **200** : normal response
 **401** : client was invalid
 
+#### POST `/<collection>/find` (optionally implemented)
+
+Performs a query, returning an array of results. POST body parameters are:
+
+**selector** (optional) : JSON of query, in MongoDB format. e.g. `{"a": 1}` to find records with field `a` having value `1`
+**fields** (optional) : JSON object indicating which fields to return in MongoDB format. e.g. `{"a": 1}` to return only field `a` and `_id`
+**sort** (optional) : JSON of MongoDB sort field. e.g. `["a"]` to sort ascending by `a`, or `[["a","desc"]]` to sort descending by `a`
+**limit** (optional) : Maximum records to return e.g. `100`
+
+Possible HTTP response codes:
+
+**200** : normal response
+**401** : client was invalid
+
 #### POST `/<collection>`
 
 Performs a single upsert, returning the upserted row. POST value is the document to upsert. Possible HTTP response codes:
@@ -262,3 +276,10 @@ It can also be used with a simple server that just overwrites documents complete
 To test, run `testem` in the main directory.
 
 To test a RemoteDb implementation, use `test/LiveRemoteDbTests.coffee`. Server must have a collection called scratch with fields as specified at top of tests file.
+
+
+### Quickfind
+
+Finds can be very wasteful when the client has large collections already cached. The quickfind protocol shards the existing docs on the client by
+id and then sends a hash of them to the server, which just responds with the changed ones. See src/quickfind.coffee for more details. It needs to be 
+enabled and is off by default.
