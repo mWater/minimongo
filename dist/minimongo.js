@@ -105,7 +105,7 @@ isLocalStorageSupported = function() {
 exports.compileDocumentSelector = compileDocumentSelector;
 
 exports.autoselectLocalDb = function(options, success, error) {
-  var IndexedDb, LocalStorageDb, MemoryDb, WebSQLDb, browser, db, ex, _ref;
+  var IndexedDb, LocalStorageDb, MemoryDb, WebSQLDb, browser, _ref;
   IndexedDb = __webpack_require__(12);
   WebSQLDb = __webpack_require__(13);
   LocalStorageDb = __webpack_require__(14);
@@ -116,27 +116,11 @@ exports.autoselectLocalDb = function(options, success, error) {
   }
   if (window.cordova) {
     if (((_ref = window.device) != null ? _ref.platform : void 0) === "iOS" && window.sqlitePlugin) {
-      try {
-        db = window.sqlitePlugin.openDatabase({
-          name: 'minimongo_' + options.namespace
-        });
-        if (!db) {
-          console.log("Failover WebSQLDb for Cordova");
-          return new WebSQLDb(options, success, error);
-        } else {
-          console.log("Selecting WebSQLDb(sqlite) for Cordova");
-          options.db = db;
-          return new WebSQLDb(options, success, error);
-        }
-      } catch (_error) {
-        ex = _error;
-        if (error) {
-          error(ex);
-        }
-        return;
-      }
+      console.log("Selecting WebSQLDb(sqlite) for Cordova");
+      options.storage = 'sqlite';
+      return new WebSQLDb(options, success, error);
     } else {
-      console.log("Selecting WebSQLDb for Cordova");
+      console.log("Selecting else WebSQLDb for Cordova");
       return new WebSQLDb(options, success, error);
     }
   }
@@ -5845,21 +5829,54 @@ module.exports = WebSQLDb = (function() {
   function WebSQLDb(options, success, error) {
     var checkV2, ex, migrateToV1, migrateToV2;
     this.collections = {};
-    if (options.db) {
-      this.db = options.db;
-      return;
-    }
-    try {
-      this.db = window.openDatabase('minimongo_' + options.namespace, '', 'Minimongo:' + options.namespace, 5 * 1024 * 1024);
-      if (!this.db) {
-        return error(new Error("Failed to create database"));
+    if (options.storage === 'sqlite' && window.sqlitePlugin) {
+      window.sqlitePlugin.openDatabase({
+        name: 'minimongo_' + options.namespace,
+        location: 'default'
+      }, (function(_this) {
+        return function(sqliteDb) {
+          console.log("Database open successful");
+          _this.db = sqliteDb;
+          console.log("Checking version");
+          _this.db.executeSql("PRAGMA user_version", [], function(rs) {
+            var version;
+            console.log("DB version is :: " + (JSON.stringify(rs.rows.item(0))));
+            version = rs.rows.item(0).user_version;
+            if (version === 0) {
+              _this.db.transaction(function(tx) {
+                tx.executeSql('CREATE TABLE docs (\ncol TEXT NOT NULL,\nid TEXT NOT NULL,\nstate TEXT NOT NULL,\ndoc TEXT,\nbase TEXT,\nPRIMARY KEY (col, id));', [], doNothing, (function(tx, err) {
+                  return error(err);
+                }));
+                tx.executeSql("PRAGMA user_version = 2", [], doNothing, (function(tx, err) {
+                  return error(err);
+                }));
+                return success(_this);
+              });
+            } else {
+              success(_this);
+            }
+          }, function(err) {
+            console.log("Pragma version error:: ");
+            console.log(JSON.stringify(err));
+          });
+        };
+      })(this), function(err) {
+        console.log(JSON.stringify(err));
+        error(err);
+      });
+    } else {
+      try {
+        this.db = window.openDatabase('minimongo_' + options.namespace, '', 'Minimongo:' + options.namespace, 5 * 1024 * 1024);
+        if (!this.db) {
+          return error(new Error("Failed to create database"));
+        }
+      } catch (_error) {
+        ex = _error;
+        if (error) {
+          error(ex);
+        }
+        return;
       }
-    } catch (_error) {
-      ex = _error;
-      if (error) {
-        error(ex);
-      }
-      return;
     }
     migrateToV1 = function(tx) {
       return tx.executeSql('CREATE TABLE docs (\n  col TEXT NOT NULL,\n  id TEXT NOT NULL,\n  state TEXT NOT NULL,\n  doc TEXT,\n  PRIMARY KEY (col, id));', [], doNothing, (function(tx, err) {
@@ -5888,10 +5905,12 @@ module.exports = WebSQLDb = (function() {
         }
       };
     })(this);
-    if (!this.db.version) {
-      this.db.changeVersion("", "1.0", migrateToV1, error, checkV2);
-    } else {
-      checkV2();
+    if (!options.storage) {
+      if (!this.db.version) {
+        this.db.changeVersion("", "1.0", migrateToV1, error, checkV2);
+      } else {
+        checkV2();
+      }
     }
     return this.db;
   }

@@ -43,23 +43,11 @@ exports.autoselectLocalDb = (options, success, error) ->
   # Always use WebSQL in cordova
   if window.cordova
     if window.device?.platform == "iOS" and window.sqlitePlugin
-      try
-        # Create database
-        db = window.sqlitePlugin.openDatabase({name: 'minimongo_' + options.namespace})
-        if not db
-          # Failover to WebSQLDb
-          console.log "Failover WebSQLDb for Cordova"
-          return new WebSQLDb options, success, error
-        else
-          console.log "Selecting WebSQLDb(sqlite) for Cordova"
-          options.db = db
-          return new WebSQLDb options, success, error
-      catch ex
-        if error
-          error(ex)
-        return
+      console.log "Selecting WebSQLDb(sqlite) for Cordova"
+      options.storage = 'sqlite'
+      return new WebSQLDb options, success, error
     else
-      console.log "Selecting WebSQLDb for Cordova"
+      console.log "Selecting else WebSQLDb for Cordova"
       # WebSQLDb must success in Cordova
       return new WebSQLDb options, success, error
 

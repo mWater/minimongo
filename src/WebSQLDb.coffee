@@ -12,20 +12,54 @@ module.exports = class WebSQLDb
   constructor: (options, success, error) ->
     @collections = {}
 
-    if options.db
-      @db = options.db
-      return
-
-    try
-      # Create database
-      # TODO escape name
-      @db = window.openDatabase 'minimongo_' + options.namespace, '', 'Minimongo:' + options.namespace, 5 * 1024 * 1024
-      if not @db
-        return error(new Error("Failed to create database"))
-    catch ex
-      if error
-        error(ex)
-      return
+    if options.storage == 'sqlite' and window.sqlitePlugin
+      # @db = options.db
+      window.sqlitePlugin.openDatabase(
+        {name: 'minimongo_' + options.namespace, location: 'default'}
+        ,(sqliteDb) =>
+          console.log "Database open successful"
+          @db = sqliteDb
+          console.log("Checking version");
+          @db.executeSql("PRAGMA user_version", [], (rs) =>
+            console.log "DB version is :: #{JSON.stringify(rs.rows.item(0))}"
+            version = rs.rows.item(0).user_version
+            if version == 0
+              @db.transaction (tx) =>
+                tx.executeSql('''
+                  CREATE TABLE docs (
+                  col TEXT NOT NULL,
+                  id TEXT NOT NULL,
+                  state TEXT NOT NULL,
+                  doc TEXT,
+                  base TEXT,
+                  PRIMARY KEY (col, id));''', [], doNothing, ((tx, err) -> error(err)))
+                tx.executeSql("PRAGMA user_version = 2", [], doNothing, ((tx, err) -> error(err)))
+                success(this)
+            else
+              success(this)
+            return
+          , (err) ->
+            console.log "Pragma version error:: "
+            console.log JSON.stringify(err)
+            return
+          )
+          return
+        ,(err) ->
+          console.log JSON.stringify(err)
+          error(err)
+          return
+        )
+    else
+      try
+        # Create database
+        # TODO escape name
+        @db = window.openDatabase 'minimongo_' + options.namespace, '', 'Minimongo:' + options.namespace, 5 * 1024 * 1024
+        if not @db
+          return error(new Error("Failed to create database"))
+      catch ex
+        if error
+          error(ex)
+        return
 
     migrateToV1 = (tx) ->
       tx.executeSql('''
@@ -50,10 +84,11 @@ module.exports = class WebSQLDb
       else
         if success then success(this)
 
-    if not @db.version
-      @db.changeVersion "", "1.0", migrateToV1, error, checkV2
-    else
-      checkV2()
+    if not options.storage
+      if not @db.version
+        @db.changeVersion "", "1.0", migrateToV1, error, checkV2
+      else
+        checkV2()
 
     return @db
 
