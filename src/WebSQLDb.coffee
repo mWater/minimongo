@@ -8,12 +8,16 @@ compileSort = require('./selector').compileSort
 # Do nothing callback for success
 doNothing = -> return
 
+# WebSQLDb adapter for minimongo DB
+# Supports sqlite plugin, if available and specified in option as {storage: 'sqlite'}
 module.exports = class WebSQLDb
   constructor: (options, success, error) ->
     @collections = {}
 
     if options.storage == 'sqlite' and window.sqlitePlugin
-      # @db = options.db
+      # sqlite plugin does not support db.version
+      # and since db operations can only be executed once the db is properly open
+      # we add the schema version migration to the success callback
       window.sqlitePlugin.openDatabase(
         {name: 'minimongo_' + options.namespace, location: 'default'}
         ,(sqliteDb) =>
@@ -21,7 +25,6 @@ module.exports = class WebSQLDb
           @db = sqliteDb
           console.log("Checking version");
           @db.executeSql("PRAGMA user_version", [], (rs) =>
-            console.log "DB version is :: #{JSON.stringify(rs.rows.item(0))}"
             version = rs.rows.item(0).user_version
             if version == 0
               @db.transaction (tx) =>
@@ -39,13 +42,13 @@ module.exports = class WebSQLDb
               success(this)
             return
           , (err) ->
-            console.log "Pragma version error:: "
-            console.log JSON.stringify(err)
+            console.log "version check error :: ",JSON.stringify(err)
+            error(err)
             return
           )
           return
         ,(err) ->
-          console.log JSON.stringify(err)
+          console.log "Error opening databse :: ", JSON.stringify(err)
           error(err)
           return
         )

@@ -5840,7 +5840,6 @@ module.exports = WebSQLDb = (function() {
           console.log("Checking version");
           _this.db.executeSql("PRAGMA user_version", [], function(rs) {
             var version;
-            console.log("DB version is :: " + (JSON.stringify(rs.rows.item(0))));
             version = rs.rows.item(0).user_version;
             if (version === 0) {
               _this.db.transaction(function(tx) {
@@ -5856,12 +5855,12 @@ module.exports = WebSQLDb = (function() {
               success(_this);
             }
           }, function(err) {
-            console.log("Pragma version error:: ");
-            console.log(JSON.stringify(err));
+            console.log("version check error :: ", JSON.stringify(err));
+            error(err);
           });
         };
       })(this), function(err) {
-        console.log(JSON.stringify(err));
+        console.log("Error opening databse :: ", JSON.stringify(err));
         error(err);
       });
     } else {
