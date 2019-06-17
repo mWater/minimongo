@@ -8,6 +8,8 @@ It is either IndexedDb backed (IndexedDb), WebSQL backed (WebSQLDb), Local stora
 
 Autoselection is possible with `utils.autoselectLocalDb(options, success, error)`. success is called with the selected database.
 
+[sqlite plugin](https://github.com/xpbrew/cordova-sqlite-storage) is also supported when available, activate sqlite plugin with option {storage: 'sqlite'} in utils.autoselectLocalDb
+
 ## Usage
 
 Minimongo is designed to be used with [browserify](http://browserify.org/) or Webpack
