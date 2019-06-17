@@ -105,7 +105,7 @@ isLocalStorageSupported = function() {
 exports.compileDocumentSelector = compileDocumentSelector;
 
 exports.autoselectLocalDb = function(options, success, error) {
-  var IndexedDb, LocalStorageDb, MemoryDb, WebSQLDb, browser;
+  var IndexedDb, LocalStorageDb, MemoryDb, WebSQLDb, browser, _ref;
   IndexedDb = __webpack_require__(12);
   WebSQLDb = __webpack_require__(13);
   LocalStorageDb = __webpack_require__(14);
@@ -115,8 +115,14 @@ exports.autoselectLocalDb = function(options, success, error) {
     return new MemoryDb(options, success);
   }
   if (window.cordova) {
-    console.log("Selecting WebSQLDb for Cordova");
-    return new WebSQLDb(options, success, error);
+    if (((_ref = window.device) != null ? _ref.platform : void 0) === "iOS" && window.sqlitePlugin) {
+      console.log("Selecting WebSQLDb(sqlite) for Cordova");
+      options.storage = 'sqlite';
+      return new WebSQLDb(options, success, error);
+    } else {
+      console.log("Selecting else WebSQLDb for Cordova");
+      return new WebSQLDb(options, success, error);
+    }
   }
   if (browser.android || browser.ios || browser.chrome || browser.safari || browser.opera || browser.blackberry) {
     console.log("Selecting WebSQLDb for browser");
@@ -5823,17 +5829,53 @@ module.exports = WebSQLDb = (function() {
   function WebSQLDb(options, success, error) {
     var checkV2, ex, migrateToV1, migrateToV2;
     this.collections = {};
-    try {
-      this.db = window.openDatabase('minimongo_' + options.namespace, '', 'Minimongo:' + options.namespace, 5 * 1024 * 1024);
-      if (!this.db) {
-        return error(new Error("Failed to create database"));
+    if (options.storage === 'sqlite' && window.sqlitePlugin) {
+      window.sqlitePlugin.openDatabase({
+        name: 'minimongo_' + options.namespace,
+        location: 'default'
+      }, (function(_this) {
+        return function(sqliteDb) {
+          console.log("Database open successful");
+          _this.db = sqliteDb;
+          console.log("Checking version");
+          _this.db.executeSql("PRAGMA user_version", [], function(rs) {
+            var version;
+            version = rs.rows.item(0).user_version;
+            if (version === 0) {
+              _this.db.transaction(function(tx) {
+                tx.executeSql('CREATE TABLE docs (\ncol TEXT NOT NULL,\nid TEXT NOT NULL,\nstate TEXT NOT NULL,\ndoc TEXT,\nbase TEXT,\nPRIMARY KEY (col, id));', [], doNothing, (function(tx, err) {
+                  return error(err);
+                }));
+                tx.executeSql("PRAGMA user_version = 2", [], doNothing, (function(tx, err) {
+                  return error(err);
+                }));
+                return success(_this);
+              });
+            } else {
+              success(_this);
+            }
+          }, function(err) {
+            console.log("version check error :: ", JSON.stringify(err));
+            error(err);
+          });
+        };
+      })(this), function(err) {
+        console.log("Error opening databse :: ", JSON.stringify(err));
+        error(err);
+      });
+    } else {
+      try {
+        this.db = window.openDatabase('minimongo_' + options.namespace, '', 'Minimongo:' + options.namespace, 5 * 1024 * 1024);
+        if (!this.db) {
+          return error(new Error("Failed to create database"));
+        }
+      } catch (_error) {
+        ex = _error;
+        if (error) {
+          error(ex);
+        }
+        return;
       }
-    } catch (_error) {
-      ex = _error;
-      if (error) {
-        error(ex);
-      }
-      return;
     }
     migrateToV1 = function(tx) {
       return tx.executeSql('CREATE TABLE docs (\n  col TEXT NOT NULL,\n  id TEXT NOT NULL,\n  state TEXT NOT NULL,\n  doc TEXT,\n  PRIMARY KEY (col, id));', [], doNothing, (function(tx, err) {
@@ -5862,10 +5904,12 @@ module.exports = WebSQLDb = (function() {
         }
       };
     })(this);
-    if (!this.db.version) {
-      this.db.changeVersion("", "1.0", migrateToV1, error, checkV2);
-    } else {
-      checkV2();
+    if (!options.storage) {
+      if (!this.db.version) {
+        this.db.changeVersion("", "1.0", migrateToV1, error, checkV2);
+      } else {
+        checkV2();
+      }
     }
     return this.db;
   }
