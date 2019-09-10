@@ -6,7 +6,7 @@ jQueryHttpClient = require './jQueryHttpClient'
 quickfind = require './quickfind'
 
 module.exports = class RemoteDb
-  # Url must have trailing /
+  # Url must have trailing /, can be an arrau of URLs
   # useQuickFind enables the quickfind protocol for finds
   # usePostFind enables POST for find
   constructor: (url, client, httpClient, useQuickFind = false, usePostFind = false) ->
@@ -17,12 +17,18 @@ module.exports = class RemoteDb
     @useQuickFind = useQuickFind
     @usePostFind = usePostFind
 
-  # Can specify url of specific collection as option. 
+  # Can specify url of specific collection as option.
   addCollection: (name, options={}, success, error) ->
     if _.isFunction(options)
       [options, success, error] = [{}, options, success]
 
-    url = options.url or (@url + name)
+    if options.url
+      url = options.url
+    else
+      if _.isArray(@url)
+        url = _.map(@url, (url) -> url + name)
+      else
+        url = @url + name
 
     collection = new Collection(name, url, @client, @httpClient, @useQuickFind, @usePostFind)
     @[name] = collection
@@ -47,6 +53,14 @@ class Collection
     @useQuickFind = useQuickFind
     @usePostFind = usePostFind
 
+  getUrl: ->
+    if _.isArray(@url)
+      url = @url.pop()
+      # Add the URL to the front of the array
+      @url.unshift(url)
+      return url
+    return @url
+
   # error is called with jqXHR
   find: (selector, options = {}) ->
     return fetch: (success, error) =>
@@ -57,7 +71,7 @@ class Collection
       # If selector or fields or sort is too big, use post
       else if @usePostFind and JSON.stringify({ selector: selector, sort: options.sort, fields: options.fields }).length > 500
         method = "post"
-      else  
+      else
         method = "get"
 
       if method == "get"
@@ -77,7 +91,7 @@ class Collection
         # Add timestamp for Android 2.3.6 bug with caching
         if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
           params._ = new Date().getTime()
-        @httpClient("GET", @url, params, null, success, error)
+        @httpClient("GET", @getUrl(), params, null, success, error)
         return
 
       # Create body + params for quickfind and post
@@ -101,13 +115,13 @@ class Collection
         # Send quickfind data
         body.quickfind = quickfind.encodeRequest(options.localData)
 
-        @httpClient("POST", @url + "/quickfind", params, body, (encodedResponse) =>
+        @httpClient("POST", @getUrl() + "/quickfind", params, body, (encodedResponse) =>
           success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort))
         , error)
         return
-      
+
       # POST method
-      @httpClient("POST", @url + "/find", params, body, (encodedResponse) =>
+      @httpClient("POST", @getUrl() + "/find", params, body, (encodedResponse) =>
         success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort))
       , error)
 
@@ -130,7 +144,7 @@ class Collection
     if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
       params._ = new Date().getTime()
 
-    @httpClient "GET", @url, params, null, (results) ->
+    @httpClient "GET", @getUrl(), params, null, (results) ->
       if results and results.length > 0
         success(results[0])
       else
@@ -159,7 +173,7 @@ class Collection
     if items.length == 1
       # POST if no base, PATCH otherwise
       if basesPresent
-        @httpClient "PATCH", @url, params, items[0], (result) ->
+        @httpClient "PATCH", @getUrl(), params, items[0], (result) ->
           if _.isArray(docs)
             success([result])
           else
@@ -167,7 +181,7 @@ class Collection
         , (err) ->
           if error then error(err)
       else
-        @httpClient "POST", @url, params, items[0].doc, (result) ->
+        @httpClient "POST", @getUrl(), params, items[0].doc, (result) ->
           if _.isArray(docs)
             success([result])
           else
@@ -177,12 +191,12 @@ class Collection
     else
       # POST if no base, PATCH otherwise
       if basesPresent
-        @httpClient "PATCH", @url, params, { doc: _.pluck(items, "doc"), base: _.pluck(items, "base") }, (result) ->
+        @httpClient "PATCH", @getUrl(), params, { doc: _.pluck(items, "doc"), base: _.pluck(items, "base") }, (result) ->
           success(result)
         , (err) ->
           if error then error(err)
       else
-        @httpClient "POST", @url, params, _.pluck(items, "doc"), (result) ->
+        @httpClient "POST", @getUrl(), params, _.pluck(items, "doc"), (result) ->
           success(result)
         , (err) ->
           if error then error(err)
@@ -194,7 +208,7 @@ class Collection
       throw new Error("Client required to remove")
 
     params = { client: @client }
-    @httpClient "DELETE", @url + "/" + id, params, null, success, (err) ->
+    @httpClient "DELETE", @getUrl() + "/" + id, params, null, success, (err) ->
       # 410 is an acceptable delete status
       if err.status == 410
         success()

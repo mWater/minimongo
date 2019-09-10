@@ -13085,7 +13085,17 @@ module.exports = RemoteDb = (function() {
     if (_.isFunction(options)) {
       _ref = [{}, options, success], options = _ref[0], success = _ref[1], error = _ref[2];
     }
-    url = options.url || (this.url + name);
+    if (options.url) {
+      url = options.url;
+    } else {
+      if (_.isArray(this.url)) {
+        url = _.map(this.url, function(url) {
+          return url + name;
+        });
+      } else {
+        url = this.url + name;
+      }
+    }
     collection = new Collection(name, url, this.client, this.httpClient, this.useQuickFind, this.usePostFind);
     this[name] = collection;
     this.collections[name] = collection;
@@ -13119,6 +13129,16 @@ Collection = (function() {
     this.useQuickFind = useQuickFind;
     this.usePostFind = usePostFind;
   }
+
+  Collection.prototype.getUrl = function() {
+    var url;
+    if (_.isArray(this.url)) {
+      url = this.url.pop();
+      this.url.unshift(url);
+      return url;
+    }
+    return this.url;
+  };
 
   Collection.prototype.find = function(selector, options) {
     if (options == null) {
@@ -13160,7 +13180,7 @@ Collection = (function() {
             if ((typeof navigator !== "undefined" && navigator !== null) && navigator.userAgent.toLowerCase().indexOf('android 2.3') !== -1) {
               params._ = new Date().getTime();
             }
-            _this.httpClient("GET", _this.url, params, null, success, error);
+            _this.httpClient("GET", _this.getUrl(), params, null, success, error);
             return;
           }
           body = {
@@ -13184,12 +13204,12 @@ Collection = (function() {
           }
           if (method === "quickfind") {
             body.quickfind = quickfind.encodeRequest(options.localData);
-            _this.httpClient("POST", _this.url + "/quickfind", params, body, function(encodedResponse) {
+            _this.httpClient("POST", _this.getUrl() + "/quickfind", params, body, function(encodedResponse) {
               return success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort));
             }, error);
             return;
           }
-          return _this.httpClient("POST", _this.url + "/find", params, body, function(encodedResponse) {
+          return _this.httpClient("POST", _this.getUrl() + "/find", params, body, function(encodedResponse) {
             return success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort));
           }, error);
         };
@@ -13217,7 +13237,7 @@ Collection = (function() {
     if ((typeof navigator !== "undefined" && navigator !== null) && navigator.userAgent.toLowerCase().indexOf('android 2.3') !== -1) {
       params._ = new Date().getTime();
     }
-    return this.httpClient("GET", this.url, params, null, function(results) {
+    return this.httpClient("GET", this.getUrl(), params, null, function(results) {
       if (results && results.length > 0) {
         return success(results[0]);
       } else {
@@ -13242,7 +13262,7 @@ Collection = (function() {
     }
     if (items.length === 1) {
       if (basesPresent) {
-        return this.httpClient("PATCH", this.url, params, items[0], function(result) {
+        return this.httpClient("PATCH", this.getUrl(), params, items[0], function(result) {
           if (_.isArray(docs)) {
             return success([result]);
           } else {
@@ -13254,7 +13274,7 @@ Collection = (function() {
           }
         });
       } else {
-        return this.httpClient("POST", this.url, params, items[0].doc, function(result) {
+        return this.httpClient("POST", this.getUrl(), params, items[0].doc, function(result) {
           if (_.isArray(docs)) {
             return success([result]);
           } else {
@@ -13268,7 +13288,7 @@ Collection = (function() {
       }
     } else {
       if (basesPresent) {
-        return this.httpClient("PATCH", this.url, params, {
+        return this.httpClient("PATCH", this.getUrl(), params, {
           doc: _.pluck(items, "doc"),
           base: _.pluck(items, "base")
         }, function(result) {
@@ -13279,7 +13299,7 @@ Collection = (function() {
           }
         });
       } else {
-        return this.httpClient("POST", this.url, params, _.pluck(items, "doc"), function(result) {
+        return this.httpClient("POST", this.getUrl(), params, _.pluck(items, "doc"), function(result) {
           return success(result);
         }, function(err) {
           if (error) {
@@ -13298,7 +13318,7 @@ Collection = (function() {
     params = {
       client: this.client
     };
-    return this.httpClient("DELETE", this.url + "/" + id, params, null, success, function(err) {
+    return this.httpClient("DELETE", this.getUrl() + "/" + id, params, null, success, function(err) {
       if (err.status === 410) {
         return success();
       } else {

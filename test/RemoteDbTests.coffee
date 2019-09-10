@@ -160,9 +160,9 @@ describe 'RemoteDb', ->
         }
         selector: {"a":1}
         limit: 10
-        sort: ["b"], 
+        sort: ["b"],
       }
-    
+
       assert.deepEqual data, [
         { _id: "0002", _rev: 1, a: 2, b: 1 }
         { _id: "0001", _rev: 2, a: 2, b: 2 }
@@ -180,3 +180,57 @@ describe 'RemoteDb', ->
 
     @col.find({ a: 1 }, { limit: 10, sort: ["b"], localData: localData }).fetch(success, () -> assert.fail())
 
+  it "supports array of URLs", (done) ->
+    @db = new RemoteDb(["http://someserver.com/", "http://someotherserver.com/"], "clientid", @mockHttpClient, true, true)
+    @db.addCollection("scratch")
+    @col = @db.scratch
+    success = (data) =>
+      assert.equal @httpCall.method, "GET"
+      assert.equal @httpCall.url, "http://someotherserver.com/scratch"
+      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert not @httpCall.data
+
+      assert.deepEqual data, [{ x: 1 }]
+      done()
+    @callSuccessWith = [{ x: 1 }]
+
+    @col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () -> assert.fail())
+
+  it "cycles through the provided array of URLs", (done) ->
+    @db = new RemoteDb(["http://someserver.com/", "http://someotherserver.com/"], "clientid", @mockHttpClient, true, true)
+    @db.addCollection("scratch")
+    @col = @db.scratch
+
+    success = (data) =>
+      assert.equal @httpCall.method, "GET"
+      assert.equal @httpCall.url, "http://someotherserver.com/scratch"
+      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert not @httpCall.data
+
+      assert.deepEqual data, [{ x: 1 }]
+    @callSuccessWith = [{ x: 1 }]
+
+    @col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () -> assert.fail())
+
+    success = (data) =>
+      assert.equal @httpCall.method, "GET"
+      assert.equal @httpCall.url, "http://someserver.com/scratch"
+      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert not @httpCall.data
+
+      assert.deepEqual data, [{ x: 1 }]
+    @callSuccessWith = [{ x: 1 }]
+
+    @col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () -> assert.fail())
+
+    success = (data) =>
+      assert.equal @httpCall.method, "GET"
+      assert.equal @httpCall.url, "http://someotherserver.com/scratch"
+      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
+      assert not @httpCall.data
+
+      assert.deepEqual data, [{ x: 1 }]
+      done()
+    @callSuccessWith = [{ x: 1 }]
+
+    @col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () -> assert.fail())
