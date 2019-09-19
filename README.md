@@ -155,7 +155,7 @@ Then query the hybridDb (`find` and `findOne`) to have it get results and correc
 
 When upserts and removes are done on the HybridDb, they are queued up in the LocalDb until `hybridDb.upload(success, error)` is called.
 
-`upload` will go through each collection and send any upserts or removes to the remoteDb.
+`upload` will go through each collection and send any upserts or removes to the remoteDb. You must call this to have the results go to the server! Calling periodically (e.g every 5 seconds) is safe as long as you wait for one upload call to complete before calling again.
 
 `findOne` will not return an interim `null` result, but will only return interim results when one is present.
 
