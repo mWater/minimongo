@@ -13148,7 +13148,7 @@ Collection = (function() {
       fetch: (function(_this) {
         return function(success, error) {
           var body, method, params;
-          if (_this.useQuickFind && options.localData && (!options.fields || options.fields._rev) && !(options.limit && !options.sort)) {
+          if (_this.useQuickFind && options.localData && (!options.fields || options.fields._rev) && !(options.limit && !options.sort && !options.orderByExprs)) {
             method = "quickfind";
           } else if (_this.usePostFind && JSON.stringify({
             selector: selector,
@@ -13174,6 +13174,12 @@ Collection = (function() {
             if (options.fields) {
               params.fields = JSON.stringify(options.fields);
             }
+            if (options.whereExpr) {
+              params.whereExpr = JSON.stringify(options.whereExpr);
+            }
+            if (options.orderByExprs) {
+              params.orderByExprs = JSON.stringify(options.orderByExprs);
+            }
             if (_this.client) {
               params.client = _this.client;
             }
@@ -13197,6 +13203,12 @@ Collection = (function() {
           }
           if (options.fields) {
             body.fields = options.fields;
+          }
+          if (options.whereExpr) {
+            body.whereExpr = options.whereExpr;
+          }
+          if (options.orderByExprs) {
+            body.orderByExprs = options.orderByExprs;
           }
           params = {};
           if (_this.client) {

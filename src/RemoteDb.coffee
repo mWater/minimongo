@@ -66,7 +66,7 @@ class Collection
     return fetch: (success, error) =>
       # Determine method: "get", "post" or "quickfind"
       # If in quickfind and localData present and (no fields option or _rev included) and not (limit with no sort), use quickfind
-      if @useQuickFind and options.localData and (not options.fields or options.fields._rev) and not (options.limit and not options.sort)
+      if @useQuickFind and options.localData and (not options.fields or options.fields._rev) and not (options.limit and not options.sort and not options.orderByExprs)
         method = "quickfind"
       # If selector or fields or sort is too big, use post
       else if @usePostFind and JSON.stringify({ selector: selector, sort: options.sort, fields: options.fields }).length > 500
@@ -86,6 +86,13 @@ class Collection
           params.skip = options.skip
         if options.fields
           params.fields = JSON.stringify(options.fields)
+
+        # Advanced options for mwater-expression-based filtering and ordering
+        if options.whereExpr
+          params.whereExpr = JSON.stringify(options.whereExpr)
+        if options.orderByExprs
+          params.orderByExprs = JSON.stringify(options.orderByExprs)
+
         if @client
           params.client = @client
         # Add timestamp for Android 2.3.6 bug with caching
@@ -106,6 +113,12 @@ class Collection
         body.skip = options.skip
       if options.fields
         body.fields = options.fields
+        
+      # Advanced options for mwater-expression-based filtering and ordering
+      if options.whereExpr
+        body.whereExpr = options.whereExpr
+      if options.orderByExprs
+        body.orderByExprs = options.orderByExprs
 
       params = {}
       if @client
