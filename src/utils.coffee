@@ -125,6 +125,32 @@ exports.cloneLocalDb = (fromDb, toDb, success, error) ->
 
     success()
 
+# Clone a local database collection's caches, pending upserts and removes from one database to another
+# Useful for making a replica
+exports.cloneLocalCollection = (fromCol, toCol, success, error) ->
+  # Get all items
+  fromCol.find({}).fetch (items) =>
+    # Seed items
+    toCol.seed items, =>
+      # Copy upserts
+      fromCol.pendingUpserts (upserts) =>
+        toCol.upsert _.pluck(upserts, "doc"), _.pluck(upserts, "base"), =>
+          # Copy removes
+          fromCol.pendingRemoves (removes) =>
+            async.eachSeries removes, (remove, cb2) =>
+              toCol.remove remove, () =>
+                cb2()
+              , cb2
+            , (err) =>
+              if err
+                return error(err)
+              success()
+          , error
+        , error
+      , error
+    , error
+  , error
+
 # Processes a find with sorting and filtering and limiting
 exports.processFind = (items, selector, options) ->
   filtered = _.filter(items, compileDocumentSelector(selector))

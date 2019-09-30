@@ -202,6 +202,31 @@ exports.cloneLocalDb = function(fromDb, toDb, success, error) {
   })(this));
 };
 
+exports.cloneLocalCollection = function(fromCol, toCol, success, error) {
+  return fromCol.find({}).fetch((function(_this) {
+    return function(items) {
+      return toCol.seed(items, function() {
+        return fromCol.pendingUpserts(function(upserts) {
+          return toCol.upsert(_.pluck(upserts, "doc"), _.pluck(upserts, "base"), function() {
+            return fromCol.pendingRemoves(function(removes) {
+              return async.eachSeries(removes, function(remove, cb2) {
+                return toCol.remove(remove, function() {
+                  return cb2();
+                }, cb2);
+              }, function(err) {
+                if (err) {
+                  return error(err);
+                }
+                return success();
+              });
+            }, error);
+          }, error);
+        }, error);
+      }, error);
+    };
+  })(this), error);
+};
+
 exports.processFind = function(items, selector, options) {
   var filtered;
   filtered = _.filter(items, compileDocumentSelector(selector));
@@ -13078,7 +13103,7 @@ module.exports = RemoteDb = (function() {
   }
 
   RemoteDb.prototype.addCollection = function(name, options, success, error) {
-    var collection, url, _ref;
+    var collection, url, usePostFind, useQuickFind, _ref;
     if (options == null) {
       options = {};
     }
@@ -13096,7 +13121,15 @@ module.exports = RemoteDb = (function() {
         url = this.url + name;
       }
     }
-    collection = new Collection(name, url, this.client, this.httpClient, this.useQuickFind, this.usePostFind);
+    useQuickFind = this.useQuickFind;
+    if (options.useQuickFind !== null) {
+      useQuickFind = options.useQuickFind;
+    }
+    usePostFind = this.usePostFind;
+    if (options.usePostFind !== null) {
+      usePostFind = options.usePostFind;
+    }
+    collection = new Collection(name, url, this.client, this.httpClient, useQuickFind, usePostFind);
     this[name] = collection;
     this.collections[name] = collection;
     if (success != null) {

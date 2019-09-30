@@ -18,6 +18,8 @@ module.exports = class RemoteDb
     @usePostFind = usePostFind
 
   # Can specify url of specific collection as option.
+  # useQuickFind can be overridden in options
+  # usePostFind can be overridden in options
   addCollection: (name, options={}, success, error) ->
     if _.isFunction(options)
       [options, success, error] = [{}, options, success]
@@ -29,8 +31,16 @@ module.exports = class RemoteDb
         url = _.map(@url, (url) -> url + name)
       else
         url = @url + name
+    
+    useQuickFind = @useQuickFind
+    if options.useQuickFind != null
+      useQuickFind = options.useQuickFind
 
-    collection = new Collection(name, url, @client, @httpClient, @useQuickFind, @usePostFind)
+    usePostFind = @usePostFind
+    if options.usePostFind != null
+      usePostFind = options.usePostFind
+
+    collection = new Collection(name, url, @client, @httpClient, useQuickFind, usePostFind)
     @[name] = collection
     @collections[name] = collection
     if success? then success()
