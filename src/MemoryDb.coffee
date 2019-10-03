@@ -51,7 +51,12 @@ class Collection
   _findFetch: (selector, options, success, error) ->
     # Defer to allow other processes to run
     setTimeout () =>
-      results = processFind(_.values(@items), selector, options)
+      # Shortcut if _id is specified
+      if selector and selector._id and _.isString(selector._id)
+        allItems = _.compact([@items[selector._id]])
+      else
+        allItems = _.values(@items)
+      results = processFind(allItems, selector, options)
       if success? then success(@_applySafety(results))
     , 0
 

@@ -5006,8 +5006,13 @@ Collection = (function() {
   Collection.prototype._findFetch = function(selector, options, success, error) {
     return setTimeout((function(_this) {
       return function() {
-        var results;
-        results = processFind(_.values(_this.items), selector, options);
+        var allItems, results;
+        if (selector && selector._id && _.isString(selector._id)) {
+          allItems = _.compact([_this.items[selector._id]]);
+        } else {
+          allItems = _.values(_this.items);
+        }
+        results = processFind(allItems, selector, options);
         if (success != null) {
           return success(_this._applySafety(results));
         }
@@ -13122,11 +13127,11 @@ module.exports = RemoteDb = (function() {
       }
     }
     useQuickFind = this.useQuickFind;
-    if (options.useQuickFind !== null) {
+    if (options.useQuickFind != null) {
       useQuickFind = options.useQuickFind;
     }
     usePostFind = this.usePostFind;
-    if (options.usePostFind !== null) {
+    if (options.usePostFind != null) {
       usePostFind = options.usePostFind;
     }
     collection = new Collection(name, url, this.client, this.httpClient, useQuickFind, usePostFind);

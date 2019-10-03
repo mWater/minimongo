@@ -33,11 +33,11 @@ module.exports = class RemoteDb
         url = @url + name
     
     useQuickFind = @useQuickFind
-    if options.useQuickFind != null
+    if options.useQuickFind?
       useQuickFind = options.useQuickFind
 
     usePostFind = @usePostFind
-    if options.usePostFind != null
+    if options.usePostFind?
       usePostFind = options.usePostFind
 
     collection = new Collection(name, url, @client, @httpClient, useQuickFind, usePostFind)
