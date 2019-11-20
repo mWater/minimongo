@@ -31,7 +31,7 @@ module.exports = class RemoteDb
         url = _.map(@url, (url) -> url + name)
       else
         url = @url + name
-    
+
     useQuickFind = @useQuickFind
     if options.useQuickFind?
       useQuickFind = options.useQuickFind
@@ -123,7 +123,7 @@ class Collection
         body.skip = options.skip
       if options.fields
         body.fields = options.fields
-        
+
       # Advanced options for mwater-expression-based filtering and ordering
       if options.whereExpr
         body.whereExpr = options.whereExpr
@@ -184,7 +184,7 @@ class Collection
     results = []
 
     # Check if bases present
-    basesPresent = _.compact(_.pluck(items, "base")).length > 0
+    basesPresent = _.compact(_.map(items, "base")).length > 0
 
     params = { client: @client }
 
@@ -214,12 +214,12 @@ class Collection
     else
       # POST if no base, PATCH otherwise
       if basesPresent
-        @httpClient "PATCH", @getUrl(), params, { doc: _.pluck(items, "doc"), base: _.pluck(items, "base") }, (result) ->
+        @httpClient "PATCH", @getUrl(), params, { doc: _.map(items, "doc"), base: _.map(items, "base") }, (result) ->
           success(result)
         , (err) ->
           if error then error(err)
       else
-        @httpClient "POST", @getUrl(), params, _.pluck(items, "doc"), (result) ->
+        @httpClient "POST", @getUrl(), params, _.map(items, "doc"), (result) ->
           success(result)
         , (err) ->
           if error then error(err)

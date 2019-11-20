@@ -27,7 +27,7 @@ describe 'quickfind', ->
   it "only includes changes", ->
     request = quickfind.encodeRequest([@row3, @row2, @row1])
     response = quickfind.encodeResponse([@row3, @row1], request)
-
+    console.log response
     assert.equal _.keys(response).length, 1
     assert.deepEqual response["00"], [@row1]
 

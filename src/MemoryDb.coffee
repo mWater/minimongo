@@ -94,9 +94,9 @@ class Collection
       @upserts[item.doc._id] = item
 
     if _.isArray(docs)
-      if success then success(@_applySafety(_.pluck(items, "doc")))
+      if success then success(@_applySafety(_.map(items, "doc")))
     else
-      if success then success(@_applySafety(_.pluck(items, "doc")[0]))
+      if success then success(@_applySafety(_.map(items, "doc")[0]))
 
   remove: (id, success, error) ->
     # Special case for filter-type remove
@@ -122,7 +122,7 @@ class Collection
     for doc in docs
       @cacheOne(doc)
 
-    docsMap = _.object(_.pluck(docs, "_id"), docs)
+    docsMap = _.zipObject(_.map(docs, "_id"), docs)
 
     if options.sort
       sort = compileSort(options.sort)
@@ -148,7 +148,7 @@ class Collection
     success _.values(@upserts)
 
   pendingRemoves: (success) ->
-    success _.pluck(@removes, "_id")
+    success _.map(@removes, "_id")
 
   resolveUpserts: (upserts, success) ->
     for upsert in upserts
@@ -190,7 +190,7 @@ class Collection
         # If _rev present, make sure that not overwritten by lower or equal _rev
         if not existing or not doc._rev or not existing._rev or doc._rev > existing._rev
           @items[doc._id] = doc
-  
+
     if success? then success()
 
   uncache: (selector, success, error) ->
@@ -200,15 +200,15 @@ class Collection
       return @upserts[item._id]? or not compiledSelector(item)
       )
 
-    @items = _.object(_.pluck(items, "_id"), items)
+    @items = _.zipObject(_.map(items, "_id"), items)
     if success? then success()
 
   uncacheList: (ids, success, error) ->
-    idIndex = _.indexBy(ids)
+    idIndex = _.keyBy(ids)
 
     items = _.filter(_.values(@items), (item) =>
       return @upserts[item._id]? or not idIndex[item._id]
       )
 
-    @items = _.object(_.pluck(items, "_id"), items)
+    @items = _.zipObject(_.map(items, "_id"), items)
     if success? then success()

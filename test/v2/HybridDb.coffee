@@ -36,7 +36,7 @@ module.exports = class HybridDb
       col = _.first(cols)
       if col
         col.upload(->
-          uploadCols(_.rest(cols), success, error)
+          uploadCols(_.drop(cols), success, error)
         , (err) ->
           error(err))
       else
@@ -188,7 +188,7 @@ class HybridCollection
 
         @localCol.pendingRemoves (removes) =>
           if removes.length > 0
-            removesMap = _.object(_.map(removes, (id) -> [id, id]))
+            removesMap = _.fromPairs(_.map(removes, (id) -> [id, id]))
             data = _.filter remoteData, (doc) ->
               return not _.has(removesMap, doc._id)
 
@@ -196,7 +196,7 @@ class HybridCollection
           @localCol.pendingUpserts (upserts) ->
             if upserts.length > 0
               # Remove upserts from data
-              upsertsMap = _.object(_.pluck(upserts, '_id'), _.pluck(upserts, '_id'))
+              upsertsMap = _.zipObject(_.map(upserts, '_id'), _.map(upserts, '_id'))
               data = _.filter data, (doc) ->
                 return not _.has(upsertsMap, doc._id)
 
@@ -240,14 +240,14 @@ class HybridCollection
             # Cache new value if caching
             if @caching
               @localCol.cacheOne remoteDoc, ->
-                uploadUpserts(_.rest(upserts), success, error)
+                uploadUpserts(_.drop(upserts), success, error)
               , error
             else
               # Remove document
               @localCol.remove upsert._id, =>
                 # Resolve remove
                 @localCol.resolveRemove upsert._id, ->
-                  uploadUpserts(_.rest(upserts), success, error)
+                  uploadUpserts(_.drop(upserts), success, error)
                 , error
               , error
           , error
@@ -259,7 +259,7 @@ class HybridCollection
               @localCol.resolveRemove upsert._id, ->
                 # Continue if was 410
                 if err.status == 410
-                  uploadUpserts(_.rest(upserts), success, error)
+                  uploadUpserts(_.drop(upserts), success, error)
                 else
                   error(err)
               , error
@@ -274,7 +274,7 @@ class HybridCollection
       if remove
         @remoteCol.remove remove, =>
           @localCol.resolveRemove remove, ->
-            uploadRemoves(_.rest(removes), success, error)
+            uploadRemoves(_.drop(removes), success, error)
           , error
         , (err) =>
           # If 403 or 410, remove document
@@ -282,7 +282,7 @@ class HybridCollection
             @localCol.resolveRemove remove, ->
               # Continue if was 410
               if err.status == 410
-                uploadRemoves(_.rest(removes), success, error)
+                uploadRemoves(_.drop(removes), success, error)
               else
                 error(err)
             , error

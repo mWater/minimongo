@@ -42,8 +42,8 @@ class Collection
     [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
     # Upsert does to both
-    @masterCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), () =>
-      @replicaCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), (results) =>
+    @masterCol.upsert(_.map(items, "doc"), _.map(items, "base"), () =>
+      @replicaCol.upsert(_.map(items, "doc"), _.map(items, "base"), (results) =>
         success(docs)
       , error)
     , error)
@@ -59,7 +59,7 @@ class Collection
     # then do minimum to both databases
 
     # Index docs
-    docsMap = _.indexBy(docs, "_id")
+    docsMap = _.keyBy(docs, "_id")
 
     # Compile sort
     if options.sort
@@ -67,7 +67,7 @@ class Collection
 
     # Perform query
     @masterCol.find(selector, options).fetch (results) =>
-      resultsMap = _.indexBy(results, "_id")
+      resultsMap = _.keyBy(results, "_id")
 
       # Determine if each result needs to be cached
       toCache = []
@@ -99,7 +99,7 @@ class Collection
             continue
 
         # Determine which ones to uncache
-        if not docsMap[result._id] 
+        if not docsMap[result._id]
           toUncache.push(result._id)
 
       # Cache ones needing caching

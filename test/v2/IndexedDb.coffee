@@ -70,7 +70,7 @@ class Collection
     @store.query (matches) ->
       # Filter removed docs
       matches = _.filter matches, (m) -> m.state != "removed"
-      if success? then success(processFind(_.pluck(matches, "doc"), selector, options))
+      if success? then success(processFind(_.map(matches, "doc"), selector, options))
     , { index: "col", keyRange: @store.makeKeyRange(only: @name), onError: error }
 
   upsert: (doc, success, error) ->
@@ -115,7 +115,7 @@ class Collection
   cache: (docs, selector, options, success, error) ->
     step2 = =>
       # Rows have been cached, now look for stale ones to remove
-      docsMap = _.object(_.pluck(docs, "_id"), docs)
+      docsMap = _.zipObject(_.map(docs, "_id"), docs)
 
       if options.sort
         sort = compileSort(options.sort)
@@ -181,12 +181,12 @@ class Collection
 
   pendingUpserts: (success, error) ->
     @store.query (matches) ->
-      if success? then success(_.pluck(matches, "doc"))
+      if success? then success(_.map(matches, "doc"))
     , { index: "col-state", keyRange: @store.makeKeyRange(only: [@name, "upserted"]), onError: error }
 
   pendingRemoves: (success, error) ->
     @store.query (matches) ->
-      if success? then success(_.pluck(_.pluck(matches, "doc"), "_id"))
+      if success? then success(_.map(_.map(matches, "doc"), "_id"))
     , { index: "col-state", keyRange: @store.makeKeyRange(only: [@name, "removed"]), onError: error }
 
   resolveUpsert: (doc, success, error) ->

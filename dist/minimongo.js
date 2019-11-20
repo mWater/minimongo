@@ -179,7 +179,7 @@ exports.cloneLocalDb = function(fromDb, toDb, success, error) {
       return fromCol.find({}).fetch(function(items) {
         return toCol.seed(items, function() {
           return fromCol.pendingUpserts(function(upserts) {
-            return toCol.upsert(_.pluck(upserts, "doc"), _.pluck(upserts, "base"), function() {
+            return toCol.upsert(_.map(upserts, "doc"), _.map(upserts, "base"), function() {
               return fromCol.pendingRemoves(function(removes) {
                 return async.eachSeries(removes, function(remove, cb2) {
                   return toCol.remove(remove, function() {
@@ -207,7 +207,7 @@ exports.cloneLocalCollection = function(fromCol, toCol, success, error) {
     return function(items) {
       return toCol.seed(items, function() {
         return fromCol.pendingUpserts(function(upserts) {
-          return toCol.upsert(_.pluck(upserts, "doc"), _.pluck(upserts, "base"), function() {
+          return toCol.upsert(_.map(upserts, "doc"), _.map(upserts, "base"), function() {
             return fromCol.pendingRemoves(function(removes) {
               return async.eachSeries(removes, function(remove, cb2) {
                 return toCol.remove(remove, function() {
@@ -344,7 +344,7 @@ processNearOperator = function(selector, list) {
           return item.distance <= value['$near']['$maxDistance'];
         });
       }
-      list = _.pluck(distances, 'doc');
+      list = _.map(distances, 'doc');
     }
   }
   return list;
@@ -482,61 +482,58 @@ LocalCollection = {};
 EJSON = __webpack_require__(23);
 var _ = __webpack_require__(1);
 
-
 // Like _.isArray, but doesn't regard polyfilled Uint8Arrays on old browsers as
 // arrays.
-var isArray = function (x) {
+var isArray = function(x) {
   return _.isArray(x) && !EJSON.isBinary(x);
 };
 
-var _anyIfArray = function (x, f) {
-  if (isArray(x))
-    return _.any(x, f);
+var _anyIfArray = function(x, f) {
+  if (isArray(x)) return _.some(x, f);
   return f(x);
 };
 
-var _anyIfArrayPlus = function (x, f) {
-  if (f(x))
-    return true;
-  return isArray(x) && _.any(x, f);
+var _anyIfArrayPlus = function(x, f) {
+  if (f(x)) return true;
+  return isArray(x) && _.some(x, f);
 };
 
 var hasOperators = function(valueSelector) {
   var theseAreOperators = undefined;
   for (var selKey in valueSelector) {
-    var thisIsOperator = selKey.substr(0, 1) === '$';
+    var thisIsOperator = selKey.substr(0, 1) === "$";
     if (theseAreOperators === undefined) {
       theseAreOperators = thisIsOperator;
     } else if (theseAreOperators !== thisIsOperator) {
       throw new Error("Inconsistent selector: " + valueSelector);
     }
   }
-  return !!theseAreOperators;  // {} has no operators
+  return !!theseAreOperators; // {} has no operators
 };
 
-var compileValueSelector = function (valueSelector) {
-  if (valueSelector == null) {  // undefined or null
-    return function (value) {
-      return _anyIfArray(value, function (x) {
-        return x == null;  // undefined or null
+var compileValueSelector = function(valueSelector) {
+  if (valueSelector == null) {
+    // undefined or null
+    return function(value) {
+      return _anyIfArray(value, function(x) {
+        return x == null; // undefined or null
       });
     };
   }
 
   // Selector is a non-null primitive (and not an array or RegExp either).
   if (!_.isObject(valueSelector)) {
-    return function (value) {
-      return _anyIfArray(value, function (x) {
+    return function(value) {
+      return _anyIfArray(value, function(x) {
         return x === valueSelector;
       });
     };
   }
 
   if (valueSelector instanceof RegExp) {
-    return function (value) {
-      if (value === undefined)
-        return false;
-      return _anyIfArray(value, function (x) {
+    return function(value) {
+      if (value === undefined) return false;
+      return _anyIfArray(value, function(x) {
         return valueSelector.test(x);
       });
     };
@@ -544,10 +541,9 @@ var compileValueSelector = function (valueSelector) {
 
   // Arrays match either identical arrays or arrays that contain it as a value.
   if (isArray(valueSelector)) {
-    return function (value) {
-      if (!isArray(value))
-        return false;
-      return _anyIfArrayPlus(value, function (x) {
+    return function(value) {
+      if (!isArray(value)) return false;
+      return _anyIfArrayPlus(value, function(x) {
         return LocalCollection._f._equal(valueSelector, x);
       });
     };
@@ -556,14 +552,15 @@ var compileValueSelector = function (valueSelector) {
   // It's an object, but not an array or regexp.
   if (hasOperators(valueSelector)) {
     var operatorFunctions = [];
-    _.each(valueSelector, function (operand, operator) {
+    _.each(valueSelector, function(operand, operator) {
       if (!_.has(VALUE_OPERATORS, operator))
         throw new Error("Unrecognized operator: " + operator);
-      operatorFunctions.push(VALUE_OPERATORS[operator](
-        operand, valueSelector.$options));
+      operatorFunctions.push(
+        VALUE_OPERATORS[operator](operand, valueSelector.$options)
+      );
     });
-    return function (value) {
-      return _.all(operatorFunctions, function (f) {
+    return function(value) {
+      return _.every(operatorFunctions, function(f) {
         return f(value);
       });
     };
@@ -571,8 +568,8 @@ var compileValueSelector = function (valueSelector) {
 
   // It's a literal; compare value (or element of value array) directly to the
   // selector.
-  return function (value) {
-    return _anyIfArray(value, function (x) {
+  return function(value) {
+    return _anyIfArray(value, function(x) {
       return LocalCollection._f._equal(valueSelector, x);
     });
   };
@@ -580,176 +577,165 @@ var compileValueSelector = function (valueSelector) {
 
 // XXX can factor out common logic below
 var LOGICAL_OPERATORS = {
-  "$and": function(subSelector) {
+  $and: function(subSelector) {
     if (!isArray(subSelector) || _.isEmpty(subSelector))
       throw Error("$and/$or/$nor must be nonempty array");
-    var subSelectorFunctions = _.map(
-      subSelector, compileDocumentSelector);
-    return function (doc) {
-      return _.all(subSelectorFunctions, function (f) {
+    var subSelectorFunctions = _.map(subSelector, compileDocumentSelector);
+    return function(doc) {
+      return _.every(subSelectorFunctions, function(f) {
         return f(doc);
       });
     };
   },
 
-  "$or": function(subSelector) {
+  $or: function(subSelector) {
     if (!isArray(subSelector) || _.isEmpty(subSelector))
       throw Error("$and/$or/$nor must be nonempty array");
-    var subSelectorFunctions = _.map(
-      subSelector, compileDocumentSelector);
-    return function (doc) {
-      return _.any(subSelectorFunctions, function (f) {
+    var subSelectorFunctions = _.map(subSelector, compileDocumentSelector);
+    return function(doc) {
+      return _.some(subSelectorFunctions, function(f) {
         return f(doc);
       });
     };
   },
 
-  "$nor": function(subSelector) {
+  $nor: function(subSelector) {
     if (!isArray(subSelector) || _.isEmpty(subSelector))
       throw Error("$and/$or/$nor must be nonempty array");
-    var subSelectorFunctions = _.map(
-      subSelector, compileDocumentSelector);
-    return function (doc) {
-      return _.all(subSelectorFunctions, function (f) {
+    var subSelectorFunctions = _.map(subSelector, compileDocumentSelector);
+    return function(doc) {
+      return _.every(subSelectorFunctions, function(f) {
         return !f(doc);
       });
     };
   },
 
-  "$where": function(selectorValue) {
+  $where: function(selectorValue) {
     if (!(selectorValue instanceof Function)) {
       selectorValue = Function("return " + selectorValue);
     }
-    return function (doc) {
+    return function(doc) {
       return selectorValue.call(doc);
     };
   }
 };
 
 var VALUE_OPERATORS = {
-  "$in": function (operand) {
-    if (!isArray(operand))
-      throw new Error("Argument to $in must be array");
+  $in: function(operand) {
+    if (!isArray(operand)) throw new Error("Argument to $in must be array");
 
     // Create index if all strings
     var index = null;
-    if (_.all(operand, _.isString))
-      index = _.indexBy(operand);
+    if (_.every(operand, _.isString)) index = _.keyBy(operand);
 
-    return function (value) {
-      return _anyIfArrayPlus(value, function (x) {
-        if (_.isString(x) && index !== null)
-          return index[x] != undefined;
-        
-        return _.any(operand, function (operandElt) {
+    return function(value) {
+      return _anyIfArrayPlus(value, function(x) {
+        if (_.isString(x) && index !== null) return index[x] != undefined;
+
+        return _.some(operand, function(operandElt) {
           return LocalCollection._f._equal(operandElt, x);
         });
       });
     };
   },
 
-  "$all": function (operand) {
-    if (!isArray(operand))
-      throw new Error("Argument to $all must be array");
-    return function (value) {
-      if (!isArray(value))
-        return false;
-      return _.all(operand, function (operandElt) {
-        return _.any(value, function (valueElt) {
+  $all: function(operand) {
+    if (!isArray(operand)) throw new Error("Argument to $all must be array");
+    return function(value) {
+      if (!isArray(value)) return false;
+      return _.every(operand, function(operandElt) {
+        return _.some(value, function(valueElt) {
           return LocalCollection._f._equal(operandElt, valueElt);
         });
       });
     };
   },
 
-  "$lt": function (operand) {
-    return function (value) {
-      return _anyIfArray(value, function (x) {
+  $lt: function(operand) {
+    return function(value) {
+      return _anyIfArray(value, function(x) {
         return LocalCollection._f._cmp(x, operand) < 0;
       });
     };
   },
 
-  "$lte": function (operand) {
-    return function (value) {
-      return _anyIfArray(value, function (x) {
+  $lte: function(operand) {
+    return function(value) {
+      return _anyIfArray(value, function(x) {
         return LocalCollection._f._cmp(x, operand) <= 0;
       });
     };
   },
 
-  "$gt": function (operand) {
-    return function (value) {
-      return _anyIfArray(value, function (x) {
+  $gt: function(operand) {
+    return function(value) {
+      return _anyIfArray(value, function(x) {
         return LocalCollection._f._cmp(x, operand) > 0;
       });
     };
   },
 
-  "$gte": function (operand) {
-    return function (value) {
-      return _anyIfArray(value, function (x) {
+  $gte: function(operand) {
+    return function(value) {
+      return _anyIfArray(value, function(x) {
         return LocalCollection._f._cmp(x, operand) >= 0;
       });
     };
   },
 
-  "$ne": function (operand) {
-    return function (value) {
-      return ! _anyIfArrayPlus(value, function (x) {
+  $ne: function(operand) {
+    return function(value) {
+      return !_anyIfArrayPlus(value, function(x) {
         return LocalCollection._f._equal(x, operand);
       });
     };
   },
 
-  "$nin": function (operand) {
-    if (!isArray(operand))
-      throw new Error("Argument to $nin must be array");
+  $nin: function(operand) {
+    if (!isArray(operand)) throw new Error("Argument to $nin must be array");
     var inFunction = VALUE_OPERATORS.$in(operand);
-    return function (value) {
+    return function(value) {
       // Field doesn't exist, so it's not-in operand
-      if (value === undefined)
-        return true;
+      if (value === undefined) return true;
       return !inFunction(value);
     };
   },
 
-  "$exists": function (operand) {
-    return function (value) {
+  $exists: function(operand) {
+    return function(value) {
       return operand === (value !== undefined);
     };
   },
 
-  "$mod": function (operand) {
+  $mod: function(operand) {
     var divisor = operand[0],
-        remainder = operand[1];
-    return function (value) {
-      return _anyIfArray(value, function (x) {
+      remainder = operand[1];
+    return function(value) {
+      return _anyIfArray(value, function(x) {
         return x % divisor === remainder;
       });
     };
   },
 
-  "$size": function (operand) {
-    return function (value) {
+  $size: function(operand) {
+    return function(value) {
       return isArray(value) && operand === value.length;
     };
   },
 
-  "$type": function (operand) {
-    return function (value) {
+  $type: function(operand) {
+    return function(value) {
       // A nonexistent field is of no type.
-      if (value === undefined)
-        return false;
+      if (value === undefined) return false;
       // Definitely not _anyIfArrayPlus: $type: 4 only matches arrays that have
       // arrays as elements according to the Mongo docs.
-      return _anyIfArray(value, function (x) {
+      return _anyIfArray(value, function(x) {
         return LocalCollection._f._type(x) === operand;
       });
     };
   },
 
-  "$regex": function (operand, options) {
+  $regex: function(operand, options) {
     if (options !== undefined) {
       // Options passed in $options (even the empty string) always overrides
       // options in the RegExp object itself.
@@ -766,80 +752,70 @@ var VALUE_OPERATORS = {
       operand = new RegExp(operand);
     }
 
-    return function (value) {
-      if (value === undefined)
-        return false;
-      return _anyIfArray(value, function (x) {
+    return function(value) {
+      if (value === undefined) return false;
+      return _anyIfArray(value, function(x) {
         return operand.test(x);
       });
     };
   },
 
-  "$options": function (operand) {
+  $options: function(operand) {
     // evaluation happens at the $regex function above
-    return function (value) { return true; };
+    return function(value) {
+      return true;
+    };
   },
 
-  "$elemMatch": function (operand) {
+  $elemMatch: function(operand) {
     var matcher = compileDocumentSelector(operand);
-    return function (value) {
-      if (!isArray(value))
-        return false;
-      return _.any(value, function (x) {
+    return function(value) {
+      if (!isArray(value)) return false;
+      return _.some(value, function(x) {
         return matcher(x);
       });
     };
   },
 
-  "$not": function (operand) {
+  $not: function(operand) {
     var matcher = compileValueSelector(operand);
-    return function (value) {
+    return function(value) {
       return !matcher(value);
     };
   },
 
-  "$near": function (operand) {
+  $near: function(operand) {
     // Always returns true. Must be handled in post-filter/sort/limit
-    return function (value) {
+    return function(value) {
       return true;
-    }
+    };
   },
 
-  "$geoIntersects": function (operand) {
+  $geoIntersects: function(operand) {
     // Always returns true. Must be handled in post-filter/sort/limit
-    return function (value) {
+    return function(value) {
       return true;
-    }
+    };
   }
-
 };
 
 // helpers used by compiled selector code
 LocalCollection._f = {
   // XXX for _all and _in, consider building 'inquery' at compile time..
 
-  _type: function (v) {
-    if (typeof v === "number")
-      return 1;
-    if (typeof v === "string")
-      return 2;
-    if (typeof v === "boolean")
-      return 8;
-    if (isArray(v))
-      return 4;
-    if (v === null)
-      return 10;
-    if (v instanceof RegExp)
-      return 11;
+  _type: function(v) {
+    if (typeof v === "number") return 1;
+    if (typeof v === "string") return 2;
+    if (typeof v === "boolean") return 8;
+    if (isArray(v)) return 4;
+    if (v === null) return 10;
+    if (v instanceof RegExp) return 11;
     if (typeof v === "function")
       // note that typeof(/x/) === "function"
       return 13;
-    if (v instanceof Date)
-      return 9;
-    if (EJSON.isBinary(v))
-      return 5;
-    if (v instanceof Meteor.Collection.ObjectID)
-      return 7;
+    if (v instanceof Date) return 9;
+    if (EJSON.isBinary(v)) return 5;
+    if (v instanceof Meteor.Collection.ObjectID) return 7;
     return 3; // object
 
     // XXX support some/all of these:
@@ -852,78 +828,81 @@ LocalCollection._f = {
   },
 
   // deep equality test: use for literal document and array matches
-  _equal: function (a, b) {
-    return EJSON.equals(a, b, {keyOrderSensitive: true});
+  _equal: function(a, b) {
+    return EJSON.equals(a, b, { keyOrderSensitive: true });
   },
 
   // maps a type code to a value that can be used to sort values of
   // different types
-  _typeorder: function (t) {
+  _typeorder: function(t) {
     // http://www.mongodb.org/display/DOCS/What+is+the+Compare+Order+for+BSON+Types
     // XXX what is the correct sort position for Javascript code?
     // ('100' in the matrix below)
     // XXX minkey/maxkey
-    return [-1,  // (not a type)
-            1,   // number
-            2,   // string
-            3,   // object
-            4,   // array
-            5,   // binary
-            -1,  // deprecated
-            6,   // ObjectID
-            7,   // bool
-            8,   // Date
-            0,   // null
-            9,   // RegExp
-            -1,  // deprecated
-            100, // JS code
-            2,   // deprecated (symbol)
-            100, // JS code
-            1,   // 32-bit int
-            8,   // Mongo timestamp
-            1    // 64-bit int
-           ][t];
+    return [
+      -1, // (not a type)
+      1, // number
+      2, // string
+      3, // object
+      4, // array
+      5, // binary
+      -1, // deprecated
+      6, // ObjectID
+      7, // bool
+      8, // Date
+      0, // null
+      9, // RegExp
+      -1, // deprecated
+      100, // JS code
+      2, // deprecated (symbol)
+      100, // JS code
+      1, // 32-bit int
+      8, // Mongo timestamp
+      1 // 64-bit int
+    ][t];
   },
 
   // compare two values of unknown type according to BSON ordering
   // semantics. (as an extension, consider 'undefined' to be less than
   // any other value.) return negative if a is less, positive if b is
   // less, or 0 if equal
-  _cmp: function (a, b) {
-    if (a === undefined)
-      return b === undefined ? 0 : -1;
-    if (b === undefined)
-      return 1;
+  _cmp: function(a, b) {
+    if (a === undefined) return b === undefined ? 0 : -1;
+    if (b === undefined) return 1;
     var ta = LocalCollection._f._type(a);
     var tb = LocalCollection._f._type(b);
     var oa = LocalCollection._f._typeorder(ta);
     var ob = LocalCollection._f._typeorder(tb);
-    if (oa !== ob)
-      return oa < ob ? -1 : 1;
+    if (oa !== ob) return oa < ob ? -1 : 1;
     if (ta !== tb)
       // XXX need to implement this if we implement Symbol or integers, or
       // Timestamp
       throw Error("Missing type coercion logic in _cmp");
-    if (ta === 7) { // ObjectID
+    if (ta === 7) {
+      // ObjectID
       // Convert to string.
       ta = tb = 2;
       a = a.toHexString();
       b = b.toHexString();
     }
-    if (ta === 9) { // Date
+    if (ta === 9) {
+      // Date
       // Convert to millis.
       ta = tb = 1;
       a = a.getTime();
       b = b.getTime();
     }
 
-    if (ta === 1) // double
+    if (ta === 1)
+      // double
       return a - b;
-    if (tb === 2) // string
-      return a < b ? -1 : (a === b ? 0 : 1);
-    if (ta === 3) { // Object
+    if (tb === 2)
+      // string
+      return a < b ? -1 : a === b ? 0 : 1;
+    if (ta === 3) {
+      // Object
       // this could be much more efficient in the expected case ...
-      var to_array = function (obj) {
+      var to_array = function(obj) {
         var ret = [];
         for (var key in obj) {
           ret.push(key);
@@ -933,37 +912,36 @@ LocalCollection._f = {
       };
       return LocalCollection._f._cmp(to_array(a), to_array(b));
     }
-    if (ta === 4) { // Array
+    if (ta === 4) {
+      // Array
       for (var i = 0; ; i++) {
-        if (i === a.length)
-          return (i === b.length) ? 0 : -1;
-        if (i === b.length)
-          return 1;
+        if (i === a.length) return i === b.length ? 0 : -1;
+        if (i === b.length) return 1;
         var s = LocalCollection._f._cmp(a[i], b[i]);
-        if (s !== 0)
-          return s;
+        if (s !== 0) return s;
       }
     }
-    if (ta === 5) { // binary
+    if (ta === 5) {
+      // binary
       // Surprisingly, a small binary blob is always less than a large one in
       // Mongo.
-      if (a.length !== b.length)
-        return a.length - b.length;
+      if (a.length !== b.length) return a.length - b.length;
       for (i = 0; i < a.length; i++) {
-        if (a[i] < b[i])
-          return -1;
-        if (a[i] > b[i])
-          return 1;
+        if (a[i] < b[i]) return -1;
+        if (a[i] > b[i]) return 1;
       }
       return 0;
     }
-    if (ta === 8) { // boolean
+    if (ta === 8) {
+      // boolean
       if (a) return b ? 0 : 1;
       return b ? -1 : 0;
     }
-    if (ta === 10) // null
+    if (ta === 10)
+      // null
       return 0;
-    if (ta === 11) // regexp
+    if (ta === 11)
+      // regexp
       throw Error("Sorting not supported on regular expression"); // XXX
     // 13: javascript code
     // 14: symbol
@@ -973,7 +951,8 @@ LocalCollection._f = {
     // 18: 64-bit integer
     // 255: minkey
     // 127: maxkey
-    if (ta === 13) // javascript code
+    if (ta === 13)
+      // javascript code
       throw Error("Sorting not supported on Javascript code"); // XXX
     throw Error("Unknown type to sort");
   }
@@ -981,8 +960,8 @@ LocalCollection._f = {
 
 // For unit tests. True if the given document matches the given
 // selector.
-LocalCollection._matches = function (selector, doc) {
-  return (LocalCollection._compileSelector(selector))(doc);
+LocalCollection._matches = function(selector, doc) {
+  return LocalCollection._compileSelector(selector)(doc);
 };
 
 // _makeLookupFunction(key) returns a lookup function.
@@ -1002,8 +981,8 @@ LocalCollection._matches = function (selector, doc) {
 //                                 {x: [2]},
 //                                 {y: 3}]})
 //   returns [1, [2], undefined]
-LocalCollection._makeLookupFunction = function (key) {
-  var dotLocation = key.indexOf('.');
+LocalCollection._makeLookupFunction = function(key) {
+  var dotLocation = key.indexOf(".");
   var first, lookupRest, nextIsNumeric;
   if (dotLocation === -1) {
     first = key;
@@ -1015,18 +994,17 @@ LocalCollection._makeLookupFunction = function (key) {
     nextIsNumeric = /^\d+(\.|$)/.test(rest);
   }
 
-  return function (doc) {
-    if (doc == null)  // null or undefined
+  return function(doc) {
+    if (doc == null)
+      // null or undefined
       return [undefined];
     var firstLevel = doc[first];
 
     // We don't "branch" at the final level.
-    if (!lookupRest)
-      return [firstLevel];
+    if (!lookupRest) return [firstLevel];
 
     // It's an empty array, and we're not done: we won't find anything.
-    if (isArray(firstLevel) && firstLevel.length === 0)
-      return [undefined];
+    if (isArray(firstLevel) && firstLevel.length === 0) return [undefined];
 
     // For each result at this level, finish the lookup on the rest of the key,
     // and return everything we find. Also, if the next result is a number,
@@ -1037,17 +1015,16 @@ LocalCollection._makeLookupFunction = function (key) {
     // consistently yet itself, see eg
     // https://jira.mongodb.org/browse/SERVER-2898
     // https://github.com/mongodb/mongo/blob/master/jstests/array_match2.js
-    if (!isArray(firstLevel) || nextIsNumeric)
-      firstLevel = [firstLevel];
+    if (!isArray(firstLevel) || nextIsNumeric) firstLevel = [firstLevel];
     return Array.prototype.concat.apply([], _.map(firstLevel, lookupRest));
   };
 };
 
 // The main compilation function for a given selector.
-var compileDocumentSelector = function (docSelector) {
+var compileDocumentSelector = function(docSelector) {
   var perKeySelectors = [];
-  _.each(docSelector, function (subSelector, key) {
-    if (key.substr(0, 1) === '$') {
+  _.each(docSelector, function(subSelector, key) {
+    if (key.substr(0, 1) === "$") {
       // Outer operators are either logical operators (they recurse back into
       // this function), or $where.
       if (!_.has(LOGICAL_OPERATORS, key))
@@ -1056,19 +1033,18 @@ var compileDocumentSelector = function (docSelector) {
     } else {
       var lookUpByIndex = LocalCollection._makeLookupFunction(key);
       var valueSelectorFunc = compileValueSelector(subSelector);
-      perKeySelectors.push(function (doc) {
+      perKeySelectors.push(function(doc) {
         var branchValues = lookUpByIndex(doc);
         // We apply the selector to each "branched" value and return true if any
         // match. This isn't 100% consistent with MongoDB; eg, see:
         // https://jira.mongodb.org/browse/SERVER-8585
-        return _.any(branchValues, valueSelectorFunc);
+        return _.some(branchValues, valueSelectorFunc);
       });
     }
   });
 
-
-  return function (doc) {
-    return _.all(perKeySelectors, function (f) {
+  return function(doc) {
+    return _.every(perKeySelectors, function(f) {
       return f(doc);
     });
   };
@@ -1077,14 +1053,16 @@ var compileDocumentSelector = function (docSelector) {
 // Given a selector, return a function that takes one argument, a
 // document, and returns true if the document matches the selector,
 // else false.
-LocalCollection._compileSelector = function (selector) {
+LocalCollection._compileSelector = function(selector) {
   // you can pass a literal function instead of a selector
   if (selector instanceof Function)
-    return function (doc) {return selector.call(doc);};
+    return function(doc) {
+      return selector.call(doc);
+    };
 
   // shorthand -- scalars match _id
   if (LocalCollection._selectorIsId(selector)) {
-    return function (doc) {
+    return function(doc) {
       return EJSON.equals(doc._id, selector);
     };
   }
@@ -1092,12 +1070,17 @@ LocalCollection._compileSelector = function (selector) {
   // protect against dangerous selectors.  falsey and {_id: falsey} are both
   // likely programmer error, and not what you want, particularly for
   // destructive operations.
-  if (!selector || (('_id' in selector) && !selector._id))
-    return function (doc) {return false;};
+  if (!selector || ("_id" in selector && !selector._id))
+    return function(doc) {
+      return false;
+    };
 
   // Top level can't be an array or true or binary.
-  if (typeof(selector) === 'boolean' || isArray(selector) ||
-      EJSON.isBinary(selector))
+  if (
+    typeof selector === "boolean" ||
+    isArray(selector) ||
+    EJSON.isBinary(selector)
+  )
     throw new Error("Invalid selector: " + selector);
 
   return compileDocumentSelector(selector);
@@ -1116,7 +1099,7 @@ LocalCollection._compileSelector = function (selector) {
 // first object comes first in order, 1 if the second object comes
 // first, or 0 if neither object comes before the other.
 
-LocalCollection._compileSort = function (spec) {
+LocalCollection._compileSort = function(spec) {
   var sortSpecParts = [];
 
   if (spec instanceof Array) {
@@ -1145,27 +1128,28 @@ LocalCollection._compileSort = function (spec) {
   }
 
   if (sortSpecParts.length === 0)
-    return function () {return 0;};
+    return function() {
+      return 0;
+    };
 
   // reduceValue takes in all the possible values for the sort key along various
   // branches, and returns the min or max value (according to the bool
   // findMin). Each value can itself be an array, and we look at its values
   // too. (ie, we do a single level of flattening on branchValues, then find the
   // min/max.)
-  var reduceValue = function (branchValues, findMin) {
+  var reduceValue = function(branchValues, findMin) {
     var reduced;
     var first = true;
     // Iterate over all the values found in all the branches, and if a value is
     // an array itself, iterate over the values in the array separately.
-    _.each(branchValues, function (branchValue) {
+    _.each(branchValues, function(branchValue) {
       // Value not an array? Pretend it is.
-      if (!isArray(branchValue))
-        branchValue = [branchValue];
+      if (!isArray(branchValue)) branchValue = [branchValue];
       // Value is an empty array? Pretend it was missing, since that's where it
       // should be sorted.
       if (isArray(branchValue) && branchValue.length === 0)
         branchValue = [undefined];
-      _.each(branchValue, function (value) {
+      _.each(branchValue, function(value) {
         // We should get here at least once: lookup functions return non-empty
         // arrays, so the outer loop runs at least once, and we prevented
         // branchValue from being an empty array.
@@ -1177,23 +1161,21 @@ LocalCollection._compileSort = function (spec) {
           // if it's less (for an ascending sort) or more (for a descending
           // sort).
           var cmp = LocalCollection._f._cmp(reduced, value);
-          if ((findMin && cmp > 0) || (!findMin && cmp < 0))
-            reduced = value;
+          if ((findMin && cmp > 0) || (!findMin && cmp < 0)) reduced = value;
         }
       });
     });
     return reduced;
   };
 
-  return function (a, b) {
+  return function(a, b) {
     for (var i = 0; i < sortSpecParts.length; ++i) {
       var specPart = sortSpecParts[i];
       var aValue = reduceValue(specPart.lookup(a), specPart.ascending);
       var bValue = reduceValue(specPart.lookup(b), specPart.ascending);
       var compare = LocalCollection._f._cmp(aValue, bValue);
-      if (compare !== 0)
-        return specPart.ascending ? compare : -compare;
-    };
+      if (compare !== 0) return specPart.ascending ? compare : -compare;
+    }
     return 0;
   };
 };
@@ -5055,11 +5037,11 @@ Collection = (function() {
     }
     if (_.isArray(docs)) {
       if (success) {
-        return success(this._applySafety(_.pluck(items, "doc")));
+        return success(this._applySafety(_.map(items, "doc")));
       }
     } else {
       if (success) {
-        return success(this._applySafety(_.pluck(items, "doc")[0]));
+        return success(this._applySafety(_.map(items, "doc")[0]));
       }
     }
   };
@@ -5099,7 +5081,7 @@ Collection = (function() {
       doc = docs[_i];
       this.cacheOne(doc);
     }
-    docsMap = _.object(_.pluck(docs, "_id"), docs);
+    docsMap = _.zipObject(_.map(docs, "_id"), docs);
     if (options.sort) {
       sort = compileSort(options.sort);
     }
@@ -5132,7 +5114,7 @@ Collection = (function() {
   };
 
   Collection.prototype.pendingRemoves = function(success) {
-    return success(_.pluck(this.removes, "_id"));
+    return success(_.map(this.removes, "_id"));
   };
 
   Collection.prototype.resolveUpserts = function(upserts, success) {
@@ -5204,7 +5186,7 @@ Collection = (function() {
         return (_this.upserts[item._id] != null) || !compiledSelector(item);
       };
     })(this));
-    this.items = _.object(_.pluck(items, "_id"), items);
+    this.items = _.zipObject(_.map(items, "_id"), items);
     if (success != null) {
       return success();
     }
@@ -5212,13 +5194,13 @@ Collection = (function() {
 
   Collection.prototype.uncacheList = function(ids, success, error) {
     var idIndex, items;
-    idIndex = _.indexBy(ids);
+    idIndex = _.keyBy(ids);
     items = _.filter(_.values(this.items), (function(_this) {
       return function(item) {
         return (_this.upserts[item._id] != null) || !idIndex[item._id];
       };
     })(this));
-    this.items = _.object(_.pluck(items, "_id"), items);
+    this.items = _.zipObject(_.map(items, "_id"), items);
     if (success != null) {
       return success();
     }
@@ -5413,7 +5395,7 @@ Collection = (function() {
         return m.state !== "removed";
       });
       if (success != null) {
-        return success(processFind(_.pluck(matches, "doc"), selector, options));
+        return success(processFind(_.map(matches, "doc"), selector, options));
       }
     }, {
       index: "col",
@@ -5502,7 +5484,7 @@ Collection = (function() {
     step2 = (function(_this) {
       return function() {
         var docsMap, sort;
-        docsMap = _.object(_.pluck(docs, "_id"), docs);
+        docsMap = _.zipObject(_.map(docs, "_id"), docs);
         if (options.sort) {
           sort = compileSort(options.sort);
         }
@@ -5608,7 +5590,7 @@ Collection = (function() {
   Collection.prototype.pendingRemoves = function(success, error) {
     return this.store.query(function(matches) {
       if (success != null) {
-        return success(_.pluck(_.pluck(matches, "doc"), "_id"));
+        return success(_.map(_.map(matches, "doc"), "_id"));
       }
     }, {
       index: "col-state",
@@ -5800,7 +5782,7 @@ Collection = (function() {
 
   Collection.prototype.uncacheList = function(ids, success, error) {
     var idIndex;
-    idIndex = _.indexBy(ids);
+    idIndex = _.keyBy(ids);
     error = error || function() {};
     return this.store.query((function(_this) {
       return function(matches) {
@@ -6156,7 +6138,7 @@ Collection = (function() {
             }
             return;
           }
-          docsMap = _.object(_.pluck(docs, "_id"), docs);
+          docsMap = _.zipObject(_.map(docs, "_id"), docs);
           if (options.sort) {
             sort = compileSort(options.sort);
           }
@@ -6549,7 +6531,7 @@ Collection = (function() {
       this.upserts[key].base = base;
     }
     removeItems = window.localStorage[this.namespace + "removes"] ? JSON.parse(window.localStorage[this.namespace + "removes"]) : [];
-    return this.removes = _.object(_.pluck(removeItems, "_id"), removeItems);
+    return this.removes = _.zipObject(_.map(removeItems, "_id"), removeItems);
   };
 
   Collection.prototype.find = function(selector, options) {
@@ -6680,7 +6662,7 @@ Collection = (function() {
       doc = docs[_i];
       this.cacheOne(doc);
     }
-    docsMap = _.object(_.pluck(docs, "_id"), docs);
+    docsMap = _.zipObject(_.map(docs, "_id"), docs);
     if (options.sort) {
       sort = compileSort(options.sort);
     }
@@ -6713,7 +6695,7 @@ Collection = (function() {
   };
 
   Collection.prototype.pendingRemoves = function(success) {
-    return success(_.pluck(this.removes, "_id"));
+    return success(_.map(this.removes, "_id"));
   };
 
   Collection.prototype.resolveUpserts = function(upserts, success) {
@@ -6864,7 +6846,7 @@ module.exports = HybridDb = (function() {
       col = _.first(cols);
       if (col) {
         return col.upload(function() {
-          return uploadCols(_.rest(cols), success, error);
+          return uploadCols(_.drop(cols), success, error);
         }, function(err) {
           return error(err);
         });
@@ -6999,7 +6981,7 @@ HybridCollection = (function() {
             return _this.localCol.pendingRemoves(function(removes) {
               var removesMap;
               if (removes.length > 0) {
-                removesMap = _.object(_.map(removes, function(id) {
+                removesMap = _.fromPairs(_.map(removes, function(id) {
                   return [id, id];
                 }));
                 data = _.filter(remoteData, function(doc) {
@@ -7009,7 +6991,7 @@ HybridCollection = (function() {
               return _this.localCol.pendingUpserts(function(upserts) {
                 var upsertsMap;
                 if (upserts.length > 0) {
-                  upsertsMap = _.object(_.map(upserts, function(u) {
+                  upsertsMap = _.zipObject(_.map(upserts, function(u) {
                     return u.doc._id;
                   }), _.map(upserts, function(u) {
                     return u.doc._id;
@@ -7017,7 +6999,7 @@ HybridCollection = (function() {
                   data = _.filter(data, function(doc) {
                     return !_.has(upsertsMap, doc._id);
                   });
-                  data = data.concat(_.pluck(upserts, "doc"));
+                  data = data.concat(_.map(upserts, "doc"));
                   data = processFind(data, selector, options);
                 }
                 if (!options.interim || !_.isEqual(localData, data)) {
@@ -7103,12 +7085,12 @@ HybridCollection = (function() {
             return _this.localCol.resolveUpserts([upsert], function() {
               if (remoteDoc) {
                 return _this.localCol.cacheOne(remoteDoc, function() {
-                  return uploadUpserts(_.rest(upserts), success, error);
+                  return uploadUpserts(_.drop(upserts), success, error);
                 }, error);
               } else {
                 return _this.localCol.remove(upsert.doc._id, function() {
                   return _this.localCol.resolveRemove(upsert.doc._id, function() {
-                    return uploadUpserts(_.rest(upserts), success, error);
+                    return uploadUpserts(_.drop(upserts), success, error);
                   }, error);
                 }, error);
               }
@@ -7118,7 +7100,7 @@ HybridCollection = (function() {
               return _this.localCol.remove(upsert.doc._id, function() {
                 return _this.localCol.resolveRemove(upsert.doc._id, function() {
                   if (err.status === 410) {
-                    return uploadUpserts(_.rest(upserts), success, error);
+                    return uploadUpserts(_.drop(upserts), success, error);
                   } else {
                     return error(err);
                   }
@@ -7140,13 +7122,13 @@ HybridCollection = (function() {
         if (remove) {
           return _this.remoteCol.remove(remove, function() {
             return _this.localCol.resolveRemove(remove, function() {
-              return uploadRemoves(_.rest(removes), success, error);
+              return uploadRemoves(_.drop(removes), success, error);
             }, error);
           }, function(err) {
             if (err.status === 410 || err.status === 403) {
               return _this.localCol.resolveRemove(remove, function() {
                 if (err.status === 410) {
-                  return uploadRemoves(_.rest(removes), success, error);
+                  return uploadRemoves(_.drop(removes), success, error);
                 } else {
                   return error(err);
                 }
@@ -7202,7 +7184,7 @@ compileSort = __webpack_require__(2).compileSort;
 
 /*
 
-Quickfind protocol allows sending information about which rows are already present locally to minimize 
+Quickfind protocol allows sending information about which rows are already present locally to minimize
 network traffic.
 
 Protocal has 3 phases:
@@ -7243,7 +7225,7 @@ exports.encodeResponse = function(serverRows, encodedRequest) {
       serverRows[key] = [];
     }
   }
-  response = _.pick(serverRows, function(rows, key) {
+  response = _.pickBy(serverRows, function(rows, key) {
     return hashRows(rows) !== encodedRequest[key];
   });
   return response;
@@ -7861,80 +7843,86 @@ var customTypes = {};
 // - A toJSONValue() method, so that Meteor can serialize it
 // - a typeName() method, to show how to look it up in our type table.
 // It is okay if these methods are monkey-patched on.
-EJSON.addType = function (name, factory) {
+EJSON.addType = function(name, factory) {
   if (_.has(customTypes, name))
     throw new Error("Type " + name + " already present");
   customTypes[name] = factory;
 };
 
 var builtinConverters = [
-  { // Date
-    matchJSONValue: function (obj) {
-      return _.has(obj, '$date') && _.size(obj) === 1;
+  {
+    // Date
+    matchJSONValue: function(obj) {
+      return _.has(obj, "$date") && _.size(obj) === 1;
     },
-    matchObject: function (obj) {
+    matchObject: function(obj) {
       return obj instanceof Date;
     },
-    toJSONValue: function (obj) {
-      return {$date: obj.getTime()};
+    toJSONValue: function(obj) {
+      return { $date: obj.getTime() };
     },
-    fromJSONValue: function (obj) {
+    fromJSONValue: function(obj) {
       return new Date(obj.$date);
     }
   },
-  { // Binary
-    matchJSONValue: function (obj) {
-      return _.has(obj, '$binary') && _.size(obj) === 1;
+  {
+    // Binary
+    matchJSONValue: function(obj) {
+      return _.has(obj, "$binary") && _.size(obj) === 1;
     },
-    matchObject: function (obj) {
-      return typeof Uint8Array !== 'undefined' && obj instanceof Uint8Array
-        || (obj && _.has(obj, '$Uint8ArrayPolyfill'));
+    matchObject: function(obj) {
+      return (
+        (typeof Uint8Array !== "undefined" && obj instanceof Uint8Array) ||
+        (obj && _.has(obj, "$Uint8ArrayPolyfill"))
+      );
     },
-    toJSONValue: function (obj) {
-      return {$binary: EJSON._base64Encode(obj)};
+    toJSONValue: function(obj) {
+      return { $binary: EJSON._base64Encode(obj) };
     },
-    fromJSONValue: function (obj) {
+    fromJSONValue: function(obj) {
       return EJSON._base64Decode(obj.$binary);
     }
   },
-  { // Escaping one level
-    matchJSONValue: function (obj) {
-      return _.has(obj, '$escape') && _.size(obj) === 1;
+  {
+    // Escaping one level
+    matchJSONValue: function(obj) {
+      return _.has(obj, "$escape") && _.size(obj) === 1;
     },
-    matchObject: function (obj) {
+    matchObject: function(obj) {
       if (_.isEmpty(obj) || _.size(obj) > 2) {
         return false;
       }
-      return _.any(builtinConverters, function (converter) {
+      return _.some(builtinConverters, function(converter) {
         return converter.matchJSONValue(obj);
       });
     },
-    toJSONValue: function (obj) {
+    toJSONValue: function(obj) {
       var newObj = {};
-      _.each(obj, function (value, key) {
+      _.each(obj, function(value, key) {
         newObj[key] = EJSON.toJSONValue(value);
       });
-      return {$escape: newObj};
+      return { $escape: newObj };
     },
-    fromJSONValue: function (obj) {
+    fromJSONValue: function(obj) {
       var newObj = {};
-      _.each(obj.$escape, function (value, key) {
+      _.each(obj.$escape, function(value, key) {
         newObj[key] = EJSON.fromJSONValue(value);
       });
       return newObj;
     }
   },
-  { // Custom
-    matchJSONValue: function (obj) {
-      return _.has(obj, '$type') && _.has(obj, '$value') && _.size(obj) === 2;
+  {
+    // Custom
+    matchJSONValue: function(obj) {
+      return _.has(obj, "$type") && _.has(obj, "$value") && _.size(obj) === 2;
     },
-    matchObject: function (obj) {
+    matchObject: function(obj) {
       return EJSON._isCustomType(obj);
     },
-    toJSONValue: function (obj) {
-      return {$type: obj.typeName(), $value: obj.toJSONValue()};
+    toJSONValue: function(obj) {
+      return { $type: obj.typeName(), $value: obj.toJSONValue() };
     },
-    fromJSONValue: function (obj) {
+    fromJSONValue: function(obj) {
       var typeName = obj.$type;
       var converter = customTypes[typeName];
       return converter(obj.$value);
@@ -7942,25 +7930,22 @@ var builtinConverters = [
   }
 ];
 
-EJSON._isCustomType = function (obj) {
-  return obj &&
-    typeof obj.toJSONValue === 'function' &&
-    typeof obj.typeName === 'function' &&
-    _.has(customTypes, obj.typeName());
+EJSON._isCustomType = function(obj) {
+  return (
+    obj &&
+    typeof obj.toJSONValue === "function" &&
+    typeof obj.typeName === "function" &&
+    _.has(customTypes, obj.typeName())
+  );
 };
 
-
 //for both arrays and objects, in-place modification.
-var adjustTypesToJSONValue =
-EJSON._adjustTypesToJSONValue = function (obj) {
-  if (obj === null)
-    return null;
+var adjustTypesToJSONValue = (EJSON._adjustTypesToJSONValue = function(obj) {
+  if (obj === null) return null;
   var maybeChanged = toJSONValueHelper(obj);
-  if (maybeChanged !== undefined)
-    return maybeChanged;
-  _.each(obj, function (value, key) {
-    if (typeof value !== 'object' && value !== undefined)
-      return; // continue
+  if (maybeChanged !== undefined) return maybeChanged;
+  _.each(obj, function(value, key) {
+    if (typeof value !== "object" && value !== undefined) return; // continue
     var changed = toJSONValueHelper(value);
     if (changed) {
       obj[key] = changed;
@@ -7971,11 +7956,11 @@ EJSON._adjustTypesToJSONValue = function (obj) {
     adjustTypesToJSONValue(value);
   });
   return obj;
-};
+});
 
 // Either return the JSON-compatible version of the argument, or undefined (if
 // the item isn't itself replaceable, but maybe some fields in it are)
-var toJSONValueHelper = function (item) {
+var toJSONValueHelper = function(item) {
   for (var i = 0; i < builtinConverters.length; i++) {
     var converter = builtinConverters[i];
     if (converter.matchObject(item)) {
@@ -7985,11 +7970,10 @@ var toJSONValueHelper = function (item) {
   return undefined;
 };
 
-EJSON.toJSONValue = function (item) {
+EJSON.toJSONValue = function(item) {
   var changed = toJSONValueHelper(item);
-  if (changed !== undefined)
-    return changed;
-  if (typeof item === 'object') {
+  if (changed !== undefined) return changed;
+  if (typeof item === "object") {
     item = EJSON.clone(item);
     adjustTypesToJSONValue(item);
   }
@@ -7999,15 +7983,14 @@ EJSON.toJSONValue = function (item) {
 //for both arrays and objects. Tries its best to just
 // use the object you hand it, but may return something
 // different if the object you hand it itself needs changing.
-var adjustTypesFromJSONValue =
-EJSON._adjustTypesFromJSONValue = function (obj) {
-  if (obj === null)
-    return null;
+var adjustTypesFromJSONValue = (EJSON._adjustTypesFromJSONValue = function(
+  obj
+) {
+  if (obj === null) return null;
   var maybeChanged = fromJSONValueHelper(obj);
-  if (maybeChanged !== obj)
-    return maybeChanged;
-  _.each(obj, function (value, key) {
-    if (typeof value === 'object') {
+  if (maybeChanged !== obj) return maybeChanged;
+  _.each(obj, function(value, key) {
+    if (typeof value === "object") {
       var changed = fromJSONValueHelper(value);
       if (value !== changed) {
         obj[key] = changed;
@@ -8019,19 +8002,21 @@ EJSON._adjustTypesFromJSONValue = function (obj) {
     }
   });
   return obj;
-};
+});
 
 // Either return the argument changed to have the non-json
 // rep of itself (the Object version) or the argument itself.
 
 // DOES NOT RECURSE.  For actually getting the fully-changed value, use
 // EJSON.fromJSONValue
-var fromJSONValueHelper = function (value) {
-  if (typeof value === 'object' && value !== null) {
-    if (_.size(value) <= 2
-        && _.all(value, function (v, k) {
-          return typeof k === 'string' && k.substr(0, 1) === '$';
-        })) {
+var fromJSONValueHelper = function(value) {
+  if (typeof value === "object" && value !== null) {
+    if (
+      _.size(value) <= 2 &&
+      _.every(value, function(v, k) {
+        return typeof k === "string" && k.substr(0, 1) === "$";
+      })
+    ) {
       for (var i = 0; i < builtinConverters.length; i++) {
         var converter = builtinConverters[i];
         if (converter.matchJSONValue(value)) {
@@ -8043,9 +8028,9 @@ var fromJSONValueHelper = function (value) {
   return value;
 };
 
-EJSON.fromJSONValue = function (item) {
+EJSON.fromJSONValue = function(item) {
   var changed = fromJSONValueHelper(item);
-  if (changed === item && typeof item === 'object') {
+  if (changed === item && typeof item === "object") {
     item = EJSON.clone(item);
     adjustTypesFromJSONValue(item);
     return item;
@@ -8054,49 +8039,44 @@ EJSON.fromJSONValue = function (item) {
   }
 };
 
-EJSON.stringify = function (item) {
+EJSON.stringify = function(item) {
   return JSON.stringify(EJSON.toJSONValue(item));
 };
 
-EJSON.parse = function (item) {
+EJSON.parse = function(item) {
   return EJSON.fromJSONValue(JSON.parse(item));
 };
 
-EJSON.isBinary = function (obj) {
-  return (typeof Uint8Array !== 'undefined' && obj instanceof Uint8Array) ||
-    (obj && obj.$Uint8ArrayPolyfill);
+EJSON.isBinary = function(obj) {
+  return (
+    (typeof Uint8Array !== "undefined" && obj instanceof Uint8Array) ||
+    (obj && obj.$Uint8ArrayPolyfill)
+  );
 };
 
-EJSON.equals = function (a, b, options) {
+EJSON.equals = function(a, b, options) {
   var i;
   var keyOrderSensitive = !!(options && options.keyOrderSensitive);
-  if (a === b)
-    return true;
-  if (!a || !b) // if either one is falsy, they'd have to be === to be equal
+  if (a === b) return true;
+  if (!a || !b)
+    // if either one is falsy, they'd have to be === to be equal
     return false;
-  if (!(typeof a === 'object' && typeof b === 'object'))
-    return false;
+  if (!(typeof a === "object" && typeof b === "object")) return false;
   if (a instanceof Date && b instanceof Date)
     return a.valueOf() === b.valueOf();
   if (EJSON.isBinary(a) && EJSON.isBinary(b)) {
-    if (a.length !== b.length)
-      return false;
+    if (a.length !== b.length) return false;
     for (i = 0; i < a.length; i++) {
-      if (a[i] !== b[i])
-        return false;
+      if (a[i] !== b[i]) return false;
     }
     return true;
   }
-  if (typeof (a.equals) === 'function')
-    return a.equals(b, options);
+  if (typeof a.equals === "function") return a.equals(b, options);
   if (a instanceof Array) {
-    if (!(b instanceof Array))
-      return false;
-    if (a.length !== b.length)
-      return false;
+    if (!(b instanceof Array)) return false;
+    if (a.length !== b.length) return false;
     for (i = 0; i < a.length; i++) {
-      if (!EJSON.equals(a[i], b[i], options))
-        return false;
+      if (!EJSON.equals(a[i], b[i], options)) return false;
     }
     return true;
   }
@@ -8104,11 +8084,11 @@ EJSON.equals = function (a, b, options) {
   var ret;
   if (keyOrderSensitive) {
     var bKeys = [];
-    _.each(b, function (val, x) {
-        bKeys.push(x);
+    _.each(b, function(val, x) {
+      bKeys.push(x);
     });
     i = 0;
-    ret = _.all(a, function (val, x) {
+    ret = _.every(a, function(val, x) {
       if (i >= bKeys.length) {
         return false;
       }
@@ -8124,7 +8104,7 @@ EJSON.equals = function (a, b, options) {
     return ret && i === bKeys.length;
   } else {
     i = 0;
-    ret = _.all(a, function (val, key) {
+    ret = _.every(a, function(val, key) {
       if (!_.has(b, key)) {
         return false;
       }
@@ -8138,14 +8118,11 @@ EJSON.equals = function (a, b, options) {
   }
 };
 
-EJSON.clone = function (v) {
+EJSON.clone = function(v) {
   var ret;
-  if (typeof v !== "object")
-    return v;
-  if (v === null)
-    return null; // null has typeof "object"
-  if (v instanceof Date)
-    return new Date(v.getTime());
+  if (typeof v !== "object") return v;
+  if (v === null) return null; // null has typeof "object"
+  if (v instanceof Date) return new Date(v.getTime());
   if (EJSON.isBinary(v)) {
     ret = EJSON.newBinary(v.length);
     for (var i = 0; i < v.length; i++) {
@@ -8157,17 +8134,16 @@ EJSON.clone = function (v) {
     // For some reason, _.map doesn't work in this context on Opera (weird test
     // failures).
     ret = [];
-    for (i = 0; i < v.length; i++)
-      ret[i] = EJSON.clone(v[i]);
+    for (i = 0; i < v.length; i++) ret[i] = EJSON.clone(v[i]);
     return ret;
   }
   // handle general user-defined typed Objects if they have a clone method
-  if (typeof v.clone === 'function') {
+  if (typeof v.clone === "function") {
     return v.clone();
   }
   // handle other objects
   ret = {};
-  _.each(v, function (value, key) {
+  _.each(v, function(value, key) {
     ret[key] = EJSON.clone(value);
   });
   return ret;
@@ -13303,7 +13279,7 @@ Collection = (function() {
       throw new Error("Client required to upsert");
     }
     results = [];
-    basesPresent = _.compact(_.pluck(items, "base")).length > 0;
+    basesPresent = _.compact(_.map(items, "base")).length > 0;
     params = {
       client: this.client
     };
@@ -13339,8 +13315,8 @@ Collection = (function() {
     } else {
       if (basesPresent) {
         return this.httpClient("PATCH", this.getUrl(), params, {
-          doc: _.pluck(items, "doc"),
-          base: _.pluck(items, "base")
+          doc: _.map(items, "doc"),
+          base: _.map(items, "base")
         }, function(result) {
           return success(result);
         }, function(err) {
@@ -13349,7 +13325,7 @@ Collection = (function() {
           }
         });
       } else {
-        return this.httpClient("POST", this.getUrl(), params, _.pluck(items, "doc"), function(result) {
+        return this.httpClient("POST", this.getUrl(), params, _.map(items, "doc"), function(result) {
           return success(result);
         }, function(err) {
           if (error) {
@@ -13875,9 +13851,9 @@ Collection = (function() {
   Collection.prototype.upsert = function(docs, bases, success, error) {
     var items, _ref;
     _ref = utils.regularizeUpsert(docs, bases, success, error), items = _ref[0], success = _ref[1], error = _ref[2];
-    return this.masterCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), (function(_this) {
+    return this.masterCol.upsert(_.map(items, "doc"), _.map(items, "base"), (function(_this) {
       return function() {
-        return _this.replicaCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), function(results) {
+        return _this.replicaCol.upsert(_.map(items, "doc"), _.map(items, "base"), function(results) {
           return success(docs);
         }, error);
       };
@@ -13894,14 +13870,14 @@ Collection = (function() {
 
   Collection.prototype.cache = function(docs, selector, options, success, error) {
     var docsMap, sort;
-    docsMap = _.indexBy(docs, "_id");
+    docsMap = _.keyBy(docs, "_id");
     if (options.sort) {
       sort = compileSort(options.sort);
     }
     return this.masterCol.find(selector, options).fetch((function(_this) {
       return function(results) {
         var doc, performCaches, performUncaches, result, resultsMap, toCache, toUncache, _i, _j, _len, _len1;
-        resultsMap = _.indexBy(results, "_id");
+        resultsMap = _.keyBy(results, "_id");
         toCache = [];
         for (_i = 0, _len = docs.length; _i < _len; _i++) {
           doc = docs[_i];

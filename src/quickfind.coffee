@@ -4,7 +4,7 @@ compileSort = require('./selector').compileSort
 
 ###
 
-Quickfind protocol allows sending information about which rows are already present locally to minimize 
+Quickfind protocol allows sending information about which rows are already present locally to minimize
 network traffic.
 
 Protocal has 3 phases:
@@ -35,7 +35,7 @@ exports.encodeRequest = (clientRows) ->
 
   return request
 
-# Given an array of rows on the server and an encoded request, create encoded response 
+# Given an array of rows on the server and an encoded request, create encoded response
 exports.encodeResponse = (serverRows, encodedRequest) ->
   # Index by shard
   serverRows = _.groupBy(serverRows, (row) -> row._id.substr(0, shardLength))
@@ -46,7 +46,7 @@ exports.encodeResponse = (serverRows, encodedRequest) ->
       serverRows[key] = []
 
   # Only keep ones where different from encoded request
-  response = _.pick(serverRows, (rows, key) -> hashRows(rows) != encodedRequest[key])
+  response = _.pickBy(serverRows, (rows, key) -> hashRows(rows) != encodedRequest[key])
 
   return response
 
@@ -73,6 +73,6 @@ hashRows = (rows) ->
   hash = sha1.create()
   for row in _.sortBy(rows, "_id")
     hash.update(row._id + ":" + (row._rev or "") + "|")
-  
+
   # 80 bits is enough for uniqueness
   return hash.hex().substr(0, 20)

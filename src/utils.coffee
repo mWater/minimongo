@@ -106,7 +106,7 @@ exports.cloneLocalDb = (fromDb, toDb, success, error) ->
       toCol.seed items, =>
         # Copy upserts
         fromCol.pendingUpserts (upserts) =>
-          toCol.upsert _.pluck(upserts, "doc"), _.pluck(upserts, "base"), =>
+          toCol.upsert _.map(upserts, "doc"), _.map(upserts, "base"), =>
             # Copy removes
             fromCol.pendingRemoves (removes) =>
               async.eachSeries removes, (remove, cb2) =>
@@ -134,7 +134,7 @@ exports.cloneLocalCollection = (fromCol, toCol, success, error) ->
     toCol.seed items, =>
       # Copy upserts
       fromCol.pendingUpserts (upserts) =>
-        toCol.upsert _.pluck(upserts, "doc"), _.pluck(upserts, "base"), =>
+        toCol.upsert _.map(upserts, "doc"), _.map(upserts, "base"), =>
           # Copy removes
           fromCol.pendingRemoves (removes) =>
             async.eachSeries removes, (remove, cb2) =>
@@ -270,7 +270,7 @@ processNearOperator = (selector, list) ->
         distances = _.filter distances, (item) -> item.distance <= value['$near']['$maxDistance']
 
       # Extract docs
-      list = _.pluck distances, 'doc'
+      list = _.map distances, 'doc'
   return list
 
 pointInPolygon = (point, polygon) ->

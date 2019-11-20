@@ -9,7 +9,7 @@ _ = require 'lodash'
 processFind = require('./utils').processFind
 utils = require('./utils')
 
-# Bridges a local and remote database, querying from the local first and then 
+# Bridges a local and remote database, querying from the local first and then
 # getting the remote. Also uploads changes from local to remote.
 module.exports = class HybridDb
   constructor: (localDb, remoteDb) ->
@@ -39,7 +39,7 @@ module.exports = class HybridDb
       col = _.first(cols)
       if col
         col.upload(->
-          uploadCols(_.rest(cols), success, error)
+          uploadCols(_.drop(cols), success, error)
         , (err) ->
           error(err))
       else
@@ -165,7 +165,7 @@ class HybridCollection
 
           @localCol.pendingRemoves (removes) =>
             if removes.length > 0
-              removesMap = _.object(_.map(removes, (id) -> [id, id]))
+              removesMap = _.fromPairs(_.map(removes, (id) -> [id, id]))
               data = _.filter remoteData, (doc) ->
                 return not _.has(removesMap, doc._id)
 
@@ -173,12 +173,12 @@ class HybridCollection
             @localCol.pendingUpserts (upserts) ->
               if upserts.length > 0
                 # Remove upserts from data
-                upsertsMap = _.object(_.map(upserts, (u) -> u.doc._id), _.map(upserts, (u) -> u.doc._id))
+                upsertsMap = _.zipObject(_.map(upserts, (u) -> u.doc._id), _.map(upserts, (u) -> u.doc._id))
                 data = _.filter data, (doc) ->
                   return not _.has(upsertsMap, doc._id)
 
                 # Add upserts
-                data = data.concat(_.pluck(upserts, "doc"))
+                data = data.concat(_.map(upserts, "doc"))
 
                 # Refilter/sort/limit
                 data = processFind(data, selector, options)
@@ -238,10 +238,10 @@ class HybridCollection
 
   upsert: (docs, bases, success, error) ->
     @localCol.upsert(docs, bases, (result) ->
-      # Bases is optional 
+      # Bases is optional
       if _.isFunction(bases)
         success = bases
-        
+
       success?(docs)
     , error)
 
@@ -259,14 +259,14 @@ class HybridCollection
             # Cache new value if present
             if remoteDoc
               @localCol.cacheOne remoteDoc, ->
-                uploadUpserts(_.rest(upserts), success, error)
+                uploadUpserts(_.drop(upserts), success, error)
               , error
             else
               # Remove local
               @localCol.remove upsert.doc._id, =>
                 # Resolve remove
                 @localCol.resolveRemove upsert.doc._id, ->
-                  uploadUpserts(_.rest(upserts), success, error)
+                  uploadUpserts(_.drop(upserts), success, error)
                 , error
               , error
           , error
@@ -278,7 +278,7 @@ class HybridCollection
               @localCol.resolveRemove upsert.doc._id, ->
                 # Continue if was 410
                 if err.status == 410
-                  uploadUpserts(_.rest(upserts), success, error)
+                  uploadUpserts(_.drop(upserts), success, error)
                 else
                   error(err)
               , error
@@ -293,7 +293,7 @@ class HybridCollection
       if remove
         @remoteCol.remove remove, =>
           @localCol.resolveRemove remove, ->
-            uploadRemoves(_.rest(removes), success, error)
+            uploadRemoves(_.drop(removes), success, error)
           , error
         , (err) =>
           # If 403 or 410, remove document
@@ -301,7 +301,7 @@ class HybridCollection
             @localCol.resolveRemove remove, ->
               # Continue if was 410
               if err.status == 410
-                uploadRemoves(_.rest(removes), success, error)
+                uploadRemoves(_.drop(removes), success, error)
               else
                 error(err)
             , error
@@ -316,7 +316,7 @@ class HybridCollection
       # Sort upserts if sort defined
       if @options.sortUpserts
         upserts.sort((u1, u2) => @options.sortUpserts(u1.doc, u2.doc))
-        
+
       uploadUpserts upserts, =>
         @localCol.pendingRemoves (removes) ->
           uploadRemoves(removes, success, error)

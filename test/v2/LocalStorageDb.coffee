@@ -67,7 +67,7 @@ class Collection
 
     # Read removes
     removeItems = if window.localStorage[@namespace+"removes"] then JSON.parse(window.localStorage[@namespace+"removes"]) else []
-    @removes = _.object(_.pluck(removeItems, "_id"), removeItems)
+    @removes = _.zipObject(_.map(removeItems, "_id"), removeItems)
 
   find: (selector, options) ->
     return fetch: (success, error) =>
@@ -146,7 +146,7 @@ class Collection
     for doc in docs
       @cacheOne(doc)
 
-    docsMap = _.object(_.pluck(docs, "_id"), docs)
+    docsMap = _.zipObject(_.map(docs, "_id"), docs)
 
     if options.sort
       sort = compileSort(options.sort)
@@ -168,7 +168,7 @@ class Collection
     success _.values(@upserts)
 
   pendingRemoves: (success) ->
-    success _.pluck(@removes, "_id")
+    success _.map(@removes, "_id")
 
   resolveUpsert: (doc, success) ->
     # Handle both single and multiple upsert

@@ -242,7 +242,7 @@ class Collection
           return
 
         # Rows have been cached, now look for stale ones to remove
-        docsMap = _.object(_.pluck(docs, "_id"), docs)
+        docsMap = _.zipObject(_.map(docs, "_id"), docs)
 
         if options.sort
           sort = compileSort(options.sort)

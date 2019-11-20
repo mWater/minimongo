@@ -16,7 +16,7 @@ module.exports = ->
     # Test a filter to return specified rows (in order)
     @testFilter = (filter, ids, done) ->
       @col.find(filter, { sort:["_id"]}).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ids
+        assert.deepEqual _.map(results, '_id'), ids
         done()
 
   context 'With sample rows', ->
@@ -143,22 +143,22 @@ module.exports = ->
 
     it 'sorts ascending', (done) ->
       @col.find({}, {sort: ['a']}).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["1","3","2"]
+        assert.deepEqual _.map(results, '_id'), ["1","3","2"]
         done()
 
     it 'sorts descending', (done) ->
       @col.find({}, {sort: [['a','desc']]}).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["2","3","1"]
+        assert.deepEqual _.map(results, '_id'), ["2","3","1"]
         done()
 
     it 'limits', (done) ->
       @col.find({}, {sort: ['a'], limit:2}).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["1","3"]
+        assert.deepEqual _.map(results, '_id'), ["1","3"]
         done()
 
     it 'skips', (done) ->
       @col.find({}, {sort: ['a'], skip:2}).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["2"]
+        assert.deepEqual _.map(results, '_id'), ["2"]
         done()
 
     # MemoryDb is much faster if we relax this constraint
@@ -228,7 +228,7 @@ module.exports = ->
 
     it 'finds sorts in Javascript order', (done) ->
       @col.find({}, {sort: ['a']}).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["2","1"]
+        assert.deepEqual _.map(results, '_id'), ["2","1"]
         done()
 
   context 'With integer array in json rows', ->
@@ -309,7 +309,7 @@ module.exports = ->
           $geometry: geopoint(90, 45)
 
       @col.find(selector).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["1","3","2","4"]
+        assert.deepEqual _.map(results, '_id'), ["1","3","2","4"]
         done()
 
     it 'finds points near maxDistance', (done) ->
@@ -319,7 +319,7 @@ module.exports = ->
           $maxDistance: 111180
 
       @col.find(selector).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["1","3"]
+        assert.deepEqual _.map(results, '_id'), ["1","3"]
         done()
 
     it 'finds points near maxDistance just above', (done) ->
@@ -329,7 +329,7 @@ module.exports = ->
           $maxDistance: 111410
 
       @col.find(selector).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["1","3","2"]
+        assert.deepEqual _.map(results, '_id'), ["1","3","2"]
         done()
 
     it 'finds points within simple box', (done) ->
@@ -341,7 +341,7 @@ module.exports = ->
               [89.5, 45.5], [89.5, 46.5], [90.5, 46.5], [90.5, 45.5], [89.5, 45.5]
             ]]
       @col.find(selector).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["2"]
+        assert.deepEqual _.map(results, '_id'), ["2"]
         done()
 
     it 'finds points within big box', (done) ->
@@ -353,7 +353,7 @@ module.exports = ->
               [0, -89], [0, 89], [179, 89], [179, -89], [0, -89]
             ]]
       @col.find(selector, {sort:['_id']}).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["1", "2", "3", "4"]
+        assert.deepEqual _.map(results, '_id'), ["1", "2", "3", "4"]
         done()
 
     it 'handles undefined', (done) ->
@@ -366,7 +366,7 @@ module.exports = ->
             ]]
       @col.upsert { _id:5 }, =>
         @col.find(selector).fetch (results) ->
-          assert.deepEqual _.pluck(results, '_id'), ["2"]
+          assert.deepEqual _.map(results, '_id'), ["2"]
           done()
 
   context 'With polygon rows', ->
@@ -385,7 +385,7 @@ module.exports = ->
         $geoIntersects:
           $geometry: polygon([[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]])
       @col.find(selector).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["1"]
+        assert.deepEqual _.map(results, '_id'), ["1"]
         done()
 
     it 'finds polygons that intersect large box', (done) ->
@@ -393,7 +393,7 @@ module.exports = ->
         $geoIntersects:
           $geometry: polygon([[[0, 0], [12, 0], [12, 12], [0, 12], [0, 0]]])
       @col.find(selector).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["1", "2"]
+        assert.deepEqual _.map(results, '_id'), ["1", "2"]
         done()
 
   context 'With multipolygon rows', ->
@@ -417,7 +417,7 @@ module.exports = ->
         $geoIntersects:
           $geometry: polygon([[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]])
       @col.find(selector).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["1"]
+        assert.deepEqual _.map(results, '_id'), ["1"]
         done()
 
     it 'finds polygons that intersect large box', (done) ->
@@ -425,7 +425,7 @@ module.exports = ->
         $geoIntersects:
           $geometry: polygon([[[0, 0], [12, 0], [12, 12], [0, 12], [0, 0]]])
       @col.find(selector).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["1", "2"]
+        assert.deepEqual _.map(results, '_id'), ["1", "2"]
         done()
 
   context 'With multilinestring rows', ->
@@ -450,7 +450,7 @@ module.exports = ->
         $geoIntersects:
           $geometry: polygon([[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]])
       @col.find(selector).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), ["1"]
+        assert.deepEqual _.map(results, '_id'), ["1"]
         done()
 
     it 'finds that that doesn\'t intersect simple box', (done) ->
@@ -458,5 +458,5 @@ module.exports = ->
         $geoIntersects:
           $geometry: polygon([[[2, 2], [3, 2], [3, 3], [2, 3], [2, 2]]])
       @col.find(selector).fetch (results) ->
-        assert.deepEqual _.pluck(results, '_id'), []
+        assert.deepEqual _.map(results, '_id'), []
         done()

@@ -91,14 +91,14 @@ module.exports = ->
       @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], {}, {}, =>
         @col.cache [{ _id: "1", a: 'a' }], {_id: {$lt:"3"}}, {}, =>
           @col.find({}, {sort:['_id']}).fetch (results) ->
-            assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
+            assert.deepEqual _.map(results, '_id'), ["1", "3"]
             done()
 
     it "cache removes missing sorted limited", (done) ->
       @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], {}, {}, =>
         @col.cache [{ _id: "1", a: 'a' }], {}, {sort:['_id'], limit:2}, =>
           @col.find({}, {sort:['_id']}).fetch (results) ->
-            assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
+            assert.deepEqual _.map(results, '_id'), ["1", "3"]
             done()
 
     it "cache does not remove missing sorted limited past end", (done) ->
@@ -106,21 +106,21 @@ module.exports = ->
         @col.remove "2", =>
           @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }], {}, {sort:['_id'], limit:2}, =>
             @col.find({}, {sort:['_id']}).fetch (results) ->
-              assert.deepEqual _.pluck(results, '_id'), ["1", "3", "4"]
+              assert.deepEqual _.map(results, '_id'), ["1", "3", "4"]
               done()
 
     it "cache does not remove missing unsorted limited", (done) ->
       @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }, { _id: "4", a: 'd' }], {}, {}, =>
         @col.cache [{ _id: "3", a: 'c' }, { _id: "4", a: 'd' }], {}, { limit: 2 }, =>
           @col.find({}, {sort:['_id']}).fetch (results) ->
-            assert.deepEqual _.pluck(results, '_id'), ["1", "2", "3", "4"]
+            assert.deepEqual _.map(results, '_id'), ["1", "2", "3", "4"]
             done()
 
     it "uncache removes matching", (done) ->
       @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], {}, {}, =>
         @col.uncache { a: 'b' }, =>
           @col.find({}, {sort:['_id']}).fetch (results) ->
-            assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
+            assert.deepEqual _.map(results, '_id'), ["1", "3"]
             done()
 
     it "uncache does not remove upserts", (done) ->
@@ -128,7 +128,7 @@ module.exports = ->
         @col.upsert { _id: "2", a: 'b' }, =>
           @col.uncache { a: 'b' }, =>
             @col.find({}, {sort:['_id']}).fetch (results) ->
-              assert.deepEqual _.pluck(results, '_id'), ["1", "2", "3"]
+              assert.deepEqual _.map(results, '_id'), ["1", "2", "3"]
               done()
 
     it "uncache does not remove removes", (done) ->
@@ -136,7 +136,7 @@ module.exports = ->
         @col.remove "2", =>
           @col.uncache { a: 'b' }, =>
             @col.find({}, {sort:['_id']}).fetch (results) =>
-              assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
+              assert.deepEqual _.map(results, '_id'), ["1", "3"]
               @col.pendingRemoves (results) =>
                 assert.deepEqual results, ["2"]
                 done()
@@ -144,7 +144,7 @@ module.exports = ->
     it "cacheList caches", (done) ->
       @col.cacheList [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], =>
         @col.find({}, {sort:['_id']}).fetch (results) ->
-          assert.deepEqual _.pluck(results, '_id'), ["1", "2", "3"]
+          assert.deepEqual _.map(results, '_id'), ["1", "2", "3"]
           done()
 
     it "cacheList does not overwrite upserted", (done) ->
@@ -166,7 +166,7 @@ module.exports = ->
       @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], {}, {}, =>
         @col.uncacheList ["2"], =>
           @col.find({}, {sort:['_id']}).fetch (results) ->
-            assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
+            assert.deepEqual _.map(results, '_id'), ["1", "3"]
             done()
 
     it "uncacheList does not remove upserts", (done) ->
@@ -174,7 +174,7 @@ module.exports = ->
         @col.upsert { _id: "2", a: 'b' }, =>
           @col.uncacheList ["2"], =>
             @col.find({}, {sort:['_id']}).fetch (results) ->
-              assert.deepEqual _.pluck(results, '_id'), ["1", "2", "3"]
+              assert.deepEqual _.map(results, '_id'), ["1", "2", "3"]
               done()
 
     it "uncacheList does not remove removes", (done) ->
@@ -182,7 +182,7 @@ module.exports = ->
         @col.remove "2", =>
           @col.uncacheList ["2"], =>
             @col.find({}, {sort:['_id']}).fetch (results) =>
-              assert.deepEqual _.pluck(results, '_id'), ["1", "3"]
+              assert.deepEqual _.map(results, '_id'), ["1", "3"]
               @col.pendingRemoves (results) =>
                 assert.deepEqual results, ["2"]
                 done()
@@ -248,8 +248,8 @@ module.exports = ->
       ]
       @col.upsert docs, =>
         @col.pendingUpserts (results) ->
-          assert.deepEqual _.pluck(results, "doc"), docs
-          assert.deepEqual _.pluck(results, "base"), [null, null, null]
+          assert.deepEqual _.map(results, "doc"), docs
+          assert.deepEqual _.map(results, "base"), [null, null, null]
           done()
 
     it "allows multiple upserts with bases", (done) ->
@@ -265,8 +265,8 @@ module.exports = ->
       ]
       @col.upsert docs, bases, =>
         @col.pendingUpserts (results) ->
-          assert.deepEqual _.pluck(results, "doc"), docs
-          assert.deepEqual _.pluck(results, "base"), bases
+          assert.deepEqual _.map(results, "doc"), docs
+          assert.deepEqual _.map(results, "base"), bases
           done()
 
 

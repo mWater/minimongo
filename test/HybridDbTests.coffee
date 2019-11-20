@@ -124,7 +124,7 @@ describe 'HybridDb', ->
           if calls == 2
             @lc.find({}).fetch (data) ->
               assert.equal data.length, 2
-              assert.deepEqual _.pluck(data, 'a'), [3,2]
+              assert.deepEqual _.map(data, 'a'), [3,2]
               done()
 
     describe "cacheFindOne: true (default)", ->
@@ -217,7 +217,7 @@ describe 'HybridDb', ->
           if calls >= 2
             assert.deepEqual data, { _id : "1", a:3 }
             @lc.find({}, {}).fetch (data) ->
-              assert.deepEqual _.pluck(data, 'a'), [3,2]
+              assert.deepEqual _.map(data, 'a'), [3,2]
             done()
         , fail
 
@@ -240,7 +240,7 @@ describe 'HybridDb', ->
     describe "interim: false with timeout", ->
       beforeEach ->
         @clock = lolex.install()
-  
+
       afterEach ->
         @clock.uninstall()
 
@@ -407,7 +407,7 @@ describe 'HybridDb', ->
           if calls == 2
             @lc.find({}).fetch (data) ->
               assert.equal data.length, 2
-              assert.deepEqual _.pluck(data, 'a'), [1,2]
+              assert.deepEqual _.map(data, 'a'), [1,2]
               done()
 
     describe "cacheFindOne: false", ->
@@ -504,13 +504,13 @@ describe 'HybridDb', ->
 
       it "find only calls remote", (done) ->
         @hc.find({}, { cacheFind: false, interim: false }).fetch (data) ->
-          assert.deepEqual _.pluck(data, 'a'), [3,4]
+          assert.deepEqual _.map(data, 'a'), [3,4]
           done()
 
       it "find does not cache results", (done) ->
         @hc.find({}, { cacheFind: false, interim: false }).fetch (data) =>
           @lc.find({}).fetch (data) =>
-            assert.deepEqual _.pluck(data, 'a'), [1,2]
+            assert.deepEqual _.map(data, 'a'), [1,2]
             done()
 
       it "find falls back to local if remote fails", (done) ->
@@ -519,7 +519,7 @@ describe 'HybridDb', ->
             error()
           }
         @hc.find({}, { cacheFind: false, interim: false }).fetch (data) ->
-          assert.deepEqual _.pluck(data, 'a'), [1,2]
+          assert.deepEqual _.map(data, 'a'), [1,2]
           done()
 
       it "find errors if useLocalOnRemoteError:false if remote fails", (done) ->
@@ -536,14 +536,14 @@ describe 'HybridDb', ->
         @lc.upsert({ _id:"1", a:9 })
 
         @hc.find({}, { cacheFind: false, interim: false, sort: ['_id'] }).fetch (data) =>
-          assert.deepEqual _.pluck(data, 'a'), [9,4]
+          assert.deepEqual _.map(data, 'a'), [9,4]
           done()
 
       it "find respects local removes", (done) ->
         @lc.remove("1")
 
         @hc.find({}, { cacheFind: false, interim: false }).fetch (data) ->
-          assert.deepEqual _.pluck(data, 'a'), [4]
+          assert.deepEqual _.map(data, 'a'), [4]
           done()
 
     it "upload applies pending upserts", (done) ->
@@ -555,7 +555,7 @@ describe 'HybridDb', ->
           assert.equal data.length, 0
 
           @rc.pendingUpserts (data) ->
-            assert.deepEqual _.pluck(_.pluck(data, 'doc'), 'a'), [1,2]
+            assert.deepEqual _.map(_.map(data, 'doc'), 'a'), [1,2]
             done()
       , fail)
 
@@ -575,7 +575,7 @@ describe 'HybridDb', ->
         @lc.pendingUpserts (data) =>
           assert.equal data.length, 0
 
-          assert.deepEqual _.pluck(upserts, 'a'), [2, 1]
+          assert.deepEqual _.map(upserts, 'a'), [2, 1]
           done()
       , fail)
 
@@ -773,7 +773,7 @@ describe 'HybridDb', ->
 
     it "find uses remote", (done) ->
       @hc.find({}, { cacheFind: false, interim: false }).fetch (data) =>
-        assert.deepEqual _.pluck(data, 'a'), [3,4]
+        assert.deepEqual _.map(data, 'a'), [3,4]
         done()
 
     it "find does not cache results", (done) ->
@@ -786,14 +786,14 @@ describe 'HybridDb', ->
       @lc.upsert({ _id:"1", a:9 })
 
       @hc.find({}, { cacheFind: false, interim: false, sort: ['_id'] }).fetch (data) =>
-        assert.deepEqual _.pluck(data, 'a'), [9,4]
+        assert.deepEqual _.map(data, 'a'), [9,4]
         done()
 
     it "find respects local removes", (done) ->
       @lc.remove("1")
 
       @hc.find({}, { cacheFind: false, interim: false }).fetch (data) =>
-        assert.deepEqual _.pluck(data, 'a'), [4]
+        assert.deepEqual _.map(data, 'a'), [4]
         done()
 
     it "findOne without _id selector uses remote", (done) ->
@@ -842,7 +842,7 @@ describe 'HybridDb', ->
 
     #       # Pending remotely
     #       @rc.pendingUpserts (data) =>
-    #         assert.deepEqual _.pluck(_.pluck(data, 'doc'), "a"), [9]
+    #         assert.deepEqual _.map(_.map(data, 'doc'), "a"), [9]
 
     #         # Not cached locally
     #         @lc.find({}).fetch (data) =>
