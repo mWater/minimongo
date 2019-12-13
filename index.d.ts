@@ -10,10 +10,10 @@ export interface MinimongoCollectionFindOptions {
   /** Only for RemoteDb.find */ 
   localData?: any[]
 
-  /** Only for RemoteDb.find */ 
-  whereExpr?: Expr
-  /** Only for RemoteDb.find */ 
-  orderByExprs?: { expr: Expr, dir: "asc" | "desc" }[]
+  /** Only for RemoteDb.find, Must be an mwater-expression */ 
+  whereExpr?: any
+  /** Only for RemoteDb.find. expr must be an mwater-expression */ 
+  orderByExprs?: { expr: any, dir: "asc" | "desc" }[]
 }
 
 export class MinimongoDb {
@@ -22,7 +22,7 @@ export class MinimongoDb {
   getCollectionNames(): string[]
   localDb?: MinimongoDb
   remoteDb?: MinimongoDb 
-  [collectionName: string]: MinimongoCollection<any> 
+  collections: { [collectionName: string]: MinimongoCollection<any> }
 }
 
 export interface MinimongoCollection<ItemType> {
