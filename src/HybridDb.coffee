@@ -237,11 +237,9 @@ class HybridCollection
     @localCol.find(selector, options).fetch(localSuccess, error)
 
   upsert: (docs, bases, success, error) ->
-    @localCol.upsert(docs, bases, (result) ->
-      # Bases is optional 
-      if _.isFunction(bases)
-        success = bases
-        
+    [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
+
+    @localCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), (result) ->
       success?(docs)
     , error)
 

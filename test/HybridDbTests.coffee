@@ -737,6 +737,21 @@ describe 'HybridDb', ->
         assert.equal data.length, 1
         done()
 
+    it "passes up error from local db", (done) ->
+      oldUpsert = @lc.upsert
+      try
+        @lc.upsert = (docs, bases, success, error) ->
+          if (_.isFunction(bases))
+            error = success
+            success = bases
+          error("FAIL")
+          
+      @hc.upsert({ _id:"1", a:1 }, ->
+        done(new Error("Should not call success"))
+      , (err) ->
+        done()
+      )
+
     it "upserts to local db with base version", (done) ->
       @hc.upsert({_id:"1", a:2}, {_id:"1", a:1})
       @lc.pendingUpserts (data) ->
