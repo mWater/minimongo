@@ -7076,10 +7076,9 @@ HybridCollection = (function() {
   };
 
   HybridCollection.prototype.upsert = function(docs, bases, success, error) {
-    return this.localCol.upsert(docs, bases, function(result) {
-      if (_.isFunction(bases)) {
-        success = bases;
-      }
+    var items, _ref;
+    _ref = utils.regularizeUpsert(docs, bases, success, error), items = _ref[0], success = _ref[1], error = _ref[2];
+    return this.localCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), function(result) {
       return typeof success === "function" ? success(docs) : void 0;
     }, error);
   };
