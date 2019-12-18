@@ -1,3 +1,5 @@
+import * as utils from './src/utils'
+
 export interface MinimongoCollectionFindOptions {
   fields?: any
   sort?: any
@@ -70,5 +72,6 @@ export class WebSQLDb extends MinimongoDb {}
 export class RemoteDb extends MinimongoDb {}
 export class HybridDb extends MinimongoDb {}
 export class ReplicatingDb extends MinimongoDb {}
+
 // exports.quickfind = require('./lib/quickfind');
-// exports.utils = require('./lib/utils');
+export { utils }
