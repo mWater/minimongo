@@ -51,8 +51,16 @@ exports.autoselectLocalDb = (options, success, error) ->
       # WebSQLDb must success in Cordova
       return new WebSQLDb options, success, error
 
-  # Use WebSQL in Android, iOS, Chrome, Safari, Opera, Blackberry
-  if browser.android or browser.ios or browser.chrome or browser.safari or browser.opera or browser.blackberry
+  # Use IndexedDb for ios, Safari
+  if browser.ios or browser.safari
+    # Fallback to IndexedDb
+    return new IndexedDb options, success, (err) =>
+      console.log "Failed to create IndexedDb: " + (if err then err.message)
+      # Create memory db instead
+      return new MemoryDb(options, success)
+
+  # Use WebSQL in Android, Chrome,  Opera, Blackberry
+  if browser.android or browser.chrome or browser.opera or browser.blackberry
     console.log "Selecting WebSQLDb for browser"
     return new WebSQLDb options, success, (err) =>
       console.log "Failed to create WebSQLDb: " + (if err then err.message)

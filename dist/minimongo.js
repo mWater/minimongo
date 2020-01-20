@@ -124,7 +124,15 @@ exports.autoselectLocalDb = function(options, success, error) {
       return new WebSQLDb(options, success, error);
     }
   }
-  if (browser.android || browser.ios || browser.chrome || browser.safari || browser.opera || browser.blackberry) {
+  if (browser.ios || browser.safari) {
+    return new IndexedDb(options, success, (function(_this) {
+      return function(err) {
+        console.log("Failed to create IndexedDb: " + (err ? err.message : void 0));
+        return new MemoryDb(options, success);
+      };
+    })(this));
+  }
+  if (browser.android || browser.chrome || browser.opera || browser.blackberry) {
     console.log("Selecting WebSQLDb for browser");
     return new WebSQLDb(options, success, (function(_this) {
       return function(err) {
