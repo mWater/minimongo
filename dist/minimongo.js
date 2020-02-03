@@ -6968,54 +6968,52 @@ HybridCollection = (function() {
   };
 
   HybridCollection.prototype._findFetch = function(selector, options, success, error) {
-    var localSuccess, step2;
     _.defaults(options, this.options);
-    step2 = (function(_this) {
-      return function(localData) {
-        var remoteError, remoteOptions, remoteSuccess, timedOut, timer;
-        remoteOptions = _.cloneDeep(options);
-        if (options.cacheFind) {
-          delete remoteOptions.fields;
-        }
-        remoteOptions.localData = localData;
-        timer = null;
-        timedOut = false;
-        remoteSuccess = function(remoteData) {
-          var cacheSuccess, data;
-          if (timer) {
-            clearTimeout(timer);
-          }
-          if (timedOut) {
+    return this.localCol.pendingUpserts((function(_this) {
+      return function(upserts) {
+        return _this.localCol.pendingRemoves(function(removes) {
+          var localSuccess, step2;
+          step2 = function(localData) {
+            var remoteError, remoteOptions, remoteSuccess, timedOut, timer;
+            remoteOptions = _.cloneDeep(options);
             if (options.cacheFind) {
-              _this.localCol.cache(remoteData, selector, options, (function() {}), error);
+              delete remoteOptions.fields;
             }
-            return;
-          }
-          if (options.cacheFind) {
-            cacheSuccess = function() {
-              var localSuccess2;
-              localSuccess2 = function(localData2) {
-                if (!options.interim || !_.isEqual(localData, localData2)) {
-                  return success(localData2);
-                }
-              };
-              return _this.localCol.find(selector, options).fetch(localSuccess2, error);
-            };
-            return _this.localCol.cache(remoteData, selector, options, cacheSuccess, error);
-          } else {
-            data = remoteData;
-            return _this.localCol.pendingRemoves(function(removes) {
-              var removesMap;
-              if (removes.length > 0) {
-                removesMap = _.object(_.map(removes, function(id) {
-                  return [id, id];
-                }));
-                data = _.filter(remoteData, function(doc) {
-                  return !_.has(removesMap, doc._id);
-                });
+            remoteOptions.localData = localData;
+            timer = null;
+            timedOut = false;
+            remoteSuccess = function(remoteData) {
+              var cacheSuccess, data, removesMap, upsertsMap;
+              if (timer) {
+                clearTimeout(timer);
               }
-              return _this.localCol.pendingUpserts(function(upserts) {
-                var upsertsMap;
+              if (timedOut) {
+                if (options.cacheFind) {
+                  _this.localCol.cache(remoteData, selector, options, (function() {}), error);
+                }
+                return;
+              }
+              if (options.cacheFind) {
+                cacheSuccess = function() {
+                  var localSuccess2;
+                  localSuccess2 = function(localData2) {
+                    if (!options.interim || !_.isEqual(localData, localData2)) {
+                      return success(localData2);
+                    }
+                  };
+                  return _this.localCol.find(selector, options).fetch(localSuccess2, error);
+                };
+                return _this.localCol.cache(remoteData, selector, options, cacheSuccess, error);
+              } else {
+                data = remoteData;
+                if (removes.length > 0) {
+                  removesMap = _.object(_.map(removes, function(id) {
+                    return [id, id];
+                  }));
+                  data = _.filter(remoteData, function(doc) {
+                    return !_.has(removesMap, doc._id);
+                  });
+                }
                 if (upserts.length > 0) {
                   upsertsMap = _.object(_.map(upserts, function(u) {
                     return u.doc._id;
@@ -7031,56 +7029,56 @@ HybridCollection = (function() {
                 if (!options.interim || !_.isEqual(localData, data)) {
                   return success(data);
                 }
-              }, error);
-            }, error);
-          }
-        };
-        remoteError = function(err) {
-          if (timer) {
-            clearTimeout(timer);
-          }
-          if (timedOut) {
-            return;
-          }
-          if (!options.interim) {
-            if (options.useLocalOnRemoteError) {
-              return success(localData);
-            } else {
-              if (error) {
-                return error(err);
               }
-            }
-          } else {
-
-          }
-        };
-        if (options.timeout) {
-          timer = setTimeout(function() {
-            timer = null;
-            timedOut = true;
-            if (!options.interim) {
-              if (options.useLocalOnRemoteError) {
-                return _this.localCol.find(selector, options).fetch(success, error);
-              } else {
-                if (error) {
-                  return error(new Error("Remote timed out"));
+            };
+            remoteError = function(err) {
+              if (timer) {
+                clearTimeout(timer);
+              }
+              if (timedOut) {
+                return;
+              }
+              if (!options.interim) {
+                if (options.useLocalOnRemoteError) {
+                  return success(localData);
+                } else {
+                  if (error) {
+                    return error(err);
+                  }
                 }
-              }
-            } else {
+              } else {
 
+              }
+            };
+            if (options.timeout) {
+              timer = setTimeout(function() {
+                timer = null;
+                timedOut = true;
+                if (!options.interim) {
+                  if (options.useLocalOnRemoteError) {
+                    return _this.localCol.find(selector, options).fetch(success, error);
+                  } else {
+                    if (error) {
+                      return error(new Error("Remote timed out"));
+                    }
+                  }
+                } else {
+
+                }
+              }, options.timeout);
             }
-          }, options.timeout);
-        }
-        return _this.remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError);
+            return _this.remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError);
+          };
+          localSuccess = function(localData) {
+            if (options.interim) {
+              success(localData);
+            }
+            return step2(localData);
+          };
+          return _this.localCol.find(selector, options).fetch(localSuccess, error);
+        }, error);
       };
-    })(this);
-    localSuccess = function(localData) {
-      if (options.interim) {
-        success(localData);
-      }
-      return step2(localData);
-    };
-    return this.localCol.find(selector, options).fetch(localSuccess, error);
+    })(this), error);
   };
 
   HybridCollection.prototype.upsert = function(docs, bases, success, error) {

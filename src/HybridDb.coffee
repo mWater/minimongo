@@ -122,55 +122,57 @@ class HybridCollection
     # Merge options
     _.defaults(options, @options)
 
-    step2 = (localData) =>
-      # Setup remote options
-      remoteOptions = _.cloneDeep(options)
+    # Get pending removes and upserts immediately to avoid odd race conditions
+    @localCol.pendingUpserts (upserts) =>
+      @localCol.pendingRemoves (removes) =>
 
-      # If caching, get all fields
-      if options.cacheFind
-        delete remoteOptions.fields
+        step2 = (localData) =>
+          # Setup remote options
+          remoteOptions = _.cloneDeep(options)
 
-      # Add localData to options for remote find for quickfind protocol
-      remoteOptions.localData = localData
-
-      # Setup timer variables
-      timer = null
-      timedOut = false
-
-      remoteSuccess = (remoteData) =>
-        # Cancel timer
-        if timer
-          clearTimeout(timer)
-
-        # Ignore if timed out, caching asynchronously
-        if timedOut
+          # If caching, get all fields
           if options.cacheFind
-            @localCol.cache(remoteData, selector, options, (->), error)
-          return
+            delete remoteOptions.fields
 
-        if options.cacheFind
-          # Cache locally
-          cacheSuccess = =>
-            # Get local data again
-            localSuccess2 = (localData2) ->
-              # Check if different or not interim
-              if not options.interim or not _.isEqual(localData, localData2)
-                # Send again
-                success(localData2)
-            @localCol.find(selector, options).fetch(localSuccess2, error)
-          @localCol.cache(remoteData, selector, options, cacheSuccess, error)
-        else
-          # Remove local remotes
-          data = remoteData
+          # Add localData to options for remote find for quickfind protocol
+          remoteOptions.localData = localData
 
-          @localCol.pendingRemoves (removes) =>
-            if removes.length > 0
-              removesMap = _.object(_.map(removes, (id) -> [id, id]))
-              data = _.filter remoteData, (doc) ->
-                return not _.has(removesMap, doc._id)
+          # Setup timer variables
+          timer = null
+          timedOut = false
 
-            # Add upserts
-            @localCol.pendingUpserts (upserts) ->
+          remoteSuccess = (remoteData) =>
+            # Cancel timer
+            if timer
+              clearTimeout(timer)
+
+            # Ignore if timed out, caching asynchronously
+            if timedOut
+              if options.cacheFind
+                @localCol.cache(remoteData, selector, options, (->), error)
+              return
+
+            if options.cacheFind
+              # Cache locally
+              cacheSuccess = =>
+                # Get local data again
+                localSuccess2 = (localData2) ->
+                  # Check if different or not interim
+                  if not options.interim or not _.isEqual(localData, localData2)
+                    # Send again
+                    success(localData2)
+                @localCol.find(selector, options).fetch(localSuccess2, error)
+              @localCol.cache(remoteData, selector, options, cacheSuccess, error)
+            else
+              # Remove local remotes
+              data = remoteData
+
+              if removes.length > 0
+                removesMap = _.object(_.map(removes, (id) -> [id, id]))
+                data = _.filter remoteData, (doc) ->
+                  return not _.has(removesMap, doc._id)
+
+              # Add upserts
               if upserts.length > 0
                 # Remove upserts from data
                 upsertsMap = _.object(_.map(upserts, (u) -> u.doc._id), _.map(upserts, (u) -> u.doc._id))
@@ -187,54 +189,54 @@ class HybridCollection
               if not options.interim or not _.isEqual(localData, data)
                 # Send again
                 success(data)
-            , error
-          , error
 
-      remoteError = (err) =>
-        # Cancel timer
-        if timer
-          clearTimeout(timer)
+          remoteError = (err) =>
+            # Cancel timer
+            if timer
+              clearTimeout(timer)
 
-        if timedOut
-          return
+            if timedOut
+              return
 
-        # If no interim, do local find
-        if not options.interim
-          if options.useLocalOnRemoteError
-            success(localData)
-          else
-            if error then error(err)
-        else
-          # Otherwise do nothing
-          return
-
-      # Start timer if remote
-      if options.timeout
-        timer = setTimeout () =>
-          timer = null
-          timedOut = true
-
-          # If no interim, do local find
-          if not options.interim
-            if options.useLocalOnRemoteError
-              @localCol.find(selector, options).fetch(success, error)
+            # If no interim, do local find
+            if not options.interim
+              if options.useLocalOnRemoteError
+                success(localData)
+              else
+                if error then error(err)
             else
-              if error then error(new Error("Remote timed out"))
-          else
-            # Otherwise do nothing
-            return
-        , options.timeout
+              # Otherwise do nothing
+              return
 
-      @remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError)
+          # Start timer if remote
+          if options.timeout
+            timer = setTimeout () =>
+              timer = null
+              timedOut = true
 
-    localSuccess = (localData) ->
-      # If interim, return data immediately
-      if options.interim
-        success(localData)
-      step2(localData)
+              # If no interim, do local find
+              if not options.interim
+                if options.useLocalOnRemoteError
+                  @localCol.find(selector, options).fetch(success, error)
+                else
+                  if error then error(new Error("Remote timed out"))
+              else
+                # Otherwise do nothing
+                return
+            , options.timeout
 
-    # Always get local data first
-    @localCol.find(selector, options).fetch(localSuccess, error)
+          @remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError)
+
+        localSuccess = (localData) ->
+          # If interim, return data immediately
+          if options.interim
+            success(localData)
+          step2(localData)
+
+        # Always get local data first
+        @localCol.find(selector, options).fetch(localSuccess, error)
+      , error
+    , error
 
   upsert: (docs, bases, success, error) ->
     [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
