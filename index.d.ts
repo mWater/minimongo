@@ -24,10 +24,10 @@ export class MinimongoDb {
   getCollectionNames(): string[]
   localDb?: MinimongoDb
   remoteDb?: MinimongoDb 
-  collections: { [collectionName: string]: MinimongoCollection<any> }
+  collections: { [collectionName: string]: MinimongoCollection }
 }
 
-export interface MinimongoCollection<ItemType> {
+export interface MinimongoCollection<ItemType = any> {
   find(selector: any, options?: MinimongoCollectionFindOptions): { 
     fetch(success: (items: ItemType[]) => void, error: (err: any) => void): void
   }
