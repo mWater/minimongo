@@ -380,8 +380,6 @@ LocalCollection._f = {
       return 9;
     if (EJSON.isBinary(v))
       return 5;
-    if (v instanceof Meteor.Collection.ObjectID)
-      return 7;
     return 3; // object
 
     // XXX support some/all of these:
