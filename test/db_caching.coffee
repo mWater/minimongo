@@ -84,6 +84,13 @@ module.exports = ->
             assert.equal results.length, 2
             done()
 
+    it "cache excludes excluded", (done) ->
+      @col.cache [{ _id: "1", a: 'a' }, { _id: "2", a: 'b' }, { _id: "3", a: 'c' }], {}, {}, =>
+        @col.cache [{ _id: "1", a: 'a' }, { _id: "4", a: 'd' }, { _id: "5", a: "e" }], {}, { exclude: ["2", "4"] }, =>
+          @col.find({}, {sort:['_id']}).fetch (results) ->
+            assert.deepEqual _.pluck(results, '_id'), ["1", "2", "5"]
+            done()
+
     it "handles implicitly sorted ($near) with limit"
     # TODO
 

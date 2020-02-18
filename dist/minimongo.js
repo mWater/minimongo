@@ -4926,7 +4926,8 @@ function inBBox(pt, bbox) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var Collection, MemoryDb, async, compileSort, processFind, utils, _,
-  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 _ = __webpack_require__(1);
 
@@ -5100,9 +5101,12 @@ Collection = (function() {
   };
 
   Collection.prototype.cache = function(docs, selector, options, success, error) {
-    var doc, docsMap, sort, _i, _len;
+    var doc, docsMap, sort, _i, _len, _ref;
     for (_i = 0, _len = docs.length; _i < _len; _i++) {
       doc = docs[_i];
+      if (options && options.exclude && (_ref = doc._id, __indexOf.call(options.exclude, _ref) >= 0)) {
+        continue;
+      }
       this.cacheOne(doc);
     }
     docsMap = _.object(_.pluck(docs, "_id"), docs);
@@ -5111,7 +5115,7 @@ Collection = (function() {
     }
     return this.find(selector, options).fetch((function(_this) {
       return function(results) {
-        var result, _j, _len1;
+        var result, _j, _len1, _ref1;
         for (_j = 0, _len1 = results.length; _j < _len1; _j++) {
           result = results[_j];
           if (!docsMap[result._id] && !_.has(_this.upserts, result._id)) {
@@ -5122,6 +5126,9 @@ Collection = (function() {
               if (!options.sort) {
                 continue;
               }
+            }
+            if (options && options.exclude && (_ref1 = result._id, __indexOf.call(options.exclude, _ref1) >= 0)) {
+              continue;
             }
             delete _this.items[result._id];
           }
@@ -5282,7 +5289,8 @@ exports.default = bbox;
 /* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Collection, IDBStore, IndexedDb, async, compileSort, processFind, utils, _;
+var Collection, IDBStore, IndexedDb, async, compileSort, processFind, utils, _,
+  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 _ = __webpack_require__(1);
 
@@ -5525,7 +5533,7 @@ Collection = (function() {
             return;
           }
           return _this.store.getBatch(keys, function(records) {
-            var i, record, result, _i, _ref;
+            var i, record, result, _i, _ref, _ref1;
             for (i = _i = 0, _ref = records.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
               record = records[i];
               result = results[i];
@@ -5537,6 +5545,9 @@ Collection = (function() {
                   if (!options.sort) {
                     continue;
                   }
+                }
+                if (options && options.exclude && (_ref1 = result._id, __indexOf.call(options.exclude, _ref1) >= 0)) {
+                  continue;
                 }
                 removes.push([_this.name, result._id]);
               }
@@ -5567,11 +5578,14 @@ Collection = (function() {
     puts = [];
     return this.store.getBatch(keys, (function(_this) {
       return function(records) {
-        var doc, i, record, _i, _ref;
+        var doc, i, record, _i, _ref, _ref1;
         for (i = _i = 0, _ref = records.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
           record = records[i];
           doc = docs[i];
           if ((record == null) || record.state === "cached") {
+            if (options && options.exclude && (_ref1 = doc._id, __indexOf.call(options.exclude, _ref1) >= 0)) {
+              continue;
+            }
             if (!record || !doc._rev || !record.doc._rev || doc._rev > record.doc._rev) {
               puts.push({
                 col: _this.name,
@@ -5847,7 +5861,8 @@ Collection = (function() {
 /* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Collection, WebSQLDb, async, compileSort, doNothing, processFind, utils, _;
+var Collection, WebSQLDb, async, compileSort, doNothing, processFind, utils, _,
+  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 _ = __webpack_require__(1);
 
@@ -6136,9 +6151,13 @@ Collection = (function() {
       return function(tx) {
         return async.eachSeries(docs, function(doc, callback) {
           return tx.executeSql("SELECT * FROM docs WHERE col = ? AND id = ?", [_this.name, doc._id], function(tx, results) {
-            var existing;
+            var existing, _ref;
             if (results.rows.length === 0 || results.rows.item(0).state === "cached") {
               existing = results.rows.length > 0 ? JSON.parse(results.rows.item(0).doc) : null;
+              if (options && options.exclude && (_ref = doc._id, __indexOf.call(options.exclude, _ref) >= 0)) {
+                callback();
+                return;
+              }
               if (!existing || !doc._rev || !existing._rev || doc._rev > existing._rev) {
                 return tx.executeSql("INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)", [_this.name, doc._id, "cached", JSON.stringify(doc)], function() {
                   return callback();
@@ -6170,7 +6189,12 @@ Collection = (function() {
             return _this.db.transaction(function(tx) {
               return async.eachSeries(results, function(result, callback) {
                 return tx.executeSql("SELECT * FROM docs WHERE col = ? AND id = ?", [_this.name, result._id], function(tx, rows) {
+                  var _ref;
                   if (!docsMap[result._id] && rows.rows.length > 0 && rows.rows.item(0).state === "cached") {
+                    if (options && options.exclude && (_ref = result._id, __indexOf.call(options.exclude, _ref) >= 0)) {
+                      callback();
+                      return;
+                    }
                     if (options.limit && docs.length === options.limit) {
                       if (options.sort && sort(result, _.last(docs)) >= 0) {
                         return callback();
@@ -6457,7 +6481,8 @@ Collection = (function() {
 /* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Collection, LocalStorageDb, async, compileSort, processFind, utils, _;
+var Collection, LocalStorageDb, async, compileSort, processFind, utils, _,
+  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 _ = __webpack_require__(1);
 
@@ -6681,9 +6706,12 @@ Collection = (function() {
   };
 
   Collection.prototype.cache = function(docs, selector, options, success, error) {
-    var doc, docsMap, sort, _i, _len;
+    var doc, docsMap, sort, _i, _len, _ref;
     for (_i = 0, _len = docs.length; _i < _len; _i++) {
       doc = docs[_i];
+      if (options && options.exclude && (_ref = doc._id, __indexOf.call(options.exclude, _ref) >= 0)) {
+        continue;
+      }
       this.cacheOne(doc);
     }
     docsMap = _.object(_.pluck(docs, "_id"), docs);
@@ -6692,10 +6720,13 @@ Collection = (function() {
     }
     return this.find(selector, options).fetch((function(_this) {
       return function(results) {
-        var result, _j, _len1;
+        var result, _j, _len1, _ref1;
         for (_j = 0, _len1 = results.length; _j < _len1; _j++) {
           result = results[_j];
           if (!docsMap[result._id] && !_.has(_this.upserts, result._id)) {
+            if (options && options.exclude && (_ref1 = result._id, __indexOf.call(options.exclude, _ref1) >= 0)) {
+              continue;
+            }
             if (options.limit && docs.length === options.limit) {
               if (options.sort && sort(result, _.last(docs)) >= 0) {
                 continue;
@@ -6981,7 +7012,7 @@ HybridCollection = (function() {
             timer = null;
             timedOut = false;
             remoteSuccess = function(remoteData) {
-              var cacheSuccess, data, removesMap, upsertsMap;
+              var cacheOptions, cacheSuccess, data, removesMap, upsertsMap;
               if (timer) {
                 clearTimeout(timer);
               }
@@ -7001,7 +7032,12 @@ HybridCollection = (function() {
                   };
                   return _this.localCol.find(selector, options).fetch(localSuccess2, error);
                 };
-                return _this.localCol.cache(remoteData, selector, options, cacheSuccess, error);
+                cacheOptions = _.extend({}, options, {
+                  exclude: removes.concat(_.map(upserts, function(u) {
+                    return u.doc._id;
+                  }))
+                });
+                return _this.localCol.cache(remoteData, selector, cacheOptions, cacheSuccess, error);
               } else {
                 data = remoteData;
                 if (removes.length > 0) {
@@ -13819,7 +13855,8 @@ module.exports = __webpack_amd_options__;
 /* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Collection, ReplicatingDb, compileSort, utils, _;
+var Collection, ReplicatingDb, compileSort, utils, _,
+  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 _ = __webpack_require__(1);
 
@@ -13903,12 +13940,15 @@ Collection = (function() {
     }
     return this.masterCol.find(selector, options).fetch((function(_this) {
       return function(results) {
-        var doc, performCaches, performUncaches, result, resultsMap, toCache, toUncache, _i, _j, _len, _len1;
+        var doc, performCaches, performUncaches, result, resultsMap, toCache, toUncache, _i, _j, _len, _len1, _ref, _ref1;
         resultsMap = _.indexBy(results, "_id");
         toCache = [];
         for (_i = 0, _len = docs.length; _i < _len; _i++) {
           doc = docs[_i];
           result = resultsMap[doc._id];
+          if (options && options.exclude && (_ref = doc._id, __indexOf.call(options.exclude, _ref) >= 0)) {
+            continue;
+          }
           if (!result) {
             toCache.push(doc);
             continue;
@@ -13930,6 +13970,9 @@ Collection = (function() {
             if (!options.sort) {
               continue;
             }
+          }
+          if (options && options.exclude && (_ref1 = result._id, __indexOf.call(options.exclude, _ref1) >= 0)) {
+            continue;
           }
           if (!docsMap[result._id]) {
             toUncache.push(result._id);

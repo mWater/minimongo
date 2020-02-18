@@ -167,6 +167,10 @@ class Collection
                 if not options.sort
                   continue
 
+              # Exclude any excluded _ids from being cached/uncached
+              if options and options.exclude and result._id in options.exclude
+                continue
+
               # Item is gone from server, remove locally
               removes.push [@name, result._id]
 
@@ -196,6 +200,9 @@ class Collection
 
         # Check if not present or not upserted/deleted
         if not record? or record.state == "cached"
+          if options and options.exclude and doc._id in options.exclude
+            continue
+
           # If _rev present, make sure that not overwritten by lower or equal _rev
           if not record or not doc._rev or not record.doc._rev or doc._rev > record.doc._rev
             puts.push { col: @name, state: "cached", doc: doc }

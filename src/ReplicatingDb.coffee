@@ -74,6 +74,10 @@ class Collection
       for doc in docs
         result = resultsMap[doc._id]
 
+        # Exclude any excluded _ids from being cached/uncached
+        if options and options.exclude and doc._id in options.exclude
+          continue
+
         # If not present locally, cache it
         if not result
           toCache.push(doc)
@@ -97,6 +101,10 @@ class Collection
           # If no sort, ignore
           if not options.sort
             continue
+
+        # Exclude any excluded _ids from being cached/uncached
+        if options and options.exclude and result._id in options.exclude
+          continue
 
         # Determine which ones to uncache
         if not docsMap[result._id] 

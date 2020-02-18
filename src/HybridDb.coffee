@@ -162,7 +162,10 @@ class HybridCollection
                     # Send again
                     success(localData2)
                 @localCol.find(selector, options).fetch(localSuccess2, error)
-              @localCol.cache(remoteData, selector, options, cacheSuccess, error)
+
+              # Exclude any recent upserts/removes to prevent race condition
+              cacheOptions = _.extend({}, options, exclude: removes.concat(_.map(upserts, (u) => u.doc._id)))
+              @localCol.cache(remoteData, selector, cacheOptions, cacheSuccess, error)
             else
               # Remove local remotes
               data = remoteData

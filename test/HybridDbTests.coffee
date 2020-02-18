@@ -126,6 +126,28 @@ describe 'HybridDb', ->
               assert.equal data.length, 2
               assert.deepEqual _.pluck(data, 'a'), [3,2]
               done()
+      
+      it "snapshots local upserts/removes to prevent race condition", (done) ->
+        # If the server receives the upsert/remove *after* the query and returns *before* the 
+        # query does, a newly upserted item may be removed from cache
+
+        @lc.upsert(_id: "1", a: 1)
+
+        oldRcFind = @rc.find
+        @rc.find = () => 
+          return {
+            fetch: (success) => 
+              # Simulate separate process having performed and resolved upsert
+              @lc.pendingUpserts((us) => 
+                @lc.resolveUpserts(us)
+              )
+              success([])
+          }
+
+        @hc.find({}, { interim: false }).fetch (data) =>
+          @rc.find = oldRcFind
+          assert.equal data.length, 1
+          done()
 
     describe "cacheFindOne: true (default)", ->
       it "findOne performs full field remote queries", (done) ->

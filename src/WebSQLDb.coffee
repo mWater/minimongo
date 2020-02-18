@@ -225,6 +225,11 @@ class Collection
           if results.rows.length == 0 or results.rows.item(0).state == "cached"
             existing = if results.rows.length > 0 then JSON.parse(results.rows.item(0).doc) else null
 
+            # Exclude any excluded _ids from being cached/uncached
+            if options and options.exclude and doc._id in options.exclude
+              callback()
+              return
+
             # If _rev present, make sure that not overwritten by lower or equal _rev
             if not existing or not doc._rev or not existing._rev or doc._rev > existing._rev
               # Upsert
@@ -254,6 +259,11 @@ class Collection
               # If not present in docs and is present locally and not upserted/deleted
               tx.executeSql "SELECT * FROM docs WHERE col = ? AND id = ?", [@name, result._id], (tx, rows) =>
                 if not docsMap[result._id] and rows.rows.length > 0 and rows.rows.item(0).state == "cached"
+                  # Exclude any excluded _ids from being cached/uncached
+                  if options and options.exclude and result._id in options.exclude
+                    callback()
+                    return
+
                   # If at limit
                   if options.limit and docs.length == options.limit
                     # If past end on sorted limited, ignore

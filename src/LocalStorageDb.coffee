@@ -169,6 +169,10 @@ class Collection
   cache: (docs, selector, options, success, error) ->
     # Add all non-local that are not upserted or removed
     for doc in docs
+      # Exclude any excluded _ids from being cached/uncached
+      if options and options.exclude and doc._id in options.exclude
+        continue
+
       @cacheOne(doc)
 
     docsMap = _.object(_.pluck(docs, "_id"), docs)
@@ -180,6 +184,10 @@ class Collection
     @find(selector, options).fetch (results) =>
       for result in results
         if not docsMap[result._id] and not _.has(@upserts, result._id)
+          # Exclude any excluded _ids from being cached/uncached
+          if options and options.exclude and result._id in options.exclude
+            continue
+
           # If at limit
           if options.limit and docs.length == options.limit
             # If past end on sorted limited, ignore

@@ -117,9 +117,14 @@ class Collection
 
     if success? then success()
 
+  # Options are find options with optional "exclude" which is list of _ids to exclude 
   cache: (docs, selector, options, success, error) ->
     # Add all non-local that are not upserted or removed
     for doc in docs
+      # Exclude any excluded _ids from being cached/uncached
+      if options and options.exclude and doc._id in options.exclude
+        continue
+      
       @cacheOne(doc)
 
     docsMap = _.object(_.pluck(docs, "_id"), docs)
@@ -139,6 +144,11 @@ class Collection
             # If no sort, ignore
             if not options.sort
               continue
+
+          # Exclude any excluded _ids from being cached/uncached
+          if options and options.exclude and result._id in options.exclude
+            continue
+
           delete @items[result._id]
 
       if success? then success()
