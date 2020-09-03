@@ -144,8 +144,8 @@ class Collection
         return
 
       # POST method
-      @httpClient("POST", @getUrl() + "/find", params, body, (encodedResponse) =>
-        success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort))
+      @httpClient("POST", @getUrl() + "/find", params, body, (response) =>
+        success(response)
       , error)
 
   # error is called with jqXHR

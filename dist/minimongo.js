@@ -13298,8 +13298,8 @@ Collection = (function() {
             }, error);
             return;
           }
-          return _this.httpClient("POST", _this.getUrl() + "/find", params, body, function(encodedResponse) {
-            return success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort));
+          return _this.httpClient("POST", _this.getUrl() + "/find", params, body, function(response) {
+            return success(response);
           }, error);
         };
       })(this)
