@@ -105,9 +105,6 @@ class Collection
 
         if @client
           params.client = @client
-        # Add timestamp for Android 2.3.6 bug with caching
-        if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
-          params._ = new Date().getTime()
         @httpClient("GET", @getUrl(), params, null, success, error)
         return
 
@@ -163,10 +160,6 @@ class Collection
       params.client = @client
     params.selector = JSON.stringify(selector || {})
 
-    # Add timestamp for Android 2.3.6 bug with caching
-    if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
-      params._ = new Date().getTime()
-
     @httpClient "GET", @getUrl(), params, null, (results) ->
       if results and results.length > 0
         success(results[0])
@@ -178,19 +171,14 @@ class Collection
   upsert: (docs, bases, success, error) ->
     [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
-    if not @client
-      throw new Error("Client required to upsert")
-
     results = []
 
     # Check if bases present
     basesPresent = _.compact(_.pluck(items, "base")).length > 0
 
-    params = { client: @client }
-
-    # Add timestamp for Android 2.3.6 bug with caching
-    if navigator? and navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
-      params._ = new Date().getTime()
+    params = { }
+    if @client
+      params.client = @client
 
     # Handle single case
     if items.length == 1

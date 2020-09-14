@@ -13260,9 +13260,6 @@ Collection = (function() {
             if (_this.client) {
               params.client = _this.client;
             }
-            if ((typeof navigator !== "undefined" && navigator !== null) && navigator.userAgent.toLowerCase().indexOf('android 2.3') !== -1) {
-              params._ = new Date().getTime();
-            }
             _this.httpClient("GET", _this.getUrl(), params, null, success, error);
             return;
           }
@@ -13323,9 +13320,6 @@ Collection = (function() {
       params.client = this.client;
     }
     params.selector = JSON.stringify(selector || {});
-    if ((typeof navigator !== "undefined" && navigator !== null) && navigator.userAgent.toLowerCase().indexOf('android 2.3') !== -1) {
-      params._ = new Date().getTime();
-    }
     return this.httpClient("GET", this.getUrl(), params, null, function(results) {
       if (results && results.length > 0) {
         return success(results[0]);
@@ -13338,16 +13332,11 @@ Collection = (function() {
   Collection.prototype.upsert = function(docs, bases, success, error) {
     var basesPresent, items, params, results, _ref;
     _ref = utils.regularizeUpsert(docs, bases, success, error), items = _ref[0], success = _ref[1], error = _ref[2];
-    if (!this.client) {
-      throw new Error("Client required to upsert");
-    }
     results = [];
     basesPresent = _.compact(_.pluck(items, "base")).length > 0;
-    params = {
-      client: this.client
-    };
-    if ((typeof navigator !== "undefined" && navigator !== null) && navigator.userAgent.toLowerCase().indexOf('android 2.3') !== -1) {
-      params._ = new Date().getTime();
+    params = {};
+    if (this.client) {
+      params.client = this.client;
     }
     if (items.length === 1) {
       if (basesPresent) {
