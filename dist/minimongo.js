@@ -133,16 +133,26 @@ exports.autoselectLocalDb = function(options, success, error) {
     })(this));
   }
   if (browser.android || browser.chrome || browser.opera || browser.blackberry) {
-    console.log("Selecting WebSQLDb for browser");
-    return new WebSQLDb(options, success, (function(_this) {
-      return function(err) {
-        console.log("Failed to create WebSQLDb: " + (err ? err.message : void 0));
-        return new IndexedDb(options, success, function(err) {
+    if (typeof window.openDatabase === "function") {
+      console.log("Selecting WebSQLDb for browser");
+      return new WebSQLDb(options, success, (function(_this) {
+        return function(err) {
+          console.log("Failed to create WebSQLDb: " + (err ? err.message : void 0));
+          return new IndexedDb(options, success, function(err) {
+            console.log("Failed to create IndexedDb: " + (err ? err.message : void 0));
+            return new MemoryDb(options, success);
+          });
+        };
+      })(this));
+    } else {
+      console.log("Selecting IndexedDb for browser as WebSQL not supported");
+      return new IndexedDb(options, success, (function(_this) {
+        return function(err) {
           console.log("Failed to create IndexedDb: " + (err ? err.message : void 0));
           return new MemoryDb(options, success);
-        });
-      };
-    })(this));
+        };
+      })(this));
+    }
   }
   if (browser.firefox && browser.version >= 16) {
     console.log("Selecting IndexedDb for browser");
