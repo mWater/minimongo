@@ -59,12 +59,19 @@ exports.autoselectLocalDb = (options, success, error) ->
       # Create memory db instead
       return new MemoryDb(options, success)
 
-  # Use WebSQL in Android, Chrome,  Opera, Blackberry
+  # Use WebSQL in Android, Chrome,  Opera, Blackberry if supports it
   if browser.android or browser.chrome or browser.opera or browser.blackberry
-    console.log "Selecting WebSQLDb for browser"
-    return new WebSQLDb options, success, (err) =>
-      console.log "Failed to create WebSQLDb: " + (if err then err.message)
+    if typeof window.openDatabase == "function"
+      console.log "Selecting WebSQLDb for browser"
+      return new WebSQLDb options, success, (err) =>
+        console.log "Failed to create WebSQLDb: " + (if err then err.message)
 
+        # Fallback to IndexedDb
+        return new IndexedDb options, success, (err) =>
+          console.log "Failed to create IndexedDb: " + (if err then err.message)
+          # Create memory db instead
+          return new MemoryDb(options, success)
+    else 
       # Fallback to IndexedDb
       return new IndexedDb options, success, (err) =>
         console.log "Failed to create IndexedDb: " + (if err then err.message)
