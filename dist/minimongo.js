@@ -496,8 +496,8 @@ licenses, included below:
 
 */
 
-LocalCollection = {};
-EJSON = __webpack_require__(23);
+var LocalCollection = {};
+var EJSON = __webpack_require__(23);
 var _ = __webpack_require__(1);
 
 
