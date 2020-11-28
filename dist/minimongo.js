@@ -7899,7 +7899,7 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
 
 var _ = __webpack_require__(1);
 
-EJSON = {}; // Global!
+var EJSON = {}; // Global!
 var customTypes = {};
 // Add a custom type, using a method of your choice to get to and
 // from a basic JSON-able representation.  The factory argument
