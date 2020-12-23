@@ -18,6 +18,17 @@ export interface MinimongoCollectionFindOptions {
   orderByExprs?: { expr: any, dir: "asc" | "desc" }[]
 }
 
+export interface MinimongoCollectionFindOneOptions {
+  fields?: any
+  sort?: any
+  limit?: number
+  skip?: number
+  interim?: boolean
+  cacheFindOne?: boolean
+  timeout?: number
+  shortcut?: boolean
+}
+
 export class MinimongoDb {
   addCollection<T>(name: string, options?: any, success?: (collection: MinimongoCollection<T>) => void, error?: (err: any) => void): void
   removeCollection<T>(name: string, success?: () => void, error?: (err: any) => void): void
@@ -36,7 +47,7 @@ export interface MinimongoCollection<ItemType = any> {
     fetch(success: (items: ItemType[]) => void, error: (err: any) => void): void
   }
 
-  findOne(selector: any, options: { fields?: any, sort?: any, limit?: number, skip?: number, interim?: boolean, cacheFindOne?: boolean, timeout?: number }, success: (item: ItemType | null) => void, error: (err: any) => void): void
+  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (item: ItemType | null) => void, error: (err: any) => void): void
 
   findOne(selector: any, success: (item: ItemType | null) => void, error: (err: any) => void): void
 
