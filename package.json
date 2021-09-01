@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/mWater/minimongo",
   "devDependencies": {
+    "@types/chai": "^4.2.21",
     "@types/lodash": "^3.10.4",
     "browserify": "^3.29.1",
     "build-library": "github:mWater/build-library",

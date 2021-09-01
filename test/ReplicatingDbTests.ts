@@ -41,7 +41,7 @@ describe("ReplicatingDb", function () {
         this.db = new ReplicatingDb(this.masterDb, this.replicaDb)
         this.db.addCollection("scratch")
         this.col = this.db.scratch
-        return done()
+        done()
       }
       return this.reset(done)
     })
@@ -75,7 +75,7 @@ describe("ReplicatingDb", function () {
         this.db = new ReplicatingDb(this.masterDb, this.replicaDb)
         this.db.addCollection("scratch")
         this.col = this.db.scratch
-        return done()
+        done()
       }
       return this.reset(done)
     })
@@ -120,7 +120,7 @@ describe("ReplicatingDb", function () {
         this.db.scratch.find = this.replicaDb.scratch.find.bind(this.replicaDb.scratch)
         this.db.scratch.findOne = this.replicaDb.scratch.findOne.bind(this.replicaDb.scratch)
 
-        return done()
+        done()
       }
       return this.reset(done)
     })

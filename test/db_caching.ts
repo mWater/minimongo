@@ -8,20 +8,20 @@ const { assert } = chai
 // @reset(done) must truncate the collection
 export default () =>
   describe("local database", function () {
-    beforeEach(function (this: any, done: any) {
+    beforeEach(function (done: any) {
       return this.reset(done)
     })
 
-    it("caches row", function (this: any, this: any, done: any) {
+    it("caches row", function (done: any) {
       return this.col.cache([{ _id: "1", a: "apple" }], {}, {}, () => {
         return this.col.find({}).fetch(function (results: any) {
           assert.equal(results[0].a, "apple")
-          return done()
+          done()
         })
       })
     })
 
-    it("caches rows", function (this: any, this: any, done: any) {
+    it("caches rows", function (done: any) {
       const rows = [
         { _id: "1", a: "apple" },
         { _id: "2", a: "banana" },
@@ -31,90 +31,90 @@ export default () =>
       return this.col.cache(rows, {}, {}, () => {
         return this.col.find({}).fetch(function (results: any) {
           assert.equal(results.length, 4)
-          return done()
+          done()
         })
       })
     })
 
-    it("caches zero rows", function (this: any, this: any, done: any) {
+    it("caches zero rows", function (done: any) {
       const rows: any = []
       return this.col.cache(rows, {}, {}, () => {
         return this.col.find({}).fetch(function (results: any) {
           assert.equal(results.length, 0)
-          return done()
+          done()
         })
       })
     })
 
-    it("cache overwrite existing", function (this: any, this: any, this: any, done: any) {
+    it("cache overwrite existing", function (done: any) {
       return this.col.cache([{ _id: "1", a: "apple" }], {}, {}, () => {
         return this.col.cache([{ _id: "1", a: "banana" }], {}, {}, () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "banana")
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("cache with same _rev does not overwrite existing", function (this: any, this: any, this: any, done: any) {
+    it("cache with same _rev does not overwrite existing", function (done: any) {
       return this.col.cache([{ _id: "1", a: "apple", _rev: 2 }], {}, {}, () => {
         return this.col.cache([{ _id: "1", a: "banana", _rev: 2 }], {}, {}, () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "apple")
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("cache with greater _rev overwrite existing", function (this: any, this: any, this: any, done: any) {
+    it("cache with greater _rev overwrite existing", function (done: any) {
       return this.col.cache([{ _id: "1", a: "apple", _rev: 1 }], {}, {}, () => {
         return this.col.cache([{ _id: "1", a: "banana", _rev: 2 }], {}, {}, () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "banana")
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("cache with lesser _rev does not overwrite existing", function (this: any, this: any, this: any, done: any) {
+    it("cache with lesser _rev does not overwrite existing", function (done: any) {
       return this.col.cache([{ _id: "1", a: "apple", _rev: 2 }], {}, {}, () => {
         return this.col.cache([{ _id: "1", a: "banana", _rev: 1 }], {}, {}, () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "apple")
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("cache doesn't overwrite upsert", function (this: any, this: any, this: any, done: any) {
+    it("cache doesn't overwrite upsert", function (done: any) {
       return this.col.upsert({ _id: "1", a: "apple" }, () => {
         return this.col.cache([{ _id: "1", a: "banana" }], {}, {}, () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "apple")
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("cache doesn't overwrite remove", function (this: any, this: any, this: any, this: any, done: any) {
+    it("cache doesn't overwrite remove", function (done: any) {
       return this.col.cache([{ _id: "1", a: "delete" }], {}, {}, () => {
         return this.col.remove("1", () => {
           return this.col.cache([{ _id: "1", a: "banana" }], {}, {}, () => {
             return this.col.find({}).fetch(function (results: any) {
               assert.equal(results.length, 0)
-              return done()
+              done()
             })
           })
         })
       })
     })
 
-    it("cache removes missing unsorted", function (this: any, this: any, this: any, done: any) {
+    it("cache removes missing unsorted", function (done: any) {
       return this.col.cache(
         [
           { _id: "1", a: "a" },
@@ -134,7 +134,7 @@ export default () =>
             () => {
               return this.col.find({}).fetch(function (results: any) {
                 assert.equal(results.length, 2)
-                return done()
+                done()
               })
             }
           )
@@ -142,7 +142,7 @@ export default () =>
       )
     })
 
-    it("cache excludes excluded", function (this: any, this: any, this: any, done: any) {
+    it("cache excludes excluded", function (done: any) {
       return this.col.cache(
         [
           { _id: "1", a: "a" },
@@ -163,7 +163,7 @@ export default () =>
             () => {
               return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
                 assert.deepEqual(_.pluck(results, "_id"), ["1", "2", "5"])
-                return done()
+                done()
               })
             }
           )
@@ -174,7 +174,7 @@ export default () =>
     it("handles implicitly sorted ($near) with limit")
     // TODO
 
-    it("cache removes missing filtered", function (this: any, this: any, this: any, done: any) {
+    it("cache removes missing filtered", function (done: any) {
       return this.col.cache(
         [
           { _id: "1", a: "a" },
@@ -187,14 +187,14 @@ export default () =>
           return this.col.cache([{ _id: "1", a: "a" }], { _id: { $lt: "3" } }, {}, () => {
             return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
               assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
-              return done()
+              done()
             })
           })
         }
       )
     })
 
-    it("cache removes missing sorted limited", function (this: any, this: any, this: any, done: any) {
+    it("cache removes missing sorted limited", function (done: any) {
       return this.col.cache(
         [
           { _id: "1", a: "a" },
@@ -207,14 +207,14 @@ export default () =>
           return this.col.cache([{ _id: "1", a: "a" }], {}, { sort: ["_id"], limit: 2 }, () => {
             return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
               assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
-              return done()
+              done()
             })
           })
         }
       )
     })
 
-    it("cache does not remove missing sorted limited past end", function (this: any, this: any, this: any, this: any, done: any) {
+    it("cache does not remove missing sorted limited past end", function (done: any) {
       return this.col.cache(
         [
           { _id: "1", a: "a" },
@@ -236,7 +236,7 @@ export default () =>
               () => {
                 return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
                   assert.deepEqual(_.pluck(results, "_id"), ["1", "3", "4"])
-                  return done()
+                  done()
                 })
               }
             )
@@ -245,7 +245,7 @@ export default () =>
       )
     })
 
-    it("cache does not remove missing unsorted limited", function (this: any, this: any, this: any, done: any) {
+    it("cache does not remove missing unsorted limited", function (done: any) {
       return this.col.cache(
         [
           { _id: "1", a: "a" },
@@ -266,7 +266,7 @@ export default () =>
             () => {
               return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
                 assert.deepEqual(_.pluck(results, "_id"), ["1", "2", "3", "4"])
-                return done()
+                done()
               })
             }
           )
@@ -274,7 +274,7 @@ export default () =>
       )
     })
 
-    it("uncache removes matching", function (this: any, this: any, this: any, done: any) {
+    it("uncache removes matching", function (done: any) {
       return this.col.cache(
         [
           { _id: "1", a: "a" },
@@ -287,14 +287,14 @@ export default () =>
           return this.col.uncache({ a: "b" }, () => {
             return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
               assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
-              return done()
+              done()
             })
           })
         }
       )
     })
 
-    it("uncache does not remove upserts", function (this: any, this: any, this: any, this: any, done: any) {
+    it("uncache does not remove upserts", function (done: any) {
       return this.col.cache(
         [
           { _id: "1", a: "a" },
@@ -308,7 +308,7 @@ export default () =>
             return this.col.uncache({ a: "b" }, () => {
               return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
                 assert.deepEqual(_.pluck(results, "_id"), ["1", "2", "3"])
-                return done()
+                done()
               })
             })
           })
@@ -316,7 +316,7 @@ export default () =>
       )
     })
 
-    it("uncache does not remove removes", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("uncache does not remove removes", function (done: any) {
       return this.col.cache(
         [
           { _id: "1", a: "a" },
@@ -332,7 +332,7 @@ export default () =>
                 assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
                 return this.col.pendingRemoves((results: any) => {
                   assert.deepEqual(results, ["2"])
-                  return done()
+                  done()
                 })
               })
             })
@@ -341,7 +341,7 @@ export default () =>
       )
     })
 
-    it("cacheList caches", function (this: any, this: any, done: any) {
+    it("cacheList caches", function (done: any) {
       return this.col.cacheList(
         [
           { _id: "1", a: "a" },
@@ -351,37 +351,37 @@ export default () =>
         () => {
           return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
             assert.deepEqual(_.pluck(results, "_id"), ["1", "2", "3"])
-            return done()
+            done()
           })
         }
       )
     })
 
-    it("cacheList does not overwrite upserted", function (this: any, this: any, this: any, done: any) {
+    it("cacheList does not overwrite upserted", function (done: any) {
       return this.col.upsert({ _id: "1", a: "apple" }, () => {
         return this.col.cacheList([{ _id: "1", a: "banana" }], () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "apple")
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("cacheList doesn't overwrite remove", function (this: any, this: any, this: any, this: any, done: any) {
+    it("cacheList doesn't overwrite remove", function (done: any) {
       return this.col.cacheList([{ _id: "1", a: "delete" }], () => {
         return this.col.remove("1", () => {
           return this.col.cacheList([{ _id: "1", a: "banana" }], () => {
             return this.col.find({}).fetch(function (results: any) {
               assert.equal(results.length, 0)
-              return done()
+              done()
             })
           })
         })
       })
     })
 
-    it("uncacheList removes ids", function (this: any, this: any, this: any, done: any) {
+    it("uncacheList removes ids", function (done: any) {
       return this.col.cache(
         [
           { _id: "1", a: "a" },
@@ -394,14 +394,14 @@ export default () =>
           return this.col.uncacheList(["2"], () => {
             return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
               assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
-              return done()
+              done()
             })
           })
         }
       )
     })
 
-    it("uncacheList does not remove upserts", function (this: any, this: any, this: any, this: any, done: any) {
+    it("uncacheList does not remove upserts", function (done: any) {
       return this.col.cache(
         [
           { _id: "1", a: "a" },
@@ -415,7 +415,7 @@ export default () =>
             return this.col.uncacheList(["2"], () => {
               return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
                 assert.deepEqual(_.pluck(results, "_id"), ["1", "2", "3"])
-                return done()
+                done()
               })
             })
           })
@@ -423,7 +423,7 @@ export default () =>
       )
     })
 
-    it("uncacheList does not remove removes", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("uncacheList does not remove removes", function (done: any) {
       return this.col.cache(
         [
           { _id: "1", a: "a" },
@@ -439,7 +439,7 @@ export default () =>
                 assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
                 return this.col.pendingRemoves((results: any) => {
                   assert.deepEqual(results, ["2"])
-                  return done()
+                  done()
                 })
               })
             })
@@ -448,44 +448,44 @@ export default () =>
       )
     })
 
-    it("returns pending upserts", function (this: any, this: any, this: any, done: any) {
+    it("returns pending upserts", function (done: any) {
       return this.col.cache([{ _id: "1", a: "apple" }], {}, {}, () => {
         return this.col.upsert({ _id: "2", a: "banana" }, () => {
           return this.col.pendingUpserts(function (results: any) {
             assert.equal(results.length, 1)
             assert.equal(results[0].doc.a, "banana")
             assert.isNull(results[0].base)
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("resolves pending upserts", function (this: any, this: any, this: any, done: any) {
+    it("resolves pending upserts", function (done: any) {
       return this.col.upsert({ _id: "2", a: "banana" }, () => {
         return this.col.resolveUpserts([{ doc: { _id: "2", a: "banana" }, base: null }], () => {
           return this.col.pendingUpserts(function (results: any) {
             assert.equal(results.length, 0)
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("sets base of upserts", function (this: any, this: any, this: any, done: any) {
+    it("sets base of upserts", function (done: any) {
       return this.col.cacheOne({ _id: "2", a: "apple" }, () => {
         return this.col.upsert({ _id: "2", a: "banana" }, () => {
           return this.col.pendingUpserts(function (results: any) {
             assert.equal(results.length, 1)
             assert.equal(results[0].doc.a, "banana")
             assert.equal(results[0].base.a, "apple")
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("keeps base on subsequent upserts", function (this: any, this: any, this: any, this: any, done: any) {
+    it("keeps base on subsequent upserts", function (done: any) {
       return this.col.cacheOne({ _id: "2", a: "apple" }, () => {
         return this.col.upsert({ _id: "2", a: "banana" }, () => {
           return this.col.upsert({ _id: "2", a: "orange" }, () => {
@@ -493,38 +493,38 @@ export default () =>
               assert.equal(results.length, 1)
               assert.equal(results[0].doc.a, "orange")
               assert.equal(results[0].base.a, "apple")
-              return done()
+              done()
             })
           })
         })
       })
     })
 
-    it("allows setting of upsert base", function (this: any, this: any, done: any) {
+    it("allows setting of upsert base", function (done: any) {
       return this.col.upsert({ _id: "2", a: "banana" }, { _id: "2", a: "apple" }, () => {
         return this.col.pendingUpserts(function (results: any) {
           assert.equal(results.length, 1)
           assert.equal(results[0].doc.a, "banana")
           assert.equal(results[0].base.a, "apple")
-          return done()
+          done()
         })
       })
     })
 
-    it("allows setting of null upsert base", function (this: any, this: any, this: any, done: any) {
+    it("allows setting of null upsert base", function (done: any) {
       return this.col.cacheOne({ _id: "2", a: "apple" }, () => {
         return this.col.upsert({ _id: "2", a: "banana" }, null, () => {
           return this.col.pendingUpserts(function (results: any) {
             assert.equal(results.length, 1)
             assert.equal(results[0].doc.a, "banana")
             assert.equal(results[0].base, null)
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("allows multiple upserts", function (this: any, this: any, done: any) {
+    it("allows multiple upserts", function (done: any) {
       const docs = [
         { _id: "1", a: "apple" },
         { _id: "2", a: "banana" },
@@ -534,12 +534,12 @@ export default () =>
         return this.col.pendingUpserts(function (results: any) {
           assert.deepEqual(_.pluck(results, "doc"), docs)
           assert.deepEqual(_.pluck(results, "base"), [null, null, null])
-          return done()
+          done()
         })
       })
     })
 
-    it("allows multiple upserts with bases", function (this: any, this: any, done: any) {
+    it("allows multiple upserts with bases", function (done: any) {
       const docs = [
         { _id: "1", a: "apple" },
         { _id: "2", a: "banana" },
@@ -554,12 +554,12 @@ export default () =>
         return this.col.pendingUpserts(function (results: any) {
           assert.deepEqual(_.pluck(results, "doc"), docs)
           assert.deepEqual(_.pluck(results, "base"), bases)
-          return done()
+          done()
         })
       })
     })
 
-    it("resolves multiple upserts", function (this: any, this: any, this: any, this: any, done: any) {
+    it("resolves multiple upserts", function (done: any) {
       const docs = [
         { _id: "1", a: "apple" },
         { _id: "2", a: "banana" },
@@ -570,14 +570,14 @@ export default () =>
           return this.col.resolveUpserts(upserts, () => {
             return this.col.pendingUpserts(function (results: any) {
               assert.equal(results.length, 0)
-              return done()
+              done()
             })
           })
         })
       })
     })
 
-    it("handles removed pending upserts", function (this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("handles removed pending upserts", function (done: any) {
       const docs = [
         { _id: "1", a: "apple" },
         { _id: "2", a: "banana" },
@@ -590,7 +590,7 @@ export default () =>
               return this.col.resolveUpserts(upserts, () => {
                 return this.col.pendingUpserts(function (results: any) {
                   assert.equal(results.length, 0)
-                  return done()
+                  done()
                 })
               })
             })
@@ -599,7 +599,7 @@ export default () =>
       })
     })
 
-    it("retains changed pending upserts but updates base", function (this: any, this: any, this: any, this: any, done: any) {
+    it("retains changed pending upserts but updates base", function (done: any) {
       return this.col.upsert({ _id: "2", a: "banana" }, () => {
         return this.col.upsert({ _id: "2", a: "banana2" }, () => {
           return this.col.resolveUpserts([{ doc: { _id: "2", a: "banana" }, base: null }], () => {
@@ -607,14 +607,14 @@ export default () =>
               assert.equal(results.length, 1)
               assert.equal(results[0].doc.a, "banana2")
               assert.equal(results[0].base.a, "banana")
-              return done()
+              done()
             })
           })
         })
       })
     })
 
-    it("removes by filter", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("removes by filter", function (done: any) {
       return this.col.upsert({ _id: "1", a: "apple" }, () => {
         return this.col.upsert({ _id: "2", a: "banana" }, () => {
           return this.col.upsert({ _id: "3", a: "banana" }, () => {
@@ -622,7 +622,7 @@ export default () =>
               return this.col.pendingUpserts(function (results: any) {
                 assert.equal(results.length, 1)
                 assert.equal(results[0].doc.a, "apple")
-                return done()
+                done()
               })
             })
           })
@@ -630,211 +630,211 @@ export default () =>
       })
     })
 
-    it("removes pending upserts", function (this: any, this: any, this: any, done: any) {
+    it("removes pending upserts", function (done: any) {
       return this.col.upsert({ _id: "2", a: "banana" }, () => {
         return this.col.remove("2", () => {
           return this.col.pendingUpserts(function (results: any) {
             assert.equal(results.length, 0)
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("returns pending removes", function (this: any, this: any, this: any, done: any) {
+    it("returns pending removes", function (done: any) {
       return this.col.cache([{ _id: "1", a: "apple" }], {}, {}, () => {
         return this.col.remove("1", () => {
           return this.col.pendingRemoves(function (results: any) {
             assert.equal(results.length, 1)
             assert.equal(results[0], 1)
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("returns pending removes that are not present", function (this: any, this: any, done: any) {
+    it("returns pending removes that are not present", function (done: any) {
       return this.col.remove("2", () => {
         return this.col.pendingRemoves(function (results: any) {
           assert.equal(results.length, 1)
           assert.equal(results[0], 2)
-          return done()
+          done()
         })
       })
     })
 
-    it("resolves pending removes", function (this: any, this: any, this: any, this: any, done: any) {
+    it("resolves pending removes", function (done: any) {
       return this.col.cache([{ _id: "1", a: "apple" }], {}, {}, () => {
         return this.col.remove("1", () => {
           return this.col.resolveRemove("1", () => {
             return this.col.pendingRemoves(function (results: any) {
               assert.equal(results.length, 0)
-              return done()
+              done()
             })
           })
         })
       })
     })
 
-    it("seeds", function (this: any, this: any, done: any) {
+    it("seeds", function (done: any) {
       return this.col.seed([{ _id: "1", a: "apple" }], () => {
         return this.col.find({}).fetch(function (results: any) {
           assert.equal(results[0].a, "apple")
-          return done()
+          done()
         })
       })
     })
 
-    it("does not overwrite existing", function (this: any, this: any, this: any, done: any) {
+    it("does not overwrite existing", function (done: any) {
       return this.col.cache([{ _id: "1", a: "banana" }], {}, {}, () => {
         return this.col.seed([{ _id: "1", a: "apple" }], () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "banana")
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("does not add removed", function (this: any, this: any, this: any, this: any, done: any) {
+    it("does not add removed", function (done: any) {
       return this.col.cache([{ _id: "1", a: "apple" }], {}, {}, () => {
         return this.col.remove("1", () => {
           return this.col.seed([{ _id: "1", a: "apple" }], () => {
             return this.col.find({}).fetch(function (results: any) {
               assert.equal(results.length, 0)
-              return done()
+              done()
             })
           })
         })
       })
     })
 
-    it("allows removing uncached rows", function (this: any, this: any, done: any) {
+    it("allows removing uncached rows", function (done: any) {
       return this.col.remove("12345", () => {
         return this.col.pendingRemoves(function (results: any) {
           assert.equal(results.length, 1)
           assert.equal(results[0], "12345")
-          return done()
+          done()
         })
       })
     })
 
-    it("seeds rows", function (this: any, this: any, done: any) {
+    it("seeds rows", function (done: any) {
       return this.col.seed([{ _id: "1", a: "apple" }], () => {
         return this.col.find({}).fetch(function (results: any) {
           assert.equal(results[0].a, "apple")
-          return done()
+          done()
         })
       })
     })
 
-    it("seed does not overwrite existing", function (this: any, this: any, this: any, done: any) {
+    it("seed does not overwrite existing", function (done: any) {
       return this.col.cache([{ _id: "1", a: "apple" }], {}, {}, () => {
         return this.col.seed({ _id: "1", a: "banana" }, () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "apple")
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("seed doesn't overwrite upsert", function (this: any, this: any, this: any, done: any) {
+    it("seed doesn't overwrite upsert", function (done: any) {
       return this.col.upsert({ _id: "1", a: "apple" }, () => {
         return this.col.seed({ _id: "1", a: "banana" }, () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "apple")
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("seed doesn't overwrite remove", function (this: any, this: any, this: any, this: any, done: any) {
+    it("seed doesn't overwrite remove", function (done: any) {
       return this.col.cache([{ _id: "1", a: "delete" }], {}, {}, () => {
         return this.col.remove("1", () => {
           return this.col.seed({ _id: "1", a: "banana" }, () => {
             return this.col.find({}).fetch(function (results: any) {
               assert.equal(results.length, 0)
-              return done()
+              done()
             })
           })
         })
       })
     })
 
-    it("cache one single doc", function (this: any, this: any, done: any) {
+    it("cache one single doc", function (done: any) {
       return this.col.cacheOne({ _id: "1", a: "apple" }, () => {
         return this.col.find({}).fetch(function (results: any) {
           assert.equal(results[0].a, "apple")
-          return done()
+          done()
         })
       })
     })
 
-    it("cache one overwrite existing", function (this: any, this: any, this: any, done: any) {
+    it("cache one overwrite existing", function (done: any) {
       return this.col.cache([{ _id: "1", a: "apple" }], {}, {}, () => {
         return this.col.cacheOne({ _id: "1", a: "banana" }, () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "banana")
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("cache one doesn't overwrite upsert", function (this: any, this: any, this: any, done: any) {
+    it("cache one doesn't overwrite upsert", function (done: any) {
       return this.col.upsert({ _id: "1", a: "apple" }, () => {
         return this.col.cacheOne({ _id: "1", a: "banana" }, () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "apple")
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("cache one doesn't overwrite remove", function (this: any, this: any, this: any, this: any, done: any) {
+    it("cache one doesn't overwrite remove", function (done: any) {
       return this.col.cache([{ _id: "1", a: "delete" }], {}, {}, () => {
         return this.col.remove("1", () => {
           return this.col.cacheOne({ _id: "1", a: "banana" }, () => {
             return this.col.find({}).fetch(function (results: any) {
               assert.equal(results.length, 0)
-              return done()
+              done()
             })
           })
         })
       })
     })
 
-    it("cache one with same _rev does not overwrite existing", function (this: any, this: any, this: any, done: any) {
+    it("cache one with same _rev does not overwrite existing", function (done: any) {
       return this.col.cacheOne({ _id: "1", a: "apple", _rev: 2 }, () => {
         return this.col.cacheOne({ _id: "1", a: "banana", _rev: 2 }, () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "apple")
-            return done()
+            done()
           })
         })
       })
     })
 
-    it("cache one with greater _rev overwrite existing", function (this: any, this: any, this: any, done: any) {
+    it("cache one with greater _rev overwrite existing", function (done: any) {
       return this.col.cacheOne({ _id: "1", a: "apple", _rev: 1 }, () => {
         return this.col.cacheOne({ _id: "1", a: "banana", _rev: 2 }, () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "banana")
-            return done()
+            done()
           })
         })
       })
     })
 
-    return it("cache one with lesser _rev does not overwrite existing", function (this: any, this: any, this: any, done: any) {
+    return it("cache one with lesser _rev does not overwrite existing", function (done: any) {
       return this.col.cacheOne({ _id: "1", a: "apple", _rev: 2 }, () => {
         return this.col.cacheOne({ _id: "1", a: "banana", _rev: 1 }, () => {
           return this.col.find({}).fetch(function (results: any) {
             assert.equal(results[0].a, "apple")
-            return done()
+            done()
           })
         })
       })

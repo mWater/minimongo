@@ -41,7 +41,7 @@ describe("RemoteDb", function () {
     return (this.col = this.db.scratch)
   })
 
-  it("calls GET for find", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("calls GET for find", function (done: any) {
     const success = (data: any) => {
       assert.equal(this.httpCall.method, "GET")
       assert.equal(this.httpCall.url, "http://someserver.com/scratch")
@@ -53,14 +53,14 @@ describe("RemoteDb", function () {
       assert(!this.httpCall.data)
 
       assert.deepEqual(data, [{ x: 1 }])
-      return done()
+      done()
     }
     this.callSuccessWith = [{ x: 1 }]
 
     return this.col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () => assert.fail())
   })
 
-  it("calls POST for find that is too big", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("calls POST for find that is too big", function (done: any) {
     let longStr = ""
     for (let i = 0; i < 1000; i++) {
       longStr += "x"
@@ -77,14 +77,14 @@ describe("RemoteDb", function () {
       })
 
       assert.deepEqual(data, [{ x: 1 }])
-      return done()
+      done()
     }
     this.callSuccessWith = [{ x: 1 }]
 
     return this.col.find({ a: longStr }, { limit: 10, sort: ["b"] }).fetch(success, () => assert.fail())
   })
 
-  it("calls GET for findOne", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("calls GET for findOne", function (done: any) {
     const success = (data: any) => {
       assert.equal(this.httpCall.method, "GET")
       assert.equal(this.httpCall.url, "http://someserver.com/scratch")
@@ -96,14 +96,14 @@ describe("RemoteDb", function () {
       assert(!this.httpCall.data)
 
       assert.deepEqual(data, { x: 1 })
-      return done()
+      done()
     }
     this.callSuccessWith = [{ x: 1 }]
 
     return this.col.findOne({ a: 1 }, { sort: ["b"] }, success, () => assert.fail())
   })
 
-  it("calls POST for new upsert", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("calls POST for new upsert", function (done: any) {
     const success = (data: any) => {
       assert.equal(this.httpCall.method, "POST")
       assert.equal(this.httpCall.url, "http://someserver.com/scratch")
@@ -111,14 +111,14 @@ describe("RemoteDb", function () {
       assert.deepEqual(this.httpCall.params, { client: "clientid" }, JSON.stringify(this.httpCall.params))
       assert.deepEqual(this.httpCall.data, { _id: "0", x: 1 })
       assert.deepEqual(data, { _id: "0", _rev: 1, x: 1 }, "success data wrong")
-      return done()
+      done()
     }
     this.callSuccessWith = { _id: "0", _rev: 1, x: 1 }
 
     return this.col.upsert({ _id: "0", x: 1 }, success, () => assert.fail())
   })
 
-  it("calls POST for new single bulk upsert", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("calls POST for new single bulk upsert", function (done: any) {
     const success = (data: any) => {
       assert.equal(this.httpCall.method, "POST")
       assert.equal(this.httpCall.url, "http://someserver.com/scratch")
@@ -126,14 +126,14 @@ describe("RemoteDb", function () {
       assert.deepEqual(this.httpCall.params, { client: "clientid" }, JSON.stringify(this.httpCall.params))
       assert.deepEqual(this.httpCall.data, { _id: "0", x: 1 })
       assert.deepEqual(data, [{ _id: "0", _rev: 1, x: 1 }])
-      return done()
+      done()
     }
     this.callSuccessWith = { _id: "0", _rev: 1, x: 1 }
 
     return this.col.upsert([{ _id: "0", x: 1 }], success, () => assert.fail())
   })
 
-  it("calls POST for new multiple bulk upsert", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("calls POST for new multiple bulk upsert", function (done: any) {
     const success = (data: any) => {
       assert.equal(this.httpCall.method, "POST")
       assert.equal(this.httpCall.url, "http://someserver.com/scratch")
@@ -147,7 +147,7 @@ describe("RemoteDb", function () {
         { _id: "0", _rev: 1, x: 1 },
         { _id: "1", _rev: 1, x: 2 }
       ])
-      return done()
+      done()
     }
     this.callSuccessWith = [
       { _id: "0", _rev: 1, x: 1 },
@@ -164,7 +164,7 @@ describe("RemoteDb", function () {
     )
   })
 
-  it("calls PATCH for upsert with base", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("calls PATCH for upsert with base", function (done: any) {
     const success = (data: any) => {
       assert.equal(this.httpCall.method, "PATCH")
       assert.equal(this.httpCall.url, "http://someserver.com/scratch")
@@ -172,14 +172,14 @@ describe("RemoteDb", function () {
       assert.deepEqual(this.httpCall.params, { client: "clientid" }, JSON.stringify(this.httpCall.params))
       assert.deepEqual(this.httpCall.data, { doc: { _id: "0", _rev: 1, x: 2 }, base: { _id: "0", _rev: 1, x: 1 } })
       assert.deepEqual(data, { _id: "0", _rev: 1, x: 2 }, "success data wrong")
-      return done()
+      done()
     }
     this.callSuccessWith = { _id: "0", _rev: 1, x: 2 }
 
     return this.col.upsert({ _id: "0", _rev: 1, x: 2 }, { _id: "0", _rev: 1, x: 1 }, success, () => assert.fail())
   })
 
-  it("calls PATCH for new single bulk upsert with base", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("calls PATCH for new single bulk upsert with base", function (done: any) {
     const success = (data: any) => {
       assert.equal(this.httpCall.method, "PATCH")
       assert.equal(this.httpCall.url, "http://someserver.com/scratch")
@@ -187,14 +187,14 @@ describe("RemoteDb", function () {
       assert.deepEqual(this.httpCall.params, { client: "clientid" }, JSON.stringify(this.httpCall.params))
       assert.deepEqual(this.httpCall.data, { doc: { _id: "0", _rev: 1, x: 2 }, base: { _id: "0", _rev: 1, x: 1 } })
       assert.deepEqual(data, [{ _id: "0", _rev: 2, x: 2 }])
-      return done()
+      done()
     }
     this.callSuccessWith = { _id: "0", _rev: 2, x: 2 }
 
     return this.col.upsert([{ _id: "0", _rev: 1, x: 2 }], [{ _id: "0", _rev: 1, x: 1 }], success, () => assert.fail())
   })
 
-  it("calls PATCH for new multiple bulk upsert", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("calls PATCH for new multiple bulk upsert", function (done: any) {
     const success = (data: any) => {
       assert.equal(this.httpCall.method, "PATCH")
       assert.equal(this.httpCall.url, "http://someserver.com/scratch")
@@ -214,7 +214,7 @@ describe("RemoteDb", function () {
         { _id: "0", _rev: 2, x: 2 },
         { _id: "1", _rev: 2, x: 3 }
       ])
-      return done()
+      done()
     }
     this.callSuccessWith = [
       { _id: "0", _rev: 2, x: 2 },
@@ -235,7 +235,7 @@ describe("RemoteDb", function () {
     )
   })
 
-  it("calls POST quickfind for find if localData passed", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("calls POST quickfind for find if localData passed", function (done: any) {
     const success = (data: any) => {
       assert.equal(this.httpCall.method, "POST")
       assert.equal(this.httpCall.url, "http://someserver.com/scratch/quickfind")
@@ -257,7 +257,7 @@ describe("RemoteDb", function () {
         ],
         JSON.stringify(data)
       )
-      return done()
+      done()
     }
 
     this.callSuccessWith = {
@@ -272,7 +272,7 @@ describe("RemoteDb", function () {
     return this.col.find({ a: 1 }, { limit: 10, sort: ["b"], localData }).fetch(success, () => assert.fail())
   })
 
-  it("supports array of URLs", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("supports array of URLs", function (done: any) {
     this.db = new RemoteDb(
       ["http://someserver.com/", "http://someotherserver.com/"],
       "clientid",
@@ -293,14 +293,14 @@ describe("RemoteDb", function () {
       assert(!this.httpCall.data)
 
       assert.deepEqual(data, [{ x: 1 }])
-      return done()
+      done()
     }
     this.callSuccessWith = [{ x: 1 }]
 
     return this.col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () => assert.fail())
   })
 
-  return it("cycles through the provided array of URLs", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  return it("cycles through the provided array of URLs", function (done: any) {
     this.db = new RemoteDb(
       ["http://someserver.com/", "http://someotherserver.com/"],
       "clientid",
@@ -354,7 +354,7 @@ describe("RemoteDb", function () {
       assert(!this.httpCall.data)
 
       assert.deepEqual(data, [{ x: 1 }])
-      return done()
+      done()
     }
     this.callSuccessWith = [{ x: 1 }]
 

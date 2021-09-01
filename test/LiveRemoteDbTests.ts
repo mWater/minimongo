@@ -19,11 +19,11 @@ export function runTests() {
     })
 
     return describe("merging", function () {
-      beforeEach(function (this: any, done: any) {
+      beforeEach(function (done: any) {
         return this.reset(done)
       })
 
-      it("merges changes with base specified", function (this: any, this: any, this: any, this: any, done: any) {
+      it("merges changes with base specified", function (done: any) {
         const base = { _id: "1", a: "1", b: 1 }
 
         return this.col.upsert(base, (baseDoc: any) => {
@@ -44,14 +44,14 @@ export function runTests() {
               return this.col.findOne({ _id: "1" }, function (doc3: any) {
                 assert.equal(doc2.a, "2", "Should merge documents")
                 assert.equal(doc2.b, 2, "Should merge documents")
-                return done()
+                done()
               })
             })
           })
         })
       })
 
-      return it("overrides changes with no base specified", function (this: any, this: any, this: any, done: any) {
+      return it("overrides changes with no base specified", function (done: any) {
         const base = { _id: "1", a: "1", b: 1 }
 
         return this.col.upsert(base, (baseDoc: any) => {
@@ -67,7 +67,7 @@ export function runTests() {
             return this.col.upsert(change2, null, function (doc2: any) {
               assert.equal(doc2.a, "1", "Should not merge returned document")
               assert.equal(doc2.b, 2, "Should keep new value")
-              return done()
+              done()
             })
           })
         })

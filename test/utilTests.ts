@@ -9,7 +9,7 @@ import _ from "lodash"
 import MemoryDb from "../src/MemoryDb"
 
 describe("autoselected Local Db", function () {
-  before(function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  before(function (done: any) {
     utils.autoselectLocalDb({ namespace: "db.scratch" }, (db: any) => {
       this.db = db
       return this.db.addCollection("scratch", () => done())
@@ -19,7 +19,7 @@ describe("autoselected Local Db", function () {
       return this.db.removeCollection("scratch", () => {
         return this.db.addCollection("scratch", () => {
           this.col = this.db.scratch
-          return done()
+          done()
         })
       })
     })
@@ -35,113 +35,113 @@ describe("autoselected Local Db", function () {
 })
 
 describe("migrated Local Db", function () {
-  beforeEach(function (this: any, this: any, this: any, this: any, done: any) {
+  beforeEach(function (done: any) {
     this.from = new MemoryDb()
     this.to = new MemoryDb()
     this.from.addCollection("a")
     this.to.addCollection("a")
-    return done()
+    done()
   })
 
-  it("migrates upserts", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("migrates upserts", function (done: any) {
     return this.from.a.upsert({ _id: "1", x: 1 }, () => {
       return utils.migrateLocalDb(this.from, this.to, () => {
         return this.to.a.pendingUpserts((upserts: any) => {
           assert.deepEqual(upserts, [{ doc: { _id: "1", x: 1 }, base: null }])
           this.from.a.pendingUpserts((upserts2: any) => assert.equal(upserts2.length, 0))
-          return done()
+          done()
         })
       })
     })
   })
 
-  it("migrates removes", function (this: any, this: any, this: any, this: any, done: any) {
+  it("migrates removes", function (done: any) {
     return this.from.a.remove("1", () => {
       return utils.migrateLocalDb(this.from, this.to, () => {
         return this.to.a.pendingRemoves(function (removes: any) {
           assert.deepEqual(removes, ["1"])
-          return done()
+          done()
         })
       })
     })
   })
 
-  it("does not migrate cached", function (this: any, this: any, this: any, this: any, done: any) {
+  it("does not migrate cached", function (done: any) {
     return this.from.a.cacheOne({ _id: "1", x: 1 }, () => {
       return utils.migrateLocalDb(this.from, this.to, () => {
         return this.to.a.pendingUpserts(function (upserts: any) {
           assert.equal(upserts.length, 0)
-          return done()
+          done()
         })
       })
     })
   })
 
-  return it("only migrates collections present in both", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+  return it("only migrates collections present in both", function (done: any) {
     this.from.addCollection("b")
     return this.from.b.upsert({ _id: "1", x: 1 }, () => {
       return utils.migrateLocalDb(this.from, this.to, () => {
         assert(!this.to.b)
-        return done()
+        done()
       })
     })
   })
 })
 
 describe("cloneLocalDb", function () {
-  beforeEach(function (this: any, this: any, this: any, done: any) {
+  beforeEach(function (done: any) {
     this.from = new MemoryDb()
     this.to = new MemoryDb()
     this.from.addCollection("a")
-    return done()
+    done()
   })
 
-  it("clones upserts", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("clones upserts", function (done: any) {
     return this.from.a.upsert({ _id: "1", x: 1 }, () => {
       return utils.cloneLocalDb(this.from, this.to, () => {
         return this.to.a.pendingUpserts((upserts: any) => {
           assert.deepEqual(upserts, [{ doc: { _id: "1", x: 1 }, base: null }])
           this.from.a.pendingUpserts((upserts2: any) => assert.equal(upserts2.length, 1))
-          return done()
+          done()
         })
       })
     })
   })
 
-  it("clones upserts with bases", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("clones upserts with bases", function (done: any) {
     return this.from.a.upsert({ _id: "1", x: 1 }, { _id: "1", x: -1 }, () => {
       return utils.cloneLocalDb(this.from, this.to, () => {
         return this.to.a.pendingUpserts((upserts: any) => {
           assert.deepEqual(upserts, [{ doc: { _id: "1", x: 1 }, base: { _id: "1", x: -1 } }])
           this.from.a.pendingUpserts((upserts2: any) => assert.equal(upserts2.length, 1))
-          return done()
+          done()
         })
       })
     })
   })
 
-  it("clones removes", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+  it("clones removes", function (done: any) {
     return this.from.a.remove("1", () => {
       return utils.cloneLocalDb(this.from, this.to, () => {
         return this.to.a.pendingRemoves((removes: any) => {
           assert.deepEqual(removes, ["1"])
           return this.from.a.pendingRemoves((removes: any) => {
             assert.deepEqual(removes, ["1"])
-            return done()
+            done()
           })
         })
       })
     })
   })
 
-  return it("clones cached", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+  return it("clones cached", function (done: any) {
     return this.from.a.cacheOne({ _id: "1", x: 1 }, () => {
       return utils.cloneLocalDb(this.from, this.to, () => {
         return this.to.a.pendingUpserts((upserts: any) => {
           assert.equal(upserts.length, 0)
           return this.to.a.find({}).fetch((items: any) => {
             assert.deepEqual(items[0], { _id: "1", x: 1 })
-            return done()
+            done()
           })
         })
       })

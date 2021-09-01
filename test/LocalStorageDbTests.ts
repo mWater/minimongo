@@ -8,12 +8,12 @@ import db_caching from "./db_caching"
 import _ from "lodash"
 
 describe("LocalStorageDb", function () {
-  before(function (this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  before(function (done: any) {
     this.reset = (done: any) => {
       this.db = new LocalStorageDb()
       this.db.addCollection("scratch")
       this.col = this.db.scratch
-      return done()
+      done()
     }
     return this.reset(done)
   })
@@ -32,24 +32,24 @@ describe("LocalStorageDb with local storage", function () {
     return (this.db = new LocalStorageDb({ namespace: "db.scratch" }))
   })
 
-  beforeEach(function (this: any, this: any, done: any) {
+  beforeEach(function (done: any) {
     this.db.removeCollection("scratch")
     this.db.addCollection("scratch")
-    return done()
+    done()
   })
 
-  it("retains items", function (this: any, done: any) {
+  it("retains items", function (done: any) {
     return this.db.scratch.upsert({ _id: "1", a: "Alice" }, function () {
       const db2 = new LocalStorageDb({ namespace: "db.scratch" })
       db2.addCollection("scratch")
       return db2.scratch.find({}).fetch(function (results: any) {
         assert.equal(results[0].a, "Alice")
-        return done()
+        done()
       })
     })
   })
 
-  it("retains upserts", function (this: any, this: any, done: any) {
+  it("retains upserts", function (done: any) {
     return this.db.scratch.cacheOne({ _id: "1", a: "Alice" }, () => {
       return this.db.scratch.upsert(
         { _id: "1", a: "Bob" },
@@ -62,7 +62,7 @@ describe("LocalStorageDb with local storage", function () {
                   assert.equal(upserts.length, 1)
                   assert.deepEqual(upserts[0].doc, { _id: "1", a: "Bob" })
                   assert.deepEqual(upserts[0].base, { _id: "1", a: "Alice" })
-                  return done()
+                  done()
                 })
               })
             )
@@ -71,14 +71,14 @@ describe("LocalStorageDb with local storage", function () {
     })
   })
 
-  return it("retains removes", function (this: any, this: any, done: any) {
+  return it("retains removes", function (done: any) {
     return this.db.scratch.seed({ _id: "1", a: "Alice" }, () => {
       return this.db.scratch.remove("1", function () {
         const db2 = new LocalStorageDb({ namespace: "db.scratch" })
         db2.addCollection("scratch")
         return db2.scratch.pendingRemoves(function (removes: any) {
           assert.deepEqual(removes, ["1"])
-          return done()
+          done()
         })
       })
     })
@@ -90,44 +90,44 @@ describe("LocalStorageDb without local storage", function () {
     return (this.db = new LocalStorageDb())
   })
 
-  beforeEach(function (this: any, this: any, done: any) {
+  beforeEach(function (done: any) {
     this.db.removeCollection("scratch")
     this.db.addCollection("scratch")
-    return done()
+    done()
   })
 
-  it("does not retain items", function (this: any, done: any) {
+  it("does not retain items", function (done: any) {
     return this.db.scratch.upsert({ _id: "1", a: "Alice" }, function () {
       const db2 = new LocalStorageDb()
       db2.addCollection("scratch")
       return db2.scratch.find({}).fetch(function (results: any) {
         assert.equal(results.length, 0)
-        return done()
+        done()
       })
     })
   })
 
-  it("does not retain upserts", function (this: any, done: any) {
+  it("does not retain upserts", function (done: any) {
     return this.db.scratch.upsert({ _id: "1", a: "Alice" }, function () {
       const db2 = new LocalStorageDb()
       db2.addCollection("scratch")
       return db2.scratch.find({}).fetch((results: any) =>
         db2.scratch.pendingUpserts(function (upserts: any) {
           assert.equal(results.length, 0)
-          return done()
+          done()
         })
       )
     })
   })
 
-  return it("does not retain removes", function (this: any, this: any, done: any) {
+  return it("does not retain removes", function (done: any) {
     return this.db.scratch.seed({ _id: "1", a: "Alice" }, () => {
       return this.db.scratch.remove("1", function () {
         const db2 = new LocalStorageDb()
         db2.addCollection("scratch")
         return db2.scratch.pendingRemoves(function (removes: any) {
           assert.equal(removes.length, 0)
-          return done()
+          done()
         })
       })
     })

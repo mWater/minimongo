@@ -7,10 +7,11 @@ import { MinimongoCollection, MinimongoDb } from "./types"
 
 export default class MemoryDb implements MinimongoDb {
   collections: { [collectionName: string]: MinimongoCollection<any> }
+  options: any
 
   // Options are:
   //  safety: How to protect the in-memory copies: "clone" (default) returns a fresh copy but is slow. "freeze" returns a frozen version
-  constructor(options: any, success: any) {
+  constructor(options?: any, success?: any) {
     this.collections = {}
     this.options = _.defaults(options, { safety: "clone" })
 

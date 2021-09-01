@@ -202,7 +202,7 @@ function processNearOperator(selector: any, list: any) {
 }
 
 // Very simple polygon check. Assumes that is a square
-function pointInPolygon(this: any, this: any, this: any, this: any, point: any, polygon: any) {
+function pointInPolygon(point: any, polygon: any) {
   // Check that first == last
   if (!_.isEqual(_.first(polygon.coordinates[0]), _.last(polygon.coordinates[0]))) {
     throw new Error("First must equal last")

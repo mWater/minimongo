@@ -50,14 +50,14 @@ describe("HybridDb", function () {
       this.hybrid.addCollection("scratch")
       this.hc = this.hybrid.scratch
       this.col = this.hc
-      return done()
+      done()
     }
 
     return this.reset(done)
   })
 
   describe("passes queries", function (this: any) {
-    beforeEach(function (this: any, done: any) {
+    beforeEach(function (done: any) {
       return this.reset(done)
     })
 
@@ -65,12 +65,12 @@ describe("HybridDb", function () {
   })
 
   context("resets each time", function () {
-    beforeEach(function (this: any, done: any) {
+    beforeEach(function (done: any) {
       return this.reset(done)
     })
 
     describe("interim:true (default)", function () {
-      it("find gives only one result if data unchanged", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+      it("find gives only one result if data unchanged", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -82,11 +82,11 @@ describe("HybridDb", function () {
           calls += 1
           assert.equal(data.length, 2)
           assert.equal(calls, 1)
-          return done()
+          done()
         }, fail)
       })
 
-      it("find gives results twice if remote gives different answer", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+      it("find gives results twice if remote gives different answer", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -98,12 +98,12 @@ describe("HybridDb", function () {
           assert.equal(data.length, 2)
           calls = calls + 1
           if (calls >= 2) {
-            return done()
+            done()
           }
         }, fail)
       })
 
-      it("find gives results once if remote gives same answer with sort differences", function (this: any, this: any, this: any, this: any, done: any) {
+      it("find gives results once if remote gives same answer with sort differences", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -118,11 +118,11 @@ describe("HybridDb", function () {
 
         return this.hc.find({}).fetch(function (data: any) {
           assert.equal(data.length, 2)
-          return done()
+          done()
         }, fail)
       })
 
-      return it("local upserts are respected", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+      return it("local upserts are respected", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.upsert({ _id: "2", a: 2 })
 
@@ -133,7 +133,7 @@ describe("HybridDb", function () {
           { _id: "2" },
           function (doc: any) {
             assert.deepEqual(doc, { _id: "2", a: 2 })
-            return done()
+            done()
           },
           fail
         )
@@ -141,7 +141,7 @@ describe("HybridDb", function () {
     })
 
     describe("cacheFind: true (default)", function () {
-      it("find performs full field remote queries", function (this: any, this: any, this: any, this: any, done: any) {
+      it("find performs full field remote queries", function (done: any) {
         this.rc.seed({ _id: "1", a: 1, b: 11 })
         this.rc.seed({ _id: "2", a: 2, b: 12 })
 
@@ -152,12 +152,12 @@ describe("HybridDb", function () {
           assert.isUndefined(data[0].b)
           return this.lc.findOne({ _id: "1" }, function (doc: any) {
             assert.equal(doc.b, 11)
-            return done()
+            done()
           })
         })
       })
 
-      it("caches remote data", function (this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+      it("caches remote data", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -174,13 +174,13 @@ describe("HybridDb", function () {
             return this.lc.find({}).fetch(function (data: any) {
               assert.equal(data.length, 2)
               assert.deepEqual(_.pluck(data, "a"), [3, 2])
-              return done()
+              done()
             })
           }
         })
       })
 
-      return it("snapshots local upserts/removes to prevent race condition", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+      return it("snapshots local upserts/removes to prevent race condition", function (done: any) {
         // If the server receives the upsert/remove *after* the query and returns *before* the
         // query does, a newly upserted item may be removed from cache
 
@@ -202,13 +202,13 @@ describe("HybridDb", function () {
         return this.hc.find({}, { interim: false }).fetch((data: any) => {
           this.rc.find = oldRcFind
           assert.equal(data.length, 1)
-          return done()
+          done()
         })
       })
     })
 
     describe("cacheFindOne: true (default)", function () {
-      it("findOne performs full field remote queries", function (this: any, this: any, this: any, this: any, done: any) {
+      it("findOne performs full field remote queries", function (done: any) {
         this.rc.seed({ _id: "1", a: 1, b: 11 })
         this.rc.seed({ _id: "2", a: 2, b: 12 })
 
@@ -216,12 +216,12 @@ describe("HybridDb", function () {
           assert.isUndefined(doc.b)
           return this.lc.findOne({ _id: "1" }, function (doc: any) {
             assert.equal(doc.b, 11)
-            return done()
+            done()
           })
         })
       })
 
-      it("findOne gives results twice if remote gives different answer", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+      it("findOne gives results twice if remote gives different answer", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -238,14 +238,14 @@ describe("HybridDb", function () {
             }
             if (calls >= 2) {
               assert.deepEqual(data, { _id: "1", a: 3 })
-              return done()
+              done()
             }
           },
           fail
         )
       })
 
-      it("findOne gives local results once if remote fails", function (this: any, this: any, this: any, this: any, done: any) {
+      it("findOne gives local results once if remote fails", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
 
         this.rc.findOne = (selector: any, options = {}, success: any, error: any) => error(new Error("fail"))
@@ -259,13 +259,13 @@ describe("HybridDb", function () {
           { _id: "1" },
           function (data: any) {
             assert.equal(data.a, 1)
-            return done()
+            done()
           },
           fail
         )
       })
 
-      it("findOne gives local results selected not by _id once if remote fails", function (this: any, this: any, this: any, this: any, done: any) {
+      it("findOne gives local results selected not by _id once if remote fails", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
 
         this.rc.findOne = (selector: any, options = {}, success: any, error: any) => error(new Error("fail"))
@@ -279,13 +279,13 @@ describe("HybridDb", function () {
           { a: 1 },
           function (data: any) {
             assert.equal(data.a, 1)
-            return done()
+            done()
           },
           fail
         )
       })
 
-      it("findOne gives local results once if remote fails", function (this: any, this: any, this: any, done: any) {
+      it("findOne gives local results once if remote fails", function (done: any) {
         let called = 0
         this.rc.findOne = function (selector: any, options = {}, success: any, error: any) {
           called = called + 1
@@ -303,13 +303,13 @@ describe("HybridDb", function () {
           function (data: any) {
             assert.equal(data, null)
             assert.equal(called, 1)
-            return done()
+            done()
           },
           fail
         )
       })
 
-      return it("findOne keeps local cache updated on remote change", function (this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+      return it("findOne keeps local cache updated on remote change", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -327,7 +327,7 @@ describe("HybridDb", function () {
             if (calls >= 2) {
               assert.deepEqual(data, { _id: "1", a: 3 })
               this.lc.find({}, {}).fetch((data: any) => assert.deepEqual(_.pluck(data, "a"), [3, 2]))
-              return done()
+              done()
             }
           },
           fail
@@ -336,7 +336,7 @@ describe("HybridDb", function () {
     })
 
     describe("interim: false", () =>
-      it("find gives final results only", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+      it("find gives final results only", function (done: any) {
         this.lc.upsert({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -348,7 +348,7 @@ describe("HybridDb", function () {
           assert.equal(data.length, 2)
           assert.equal(data[0].a, 1)
           assert.equal(data[1].a, 4)
-          return done()
+          done()
         }, fail)
       }))
 
@@ -361,7 +361,7 @@ describe("HybridDb", function () {
         return this.clock.uninstall()
       })
 
-      it("find gives final results if in time", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+      it("find gives final results if in time", function (done: any) {
         this.lc.upsert({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -384,12 +384,12 @@ describe("HybridDb", function () {
           assert.equal(data.length, 2)
           assert.equal(data[0].a, 1)
           assert.equal(data[1].a, 4)
-          return done()
+          done()
         }, fail)
         return this.clock.tick(1)
       }) // Tick for setTimeout 0
 
-      it("find gives local results if out of time", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+      it("find gives local results if out of time", function (done: any) {
         this.lc.upsert({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -412,12 +412,12 @@ describe("HybridDb", function () {
           assert.equal(data.length, 2)
           assert.equal(data[0].a, 1)
           assert.equal(data[1].a, 2)
-          return done()
+          done()
         }, fail)
         return this.clock.tick(1)
       }) // Tick for setTimeout 0
 
-      it("find gives local results but still caches if out of time", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+      it("find gives local results but still caches if out of time", function (done: any) {
         this.lc.upsert({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -447,14 +447,14 @@ describe("HybridDb", function () {
               assert.equal(data.length, 2)
               assert.equal(data[0].a, 1, "Should not change since upsert")
               assert.equal(data[1].a, 4)
-              return done()
+              done()
             })
           }, 1000)
         }, fail)
         return this.clock.tick(1)
       }) // Tick for setTimeout 0
 
-      it("find gives local results once if remote fails then out of time", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+      it("find gives local results once if remote fails then out of time", function (done: any) {
         this.lc.upsert({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -484,12 +484,12 @@ describe("HybridDb", function () {
             console.error("Fail! Called twice")
           }
           assert.equal(called, 1)
-          return done()
+          done()
         }, fail)
         return this.clock.tick(1)
       }) // Tick for setTimeout 0
 
-      return it("find gives local results once if out of time then remote fails", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+      return it("find gives local results once if out of time then remote fails", function (done: any) {
         this.lc.upsert({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -516,14 +516,14 @@ describe("HybridDb", function () {
           }
 
           assert.equal(called, 1)
-          return done()
+          done()
         }, fail)
         return this.clock.tick(1)
       })
     }) // Tick for setTimeout 0
 
     describe("cacheFind: false", function () {
-      it("find performs partial field remote queries", function (this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+      it("find performs partial field remote queries", function (done: any) {
         sinon.spy(this.rc, "find")
         this.rc.seed({ _id: "1", a: 1, b: 11 })
         this.rc.seed({ _id: "2", a: 2, b: 12 })
@@ -535,11 +535,11 @@ describe("HybridDb", function () {
           assert.isUndefined(data[0].b)
           assert.deepEqual(this.rc.find.firstCall.args[1].fields, { b: 0 })
           this.rc.find.restore()
-          return done()
+          done()
         })
       })
 
-      return it("does not cache remote data", function (this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+      return it("does not cache remote data", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -556,7 +556,7 @@ describe("HybridDb", function () {
             return this.lc.find({}).fetch(function (data: any) {
               assert.equal(data.length, 2)
               assert.deepEqual(_.pluck(data, "a"), [1, 2])
-              return done()
+              done()
             })
           }
         })
@@ -564,7 +564,7 @@ describe("HybridDb", function () {
     })
 
     describe("cacheFindOne: false", () =>
-      it("findOne performs partial field remote queries", function (this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+      it("findOne performs partial field remote queries", function (done: any) {
         sinon.spy(this.rc, "find")
         this.rc.seed({ _id: "1", a: 1, b: 11 })
         this.rc.seed({ _id: "2", a: 2, b: 12 })
@@ -577,12 +577,12 @@ describe("HybridDb", function () {
           assert.isUndefined(data.b)
           assert.deepEqual(this.rc.find.getCall(0).args[1].fields, { b: 0 })
           this.rc.find.restore()
-          return done()
+          done()
         })
       }))
 
     context("shortcut: false (default)", function () {
-      it("findOne calls both local and remote", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+      it("findOne calls both local and remote", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -598,7 +598,7 @@ describe("HybridDb", function () {
               return assert.deepEqual(data, { _id: "1", a: 1 })
             } else {
               assert.deepEqual(data, { _id: "1", a: 3 })
-              return done()
+              done()
             }
           },
           fail
@@ -606,7 +606,7 @@ describe("HybridDb", function () {
       })
 
       context("interim: false", () =>
-        it("findOne calls both local and remote", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+        it("findOne calls both local and remote", function (done: any) {
           this.lc.seed({ _id: "1", a: 1 })
           this.lc.seed({ _id: "2", a: 2 })
 
@@ -618,14 +618,14 @@ describe("HybridDb", function () {
             { interim: false },
             function (data: any) {
               assert.deepEqual(data, { _id: "1", a: 3 })
-              return done()
+              done()
             },
             fail
           )
         })
       )
 
-      return it("findOne calls remote if not found", function (this: any, this: any, this: any, this: any, done: any) {
+      return it("findOne calls remote if not found", function (done: any) {
         this.lc.seed({ _id: "2", a: 2 })
 
         this.rc.seed({ _id: "1", a: 3 })
@@ -637,7 +637,7 @@ describe("HybridDb", function () {
           { shortcut: true },
           function (data: any) {
             assert.deepEqual(data, { _id: "1", a: 3 })
-            return done()
+            done()
           },
           fail
         )
@@ -645,7 +645,7 @@ describe("HybridDb", function () {
     })
 
     context("shortcut: true", function () {
-      it("findOne only calls local if found", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+      it("findOne only calls local if found", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -658,13 +658,13 @@ describe("HybridDb", function () {
           { shortcut: true },
           function (data: any) {
             assert.deepEqual(data, { _id: "1", a: 1 })
-            return done()
+            done()
           },
           fail
         )
       })
 
-      return it("findOne calls remote if not found", function (this: any, this: any, this: any, this: any, done: any) {
+      return it("findOne calls remote if not found", function (done: any) {
         this.lc.seed({ _id: "2", a: 2 })
 
         this.rc.seed({ _id: "1", a: 3 })
@@ -676,7 +676,7 @@ describe("HybridDb", function () {
           { shortcut: true },
           function (data: any) {
             assert.deepEqual(data, { _id: "1", a: 3 })
-            return done()
+            done()
           },
           fail
         )
@@ -684,7 +684,7 @@ describe("HybridDb", function () {
     })
 
     context("cacheFind: false, interim: false", function () {
-      beforeEach(function (this: any, this: any, this: any, this: any) {
+      beforeEach(function (this: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -692,23 +692,23 @@ describe("HybridDb", function () {
         return this.rc.seed({ _id: "2", a: 4 })
       })
 
-      it("find only calls remote", function (this: any, done: any) {
+      it("find only calls remote", function (done: any) {
         return this.hc.find({}, { cacheFind: false, interim: false }).fetch(function (data: any) {
           assert.deepEqual(_.pluck(data, "a"), [3, 4])
-          return done()
+          done()
         })
       })
 
-      it("find does not cache results", function (this: any, this: any, done: any) {
+      it("find does not cache results", function (done: any) {
         return this.hc.find({}, { cacheFind: false, interim: false }).fetch((data: any) => {
           return this.lc.find({}).fetch((data: any) => {
             assert.deepEqual(_.pluck(data, "a"), [1, 2])
-            return done()
+            done()
           })
         })
       })
 
-      it("find falls back to local if remote fails", function (this: any, this: any, done: any) {
+      it("find falls back to local if remote fails", function (done: any) {
         this.rc.find = (selector, options) => ({
           fetch(success: any, error: any) {
             return error()
@@ -716,11 +716,11 @@ describe("HybridDb", function () {
         })
         return this.hc.find({}, { cacheFind: false, interim: false }).fetch(function (data: any) {
           assert.deepEqual(_.pluck(data, "a"), [1, 2])
-          return done()
+          done()
         })
       })
 
-      it("find errors if useLocalOnRemoteError:false if remote fails", function (this: any, this: any, done: any) {
+      it("find errors if useLocalOnRemoteError:false if remote fails", function (done: any) {
         this.rc.find = (selector: any, options: any) => {
           return {
             fetch(success: any, error: any) {
@@ -736,26 +736,26 @@ describe("HybridDb", function () {
         )
       })
 
-      it("find respects local upserts", function (this: any, this: any, done: any) {
+      it("find respects local upserts", function (done: any) {
         this.lc.upsert({ _id: "1", a: 9 })
 
         return this.hc.find({}, { cacheFind: false, interim: false, sort: ["_id"] }).fetch((data: any) => {
           assert.deepEqual(_.pluck(data, "a"), [9, 4])
-          return done()
+          done()
         })
       })
 
-      return it("find respects local removes", function (this: any, this: any, done: any) {
+      return it("find respects local removes", function (done: any) {
         this.lc.remove("1")
 
         return this.hc.find({}, { cacheFind: false, interim: false }).fetch(function (data: any) {
           assert.deepEqual(_.pluck(data, "a"), [4])
-          return done()
+          done()
         })
       })
     })
 
-    it("upload applies pending upserts", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("upload applies pending upserts", function (done: any) {
       this.lc.upsert({ _id: "1", a: 1 })
       this.lc.upsert({ _id: "2", a: 2 })
 
@@ -765,13 +765,13 @@ describe("HybridDb", function () {
 
           return this.rc.pendingUpserts(function (data: any) {
             assert.deepEqual(_.pluck(_.pluck(data, "doc"), "a"), [1, 2])
-            return done()
+            done()
           })
         })
       }, fail)
     })
 
-    it("upload sorts pending upserts", function (this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("upload sorts pending upserts", function (done: any) {
       this.lc.upsert({ _id: "1", a: 1, b: 2 })
       this.lc.upsert({ _id: "2", a: 2, b: 1 })
 
@@ -797,12 +797,12 @@ describe("HybridDb", function () {
           assert.equal(data.length, 0)
 
           assert.deepEqual(_.pluck(upserts, "a"), [2, 1])
-          return done()
+          done()
         })
       }, fail)
     })
 
-    it("does not resolve upsert if data changed, but changes base", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("does not resolve upsert if data changed, but changes base", function (done: any) {
       this.lc.upsert({ _id: "1", a: 1 })
 
       // Override pending upserts to change doc right before returning
@@ -824,13 +824,13 @@ describe("HybridDb", function () {
           return this.rc.pendingUpserts(function (data: any) {
             assert.deepEqual(data[0].doc, { _id: "1", a: 1 })
             assert.isNull(data[0].base)
-            return done()
+            done()
           })
         })
       }, fail)
     })
 
-    it("caches new upserted value", function (this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("caches new upserted value", function (done: any) {
       this.lc.upsert({ _id: "1", a: 1 })
 
       // Override remote upsert to change returned doc
@@ -842,13 +842,13 @@ describe("HybridDb", function () {
 
           return this.lc.findOne({ _id: "1" }, {}, function (data: any) {
             assert.deepEqual(data, { _id: "1", a: 2 })
-            return done()
+            done()
           })
         })
       }, fail)
     })
 
-    it("upload applies pending removes", function (this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("upload applies pending removes", function (done: any) {
       this.lc.seed({ _id: "1", a: 1 })
       this.rc.seed({ _id: "1", a: 1 })
       this.hc.remove("1")
@@ -859,13 +859,13 @@ describe("HybridDb", function () {
 
           return this.rc.pendingRemoves(function (data: any) {
             assert.deepEqual(data, ["1"])
-            return done()
+            done()
           })
         })
       }, fail)
     })
 
-    it("keeps upserts and deletes if failed to apply", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("keeps upserts and deletes if failed to apply", function (done: any) {
       this.lc.upsert({ _id: "1", a: 1 })
       this.lc.upsert({ _id: "2", a: 2 })
       this.lc.seed({ _id: "3", a: 3 })
@@ -885,13 +885,13 @@ describe("HybridDb", function () {
               assert.equal(data.length, 1)
               return assert.equal(data[0], "3")
             })
-            return done()
+            done()
           })
         }
       )
     })
 
-    it("removes upsert if fails with 410 (gone) and continue", function (this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("removes upsert if fails with 410 (gone) and continue", function (done: any) {
       this.lc.upsert({ _id: "1", a: 1 })
 
       this.rc.upsert = (docs: any, bases: any, success: any, error: any) => error({ status: 410 })
@@ -905,7 +905,7 @@ describe("HybridDb", function () {
               { _id: "1" },
               function (data: any) {
                 assert.isNull(data)
-                return done()
+                done()
               },
               fail
             )
@@ -914,7 +914,7 @@ describe("HybridDb", function () {
       }, fail)
     })
 
-    it("removes upsert if fails with 403 (permission) and fail", function (this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("removes upsert if fails with 403 (permission) and fail", function (done: any) {
       this.lc.upsert({ _id: "1", a: 1 })
 
       this.rc.upsert = (docs: any, bases: any, success: any, error: any) => error({ status: 403 })
@@ -928,7 +928,7 @@ describe("HybridDb", function () {
               { _id: "1" },
               function (data: any) {
                 assert.isNull(data)
-                return done()
+                done()
               },
               fail
             )
@@ -937,7 +937,7 @@ describe("HybridDb", function () {
       })
     })
 
-    it("removes document if remove fails with 403 (permission) and fail", function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("removes document if remove fails with 403 (permission) and fail", function (done: any) {
       this.lc.seed({ _id: "1", a: 1 })
       this.hc.remove("3")
 
@@ -952,7 +952,7 @@ describe("HybridDb", function () {
               assert.equal(data.length, 0, "Should have zero removes")
               return this.lc.findOne({ _id: "1" }, function (data: any) {
                 assert.equal(data.a, 1)
-                return done()
+                done()
               })
             })
           })
@@ -960,7 +960,7 @@ describe("HybridDb", function () {
       )
     })
 
-    it("removes upsert if returns null", function (this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+    it("removes upsert if returns null", function (done: any) {
       this.lc.upsert({ _id: "1", a: 1 })
 
       this.rc.upsert = (docs: any, bases: any, success: any, error: any) => success(null)
@@ -974,7 +974,7 @@ describe("HybridDb", function () {
               { _id: "1" },
               function (data: any) {
                 assert.isNull(data)
-                return done()
+                done()
               },
               fail
             )
@@ -983,15 +983,15 @@ describe("HybridDb", function () {
       }, fail)
     })
 
-    it("upserts to local db", function (this: any, this: any, done: any) {
+    it("upserts to local db", function (done: any) {
       this.hc.upsert({ _id: "1", a: 1 })
       return this.lc.pendingUpserts(function (data: any) {
         assert.equal(data.length, 1)
-        return done()
+        done()
       })
     })
 
-    it("passes up error from local db", function (this: any, this: any, this: any, done: any) {
+    it("passes up error from local db", function (done: any) {
       const oldUpsert = this.lc.upsert
       try {
         this.lc.upsert = function (docs: any, bases: any, success: any, error: any) {
@@ -1010,22 +1010,22 @@ describe("HybridDb", function () {
       )
     })
 
-    it("upserts to local db with base version", function (this: any, this: any, done: any) {
+    it("upserts to local db with base version", function (done: any) {
       this.hc.upsert({ _id: "1", a: 2 }, { _id: "1", a: 1 })
       return this.lc.pendingUpserts(function (data: any) {
         assert.equal(data.length, 1)
         assert.equal(data[0].doc.a, 2)
         assert.equal(data[0].base.a, 1)
-        return done()
+        done()
       })
     })
 
-    return it("removes to local db", function (this: any, this: any, this: any, done: any) {
+    return it("removes to local db", function (done: any) {
       this.lc.seed({ _id: "1", a: 1 })
       this.hc.remove("1")
       return this.lc.pendingRemoves(function (data: any) {
         assert.equal(data.length, 1)
-        return done()
+        done()
       })
     })
   })
@@ -1067,85 +1067,85 @@ describe("HybridDb", function () {
       return this.rc.seed({ _id: "2", a: 4 })
     })
 
-    it("find uses remote", function (this: any, done: any) {
+    it("find uses remote", function (done: any) {
       return this.hc.find({}, { cacheFind: false, interim: false }).fetch((data: any) => {
         assert.deepEqual(_.pluck(data, "a"), [3, 4])
-        return done()
+        done()
       })
     })
 
-    it("find does not cache results", function (this: any, this: any, done: any) {
+    it("find does not cache results", function (done: any) {
       return this.hc.find({}, { cacheFind: false, interim: false }).fetch((data: any) => {
         return this.lc.find({}).fetch((data: any) => {
           assert.equal(data.length, 0)
-          return done()
+          done()
         })
       })
     })
 
-    it("find respects local upserts", function (this: any, this: any, done: any) {
+    it("find respects local upserts", function (done: any) {
       this.lc.upsert({ _id: "1", a: 9 })
 
       return this.hc.find({}, { cacheFind: false, interim: false, sort: ["_id"] }).fetch((data: any) => {
         assert.deepEqual(_.pluck(data, "a"), [9, 4])
-        return done()
+        done()
       })
     })
 
-    it("find respects local removes", function (this: any, this: any, done: any) {
+    it("find respects local removes", function (done: any) {
       this.lc.remove("1")
 
       return this.hc.find({}, { cacheFind: false, interim: false }).fetch((data: any) => {
         assert.deepEqual(_.pluck(data, "a"), [4])
-        return done()
+        done()
       })
     })
 
-    it("findOne without _id selector uses remote", function (this: any, done: any) {
+    it("findOne without _id selector uses remote", function (done: any) {
       return this.hc.findOne({}, { cacheFindOne: false, interim: false, sort: ["_id"] }, (data: any) => {
         assert.deepEqual(data, { _id: "1", a: 3 })
-        return done()
+        done()
       })
     })
 
-    it("findOne without _id selector respects local upsert", function (this: any, this: any, done: any) {
+    it("findOne without _id selector respects local upsert", function (done: any) {
       this.lc.upsert({ _id: "1", a: 9 })
       return this.hc.findOne({}, { cacheFindOne: false, interim: false, sort: ["_id"] }, (data: any) => {
         assert.deepEqual(data, { _id: "1", a: 9 })
-        return done()
+        done()
       })
     })
 
-    it("findOne without _id selector respects local remove", function (this: any, this: any, done: any) {
+    it("findOne without _id selector respects local remove", function (done: any) {
       this.lc.remove("1")
 
       return this.hc.findOne({}, { cacheFindOne: false, sort: ["_id"] }, (data: any) => {
         assert.deepEqual(data, { _id: "2", a: 4 })
-        return done()
+        done()
       })
     })
 
-    it("findOne with _id selector uses remote", function (this: any, done: any) {
+    it("findOne with _id selector uses remote", function (done: any) {
       return this.hc.findOne({ _id: "1" }, { cacheFindOne: false, sort: ["_id"] }, (data: any) => {
         assert.deepEqual(data, { _id: "1", a: 3 })
-        return done()
+        done()
       })
     })
 
-    it("findOne with _id selector respects local upsert", function (this: any, this: any, done: any) {
+    it("findOne with _id selector respects local upsert", function (done: any) {
       this.lc.upsert({ _id: "1", a: 9 })
       return this.hc.findOne({ _id: "1" }, { cacheFindOne: false, interim: false, sort: ["_id"] }, (data: any) => {
         assert.deepEqual(data, { _id: "1", a: 9 })
-        return done()
+        done()
       })
     })
 
-    return it("findOne with _id selector respects local remove", function (this: any, this: any, done: any) {
+    return it("findOne with _id selector respects local remove", function (done: any) {
       this.lc.remove("1")
 
       return this.hc.findOne({ _id: "1" }, { cacheFindOne: false, interim: false, sort: ["_id"] }, (data: any) => {
         assert.isNull(data)
-        return done()
+        done()
       })
     })
   })

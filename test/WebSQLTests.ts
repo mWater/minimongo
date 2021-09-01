@@ -17,14 +17,14 @@ function error(err: any) {
 describe("WebSQLDb", function (this: any) {
   this.timeout(5000)
 
-  before(function (this: any, this: any, this: any, this: any, this: any, this: any, this: any, done: any) {
+  before(function (done: any) {
     this.reset = (done: any) => {
       return new WebSQLDb({ namespace: "db.scratch" }, (db: any) => {
         this.db = db
         return this.db.removeCollection("scratch", () => {
           return this.db.addCollection("scratch", () => {
             this.col = this.db.scratch
-            return done()
+            done()
           })
         })
       })
@@ -42,7 +42,7 @@ describe("WebSQLDb", function (this: any) {
 })
 
 describe("WebSQLDb storage", function () {
-  beforeEach(function (this: any, this: any, this: any, done: any) {
+  beforeEach(function (done: any) {
     return new WebSQLDb({ namespace: "db.scratch" }, (db: any) => {
       this.db = db
       return this.db.removeCollection("scratch", () => {
@@ -51,7 +51,7 @@ describe("WebSQLDb storage", function () {
     })
   })
 
-  it("retains items", function (this: any, done: any) {
+  it("retains items", function (done: any) {
     return this.db.scratch.upsert(
       { _id: "1", a: "Alice" },
       () =>
@@ -59,14 +59,14 @@ describe("WebSQLDb storage", function () {
           db2.addCollection("scratch", () =>
             db2.scratch.find({}).fetch(function (results: any) {
               assert.equal(results[0].a, "Alice")
-              return done()
+              done()
             })
           )
         )
     )
   })
 
-  it("retains upserts", function (this: any, this: any, done: any) {
+  it("retains upserts", function (done: any) {
     return this.db.scratch.cacheOne({ _id: "1", a: "Alice" }, () => {
       return this.db.scratch.upsert(
         { _id: "1", a: "Bob" },
@@ -79,7 +79,7 @@ describe("WebSQLDb storage", function () {
                   assert.equal(upserts.length, 1)
                   assert.deepEqual(upserts[0].doc, { _id: "1", a: "Bob" })
                   assert.deepEqual(upserts[0].base, { _id: "1", a: "Alice" })
-                  return done()
+                  done()
                 })
               })
             )
@@ -88,7 +88,7 @@ describe("WebSQLDb storage", function () {
     })
   })
 
-  it("retains removes", function (this: any, this: any, done: any) {
+  it("retains removes", function (done: any) {
     return this.db.scratch.seed({ _id: "1", a: "Alice" }, () => {
       return this.db.scratch.remove(
         "1",
@@ -97,7 +97,7 @@ describe("WebSQLDb storage", function () {
             db2.addCollection("scratch", () =>
               db2.scratch.pendingRemoves(function (removes: any) {
                 assert.deepEqual(removes, ["1"])
-                return done()
+                done()
               })
             )
           )
@@ -105,7 +105,7 @@ describe("WebSQLDb storage", function () {
     })
   })
 
-  return it("inserts 1000 documents at once", function (this: any, this: any, this: any, done: any) {
+  return it("inserts 1000 documents at once", function (done: any) {
     this.timeout(30000)
     const docs = []
     for (let i = 0; i < 1000; i++) {
@@ -117,7 +117,7 @@ describe("WebSQLDb storage", function () {
       () => {
         return this.db.scratch.find({}).fetch(function (results: any) {
           assert.equal(results.length, 1000)
-          return done()
+          done()
         }, error)
       },
       error
