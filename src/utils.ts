@@ -11,6 +11,7 @@ import { default as booleanPointInPolygon } from "@turf/boolean-point-in-polygon
 import { default as intersect } from "@turf/intersect"
 import { default as booleanCrosses } from "@turf/boolean-crosses"
 import { default as booleanWithin } from "@turf/boolean-within"
+import { MinimongoCollection, MinimongoDb } from "./types"
 
 // Test window.localStorage
 function isLocalStorageSupported() {
@@ -125,9 +126,15 @@ export function migrateLocalDb(fromDb: any, toDb: any, success: any, error: any)
   return hybridDb.upload(success, error)
 }
 
-// Clone a local database's caches, pending upserts and removes from one database to another
-// Useful for making a replica
-export function cloneLocalDb(fromDb: any, toDb: any, success: any, error: any) {
+
+/** Clone a local database collection's caches, pending upserts and removes from one database to another
+ * Useful for making a replica */
+export function cloneLocalDb(
+  fromDb: MinimongoDb,
+  toDb: MinimongoDb,
+  success: () => void,
+  error: (err: any) => void
+): void {
   let name
   for (name in fromDb.collections) {
     // TODO Assumes synchronous addCollection
@@ -190,9 +197,14 @@ export function cloneLocalDb(fromDb: any, toDb: any, success: any, error: any) {
   )
 }
 
-// Clone a local database collection's caches, pending upserts and removes from one database to another
-// Useful for making a replica
-export function cloneLocalCollection(fromCol: any, toCol: any, success: any, error: any) {
+/** Clone a local database collection's caches, pending upserts and removes from one database to another
+ * Useful for making a replica */
+export function cloneLocalCollection(
+  fromCol: MinimongoCollection,
+  toCol: MinimongoCollection,
+  success: () => void,
+  error: (err: any) => void
+): void {
   // Get all items
   return fromCol.find({}).fetch((items: any) => {
     // Seed items
@@ -264,7 +276,8 @@ export function processFind(items: any, selector: any, options: any) {
   return filtered
 }
 
-export function filterFields(items: any, fields = {}) {
+/** Include/exclude fields in mongo-style */
+export function filterFields(items: any[], fields: any = {}): any[] {
   // Handle trivial case
   if (_.keys(fields).length === 0) {
     return items

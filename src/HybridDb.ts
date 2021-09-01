@@ -1,11 +1,16 @@
 import _ from "lodash"
 import { processFind } from "./utils"
 import * as utils from "./utils"
+import { MinimongoCollection, MinimongoCollectionFindOneOptions, MinimongoDb } from "./types"
 
 // Bridges a local and remote database, querying from the local first and then
 // getting the remote. Also uploads changes from local to remote.
-export default class HybridDb {
-  constructor(localDb: any, remoteDb: any) {
+export default class HybridDb implements MinimongoDb {
+  localDb: MinimongoDb
+  remoteDb: MinimongoDb
+  collections: { [collectionName: string]: MinimongoCollection<any> }
+
+  constructor(localDb: MinimongoDb, remoteDb: MinimongoDb) {
     this.localDb = localDb
     this.remoteDb = remoteDb
     this.collections = {}
@@ -17,7 +22,7 @@ export default class HybridDb {
       ;[options, success, error] = [{}, options, success]
     }
 
-    const collection = new HybridCollection(name, this.localDb[name], this.remoteDb[name], options)
+    const collection = new HybridCollection(name, this.localDb![name], this.remoteDb![name], options)
     this[name] = collection
     this.collections[name] = collection
     if (success != null) {
@@ -56,9 +61,14 @@ export default class HybridDb {
   }
 }
 
-class HybridCollection {
+class HybridCollection<T> implements MinimongoCollection<T> {
+  name: string
+  localCol: MinimongoCollection<any>
+  remoteCol: MinimongoCollection<any>
+  options: any
+
   // Options includes
-  constructor(name: any, localCol: any, remoteCol: any, options: any) {
+  constructor(name: string, localCol: MinimongoCollection<T>, remoteCol: MinimongoCollection<T>, options: any) {
     this.name = name
     this.localCol = localCol
     this.remoteCol = remoteCol
@@ -85,7 +95,9 @@ class HybridCollection {
   }
 
   // Finds one row.
-  findOne(selector: any, options = {}, success: any, error: any) {
+  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (item: T | null) => void, error: (err: any) => void): void
+  findOne(selector: any, success: (item: T | null) => void, error: (err: any) => void): void
+  findOne(selector: any, options: any, success: any, error?: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
@@ -150,8 +162,8 @@ class HybridCollection {
     _.defaults(options, this.options)
 
     // Get pending removes and upserts immediately to avoid odd race conditions
-    return this.localCol.pendingUpserts((upserts: any) => {
-      return this.localCol.pendingRemoves((removes: any) => {
+    return this.localCol.pendingUpserts!((upserts: any) => {
+      return this.localCol.pendingRemoves!((removes: any) => {
         const step2 = (localData: any) => {
           // Setup remote options
           const remoteOptions = _.cloneDeep(options)

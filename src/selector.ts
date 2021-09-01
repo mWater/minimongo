@@ -19,10 +19,10 @@ licenses, included below:
 ====================================================================
 
 */
+import EJSON from "./EJSON"
+import _ from "lodash"
 
-var LocalCollection = {}
-var EJSON = require("./EJSON")
-var _ = require("lodash")
+var LocalCollection: any = {}
 
 // Like _.isArray, but doesn't regard polyfilled Uint8Arrays on old browsers as
 // arrays.
@@ -554,8 +554,8 @@ LocalCollection._makeLookupFunction = function (key: any) {
   }
 }
 
-// The main compilation function for a given selector.
-var compileDocumentSelector = function (docSelector: any) {
+/** Compile a document selector (query) to a lambda function */
+export function compileDocumentSelector(docSelector: any): (doc: any) => boolean {
   var perKeySelectors: any = []
   _.each(docSelector, function (subSelector: any, key: any) {
     if (key.substr(0, 1) === "$") {
@@ -653,7 +653,7 @@ LocalCollection._compileSort = function (spec: any) {
       })
     }
   } else {
-    throw Error("Bad sort specification: ", JSON.stringify(spec))
+    throw Error("Bad sort specification: " + JSON.stringify(spec))
   }
 
   if (sortSpecParts.length === 0)
@@ -708,5 +708,4 @@ LocalCollection._compileSort = function (spec: any) {
   }
 }
 
-exports.compileDocumentSelector = compileDocumentSelector
-exports.compileSort = LocalCollection._compileSort
+export var compileSort = LocalCollection._compileSort

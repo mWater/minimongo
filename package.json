@@ -2,8 +2,9 @@
   "name": "minimongo",
   "version": "6.8.3",
   "description": "Client-side mongo database with server sync over http",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
+    "build": "node_modules/build-library/build",
     "test": "gulp test"
   },
   "repository": {
@@ -25,7 +26,9 @@
   },
   "homepage": "https://github.com/mWater/minimongo",
   "devDependencies": {
+    "@types/lodash": "^3.10.4",
     "browserify": "^3.29.1",
+    "build-library": "github:mWater/build-library",
     "chai": "~1.9.0",
     "coffee-loader": "^0.9.0",
     "coffeeify": "~0.6.0",

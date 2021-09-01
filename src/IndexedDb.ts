@@ -4,9 +4,12 @@ import IDBStore from "idb-wrapper"
 import * as utils from "./utils"
 import { processFind } from "./utils"
 import { compileSort } from "./selector"
+import { MinimongoCollection, MinimongoDb } from "./types"
 
 // Create a database backed by IndexedDb. options must contain namespace: <string to uniquely identify database>
-export default class IndexedDb {
+export default class IndexedDb implements MinimongoDb {
+  collections: { [collectionName: string]: MinimongoCollection<any> }
+
   constructor(options: any, success: any, error: any) {
     this.collections = {}
 

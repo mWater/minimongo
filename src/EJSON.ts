@@ -1,6 +1,6 @@
-var _ = require("lodash")
+import _ from "lodash"
 
-var EJSON = {} // Global!
+var EJSON: any = {}
 var customTypes = {}
 // Add a custom type, using a method of your choice to get to and
 // from a basic JSON-able representation.  The factory argument
@@ -16,7 +16,7 @@ EJSON.addType = function (name: any, factory: any) {
   customTypes[name] = factory
 }
 
-var builtinConverters = [
+var builtinConverters: any = [
   {
     // Date
     matchJSONValue: function (obj: any) {
@@ -309,4 +309,4 @@ EJSON.clone = function (v: any) {
   return ret
 }
 
-module.exports = EJSON
+export default EJSON

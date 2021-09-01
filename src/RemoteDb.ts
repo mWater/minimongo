@@ -4,12 +4,15 @@ import async from "async"
 import * as utils from "./utils"
 import jQueryHttpClient from "./jQueryHttpClient"
 import * as quickfind from "./quickfind"
+import { MinimongoDb, MinimongoCollection } from "./types"
 
-export default class RemoteDb {
+export default class RemoteDb implements MinimongoDb {
+  collections: { [collectionName: string]: MinimongoCollection<any> }
+
   // Url must have trailing /, can be an arrau of URLs
   // useQuickFind enables the quickfind protocol for finds
   // usePostFind enables POST for find
-  constructor(url: any, client: any, httpClient: any, useQuickFind = false, usePostFind = false) {
+  constructor(url: string, client: any, httpClient: any, useQuickFind = false, usePostFind = false) {
     this.url = url
     this.client = client
     this.collections = {}

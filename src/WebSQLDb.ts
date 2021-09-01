@@ -3,13 +3,16 @@ import async from "async"
 import * as utils from "./utils"
 import { processFind } from "./utils"
 import { compileSort } from "./selector"
+import { MinimongoCollection, MinimongoDb } from "./types"
 
 // Do nothing callback for success
 function doNothing() {}
 
 // WebSQLDb adapter for minimongo DB
 // Supports sqlite plugin, if available and specified in option as {storage: 'sqlite'}
-export default class WebSQLDb {
+export default class WebSQLDb implements MinimongoDb {
+  collections: { [collectionName: string]: MinimongoCollection<any> }
+
   constructor(options: any, success: any, error: any) {
     this.collections = {}
 

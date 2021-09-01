@@ -1,5 +1,3 @@
-import * as utils from './src/utils'
-
 export interface MinimongoCollectionFindOptions {
   fields?: any
   sort?: any
@@ -29,13 +27,14 @@ export interface MinimongoCollectionFindOneOptions {
   shortcut?: boolean
 }
 
-export class MinimongoDb {
-  addCollection<T>(name: string, options?: any, success?: (collection: MinimongoCollection<T>) => void, error?: (err: any) => void): void
-  removeCollection<T>(name: string, success?: () => void, error?: (err: any) => void): void
-  getCollectionNames(): string[]
+export interface MinimongoDb {
   localDb?: MinimongoDb
   remoteDb?: MinimongoDb 
   collections: { [collectionName: string]: MinimongoCollection }
+
+  addCollection<T>(name: string, options?: any, success?: (collection: MinimongoCollection<T>) => void, error?: (err: any) => void): void
+  removeCollection<T>(name: string, success?: () => void, error?: (err: any) => void): void
+  getCollectionNames(): string[]
 }
 
 export interface MinimongoCollection<ItemType = any> {
@@ -74,15 +73,3 @@ export interface MinimongoCollection<ItemType = any> {
   uncache?(selector: any, success: () => void, error: (err: any) => void): void
   uncacheList?(ids: string[], success: () => void, error: (err: any) => void): void
 }
-
-
-export class MemoryDb extends MinimongoDb {}
-export class LocalStorageDb extends MinimongoDb {}
-export class IndexedDb extends MinimongoDb {}
-export class WebSQLDb extends MinimongoDb {}
-export class RemoteDb extends MinimongoDb {}
-export class HybridDb extends MinimongoDb {}
-export class ReplicatingDb extends MinimongoDb {}
-
-// exports.quickfind = require('./lib/quickfind');
-export { utils }

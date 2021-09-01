@@ -3,8 +3,11 @@ import async from "async"
 import * as utils from "./utils"
 import { processFind } from "./utils"
 import { compileSort } from "./selector"
+import { MinimongoCollection, MinimongoDb } from "./types"
 
-export default class LocalStorageDb {
+export default class LocalStorageDb implements MinimongoDb {
+  collections: { [collectionName: string]: MinimongoCollection<any> }
+
   constructor(options: any, success: any) {
     this.collections = {}
 
