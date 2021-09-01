@@ -3,12 +3,14 @@ import * as utils from './utils'
 
 export * from './types'
 
-export { default as  MemoryDb } from './MemoryDb'
-export { default as  LocalStorageDb } from './LocalStorageDb'
-export { default as  IndexedDb } from './IndexedDb'
-export { default as  WebSQLDb } from './WebSQLDb'
-export { default as  RemoteDb } from './RemoteDb'
-export { default as  HybridDb } from './HybridDb'
-export { default as  ReplicatingDb } from './ReplicatingDb'
+import { default as MemoryDb } from './MemoryDb'
+import { default as LocalStorageDb } from './LocalStorageDb'
+import { default as IndexedDb } from './IndexedDb'
+import { default as WebSQLDb } from './WebSQLDb'
+import { default as RemoteDb } from './RemoteDb'
+import { default as HybridDb } from './HybridDb'
+import { default as ReplicatingDb } from './ReplicatingDb'
 
-export { quickfind, utils }
+export { quickfind, utils, MemoryDb, LocalStorageDb, IndexedDb, WebSQLDb, RemoteDb, HybridDb, ReplicatingDb }
+
+export default { quickfind, utils, MemoryDb, LocalStorageDb, IndexedDb, WebSQLDb, RemoteDb, HybridDb, ReplicatingDb }
