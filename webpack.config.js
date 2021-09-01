@@ -8,12 +8,17 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
   },
   module: {
-    loaders: [
-      { test: /\.coffee$/, loader: ["coffee-loader"] }
+    rules: [
+      { test: /\.(ts)$/, use: [
+        { 
+          loader: 'ts-loader',
+          options: { transpileOnly: true }
+        }
+      ]}
     ]
   },
   resolve: {
-    extensions: [".coffee", ".js", ".json"]
+    extensions: [".ts", ".js", ".json"]
   },
   externals: {
     lodash: '_',

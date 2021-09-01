@@ -8,6 +8,8 @@ import { MinimongoCollection, MinimongoDb } from "./types"
 // Warning: removing a collection removes it from the underlying master and replica!
 export default class ReplicatingDb implements MinimongoDb {
   collections: { [collectionName: string]: MinimongoCollection<any> }
+  masterDb: MinimongoDb
+  replicaDb: MinimongoDb
 
   constructor(masterDb: MinimongoDb, replicaDb: MinimongoDb) {
     this.collections = {}
@@ -40,7 +42,11 @@ export default class ReplicatingDb implements MinimongoDb {
 
 // Replicated collection.
 class Collection {
-  constructor(name: any, masterCol: any, replicaCol: any) {
+  name: string
+  masterCol: MinimongoCollection<any>
+  replicaCol: MinimongoCollection<any>
+
+  constructor(name: string, masterCol: MinimongoCollection, replicaCol: MinimongoCollection) {
     this.name = name
     this.masterCol = masterCol
     this.replicaCol = replicaCol
@@ -78,10 +84,10 @@ class Collection {
 
   remove(id: any, success: any, error: any) {
     // Do to both
-    return this.masterCol.remove(
+    this.masterCol.remove(
       id,
       () => {
-        return this.replicaCol.remove(id, success, error)
+        this.replicaCol.remove(id, success, error)
       },
       error
     )
