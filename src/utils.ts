@@ -1,5 +1,3 @@
-// TODO: This file was created by bulk-decaffeinate.
-// Sanity-check the conversion and remove this comment.
 // Utilities for db handling
 import _ from "lodash"
 
@@ -12,6 +10,12 @@ import { default as intersect } from "@turf/intersect"
 import { default as booleanCrosses } from "@turf/boolean-crosses"
 import { default as booleanWithin } from "@turf/boolean-within"
 import { MinimongoCollection, MinimongoDb } from "./types"
+
+import { default as IndexedDb } from "./IndexedDb"
+import { default as WebSQLDb } from "./WebSQLDb"
+import { default as LocalStorageDb } from "./LocalStorageDb"
+import { default as MemoryDb } from "./MemoryDb"
+import { default as HybridDb } from "./HybridDb"
 
 // Test window.localStorage
 function isLocalStorageSupported() {
@@ -32,12 +36,6 @@ export { compileDocumentSelector }
 
 // Select appropriate local database, prefering IndexedDb, then WebSQLDb, then LocalStorageDb, then MemoryDb
 export function autoselectLocalDb(options: any, success: any, error: any) {
-  // Here due to browserify circularity quirks
-  const IndexedDb = require("./IndexedDb")
-  const WebSQLDb = require("./WebSQLDb")
-  const LocalStorageDb = require("./LocalStorageDb")
-  const MemoryDb = require("./MemoryDb")
-
   // Get browser capabilities
   const { browser } = bowser
 
@@ -113,8 +111,6 @@ export function autoselectLocalDb(options: any, success: any, error: any) {
 // Useful for upgrading from one type of database to another
 export function migrateLocalDb(fromDb: any, toDb: any, success: any, error: any) {
   // Migrate collection using a HybridDb
-  // Here due to browserify circularity quirks
-  const HybridDb = require("./HybridDb")
   const hybridDb = new HybridDb(fromDb, toDb)
   for (let name in fromDb.collections) {
     const col = fromDb.collections[name]

@@ -5,12 +5,17 @@ module.exports = {
     path: __dirname
   },
   module: {
-    loaders: [
-      { test: /\.coffee$/, loader: ["coffee-loader"] }
+    rules: [
+      { test: /\.(ts)$/, use: [
+        { 
+          loader: 'ts-loader',
+          options: { transpileOnly: true }
+        }
+      ]}
     ]
   },
   resolve: {
-    extensions: [".coffee", ".js", ".json"]
+    extensions: [".ts", ".js", ".json"]
   },
   externals: {
   }

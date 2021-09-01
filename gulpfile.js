@@ -1,9 +1,8 @@
-import _ from 'lodash';
-import gulp from "gulp";
-import coffee from 'gulp-coffee';
-import gutil from 'gulp-util';
-import webpack from 'webpack';
-import WebpackDevServer from 'webpack-dev-server';
+const _ = require('lodash')
+const gulp = require("gulp")
+const gutil = require('gulp-util')
+const webpack = require('webpack')
+const WebpackDevServer = require('webpack-dev-server')
 
 gulp.task('build', function(done) {
   const webpackConfig = require('./webpack.config.js');
@@ -31,7 +30,6 @@ gulp.task('dist', gulp.series([
 );
 
 gulp.task("test", gulp.series([
-  "copy",
   function() {
     const webpackConfig = require('./webpack.config.tests.js');
     const compiler = webpack(webpackConfig);
@@ -47,6 +45,4 @@ gulp.task("test", gulp.series([
   }
 ])
 );
-
-gulp.task('default', gulp.series(['coffee', 'copy', 'dist']));
 

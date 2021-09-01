@@ -3,13 +3,14 @@ import async from "async"
 import * as utils from "./utils"
 import { processFind } from "./utils"
 import { compileSort } from "./selector"
-import { MinimongoDb } from "./types"
+import { MinimongoCollection, MinimongoDb } from "./types"
 
-export default class MemoryDb extends MinimongoDb {
+export default class MemoryDb implements MinimongoDb {
+  collections: { [collectionName: string]: MinimongoCollection<any> }
+
   // Options are:
   //  safety: How to protect the in-memory copies: "clone" (default) returns a fresh copy but is slow. "freeze" returns a frozen version
   constructor(options: any, success: any) {
-    super()
     this.collections = {}
     this.options = _.defaults(options, { safety: "clone" })
 
