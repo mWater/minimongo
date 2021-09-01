@@ -1,3 +1,5 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 // Utilities for db handling
 import _ from 'lodash';
 
@@ -11,7 +13,7 @@ import { default as booleanCrosses } from "@turf/boolean-crosses";
 import { default as booleanWithin } from "@turf/boolean-within";
 
 // Test window.localStorage
-const isLocalStorageSupported = function() {
+function isLocalStorageSupported() {
   if (!window.localStorage) {
     return false;
   }
@@ -22,7 +24,7 @@ const isLocalStorageSupported = function() {
   } catch (e) {
     return false;
   }
-};
+}
 
 // Compile a document selector (query) to a lambda function
 export { compileDocumentSelector };
@@ -323,7 +325,7 @@ export function createUid() {
    });
 }
 
-var processNearOperator = function(selector, list) {
+function processNearOperator(selector, list) {
   for (var key in selector) {
     var value = selector[key];
     if ((value != null) && value['$near']) {
@@ -359,14 +361,18 @@ var processNearOperator = function(selector, list) {
     }
   }
   return list;
-};
+}
 
-const pointInPolygon = (point, polygon) => booleanPointInPolygon(point, polygon);
+function pointInPolygon(point, polygon) {
+  return booleanPointInPolygon(point, polygon);
+}
 
-const polygonIntersection = (polygon1, polygon2) => intersect(polygon1, polygon2) != null;
+function polygonIntersection(polygon1, polygon2) {
+  return intersect(polygon1, polygon2) != null;
+}
 
 // From http://www.movable-type.co.uk/scripts/latlong.html
-var getDistanceFromLatLngInM = function(lat1, lng1, lat2, lng2) {
+function getDistanceFromLatLngInM(lat1, lng1, lat2, lng2) {
   const R = 6370986; // Radius of the earth in m
   const dLat = deg2rad(lat2 - lat1); // deg2rad below
   const dLng = deg2rad(lng2 - lng1);
@@ -374,11 +380,13 @@ var getDistanceFromLatLngInM = function(lat1, lng1, lat2, lng2) {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const d = R * c; // Distance in m
   return d;
-};
+}
 
-var deg2rad = deg => deg * (Math.PI / 180);
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
+}
 
-var processGeoIntersectsOperator = function(selector, list) {
+function processGeoIntersectsOperator(selector, list) {
   for (var key in selector) {
     const value = selector[key];
     if ((value != null) && value['$geoIntersects']) {
@@ -417,7 +425,7 @@ var processGeoIntersectsOperator = function(selector, list) {
   }
 
   return list;
-};
+}
 
 // Tidy up upsert parameters to always be a list of { doc: <doc>, base: <base> },
 // doing basic error checking and making sure that _id is present

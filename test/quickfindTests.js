@@ -1,8 +1,10 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 import chai from 'chai';
 const {
   assert
 } = chai;
-import quickfind from "../src/quickfind";
+import * as quickfind from "../src/quickfind";
 import _ from 'lodash';
 import sha1 from 'js-sha1';
 

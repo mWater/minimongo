@@ -1,3 +1,5 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 // Karma configuration
 // Generated on Fri Sep 18 2015 08:23:23 GMT-0400 (EDT)
 

@@ -1,7 +1,9 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 let LocalStorageDb;
 import _ from 'lodash';
 import async from 'async';
-import utils from './utils';
+import * as utils from './utils';
 import { processFind } from './utils';
 import { compileSort } from './selector';
 

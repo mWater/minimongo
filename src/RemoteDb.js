@@ -1,10 +1,12 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 let RemoteDb;
 import _ from 'lodash';
 import $ from 'jquery';
 import async from 'async';
-import utils from './utils';
+import * as utils from './utils';
 import jQueryHttpClient from './jQueryHttpClient';
-import quickfind from './quickfind';
+import * as quickfind from './quickfind';
 
 export default RemoteDb = class RemoteDb {
   // Url must have trailing /, can be an arrau of URLs

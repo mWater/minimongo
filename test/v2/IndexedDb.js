@@ -1,3 +1,5 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 let IndexedDb;
 import _ from 'lodash';
 import async from 'async';

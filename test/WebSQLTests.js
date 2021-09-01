@@ -1,3 +1,5 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 import chai from 'chai';
 const {
   assert
@@ -9,10 +11,10 @@ import _ from 'lodash';
 import async from 'async';
 import OldWebSQLDb from './v2/WebSQLDb';
 
-const error = function(err) {
+function error(err) {
   console.log(err);
   return assert.fail(JSON.stringify(err));
-};
+}
 
 describe('WebSQLDb', function() {
   this.timeout(5000);

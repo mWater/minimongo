@@ -1,3 +1,5 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 // Utilities for db handling
 import _ from 'lodash';
 
@@ -157,7 +159,7 @@ export function createUid() {
    });
 }
 
-var processNearOperator = function(selector, list) {
+function processNearOperator(selector, list) {
   for (var key in selector) {
     var value = selector[key];
     if ((value != null) && value['$near']) {
@@ -196,10 +198,10 @@ var processNearOperator = function(selector, list) {
     }
   }
   return list;
-};
+}
 
 // Very simple polygon check. Assumes that is a square
-const pointInPolygon = function(point, polygon) {
+function pointInPolygon(point, polygon) {
   // Check that first == last
   if (!_.isEqual(_.first(polygon.coordinates[0]), _.last(polygon.coordinates[0]))) {
     throw new Error("First must equal last");
@@ -223,10 +225,10 @@ const pointInPolygon = function(point, polygon) {
     return false;
   }
   return true;
-};
+}
 
 // From http://www.movable-type.co.uk/scripts/latlong.html
-var getDistanceFromLatLngInM = function(lat1, lng1, lat2, lng2) {
+function getDistanceFromLatLngInM(lat1, lng1, lat2, lng2) {
   const R = 6371000; // Radius of the earth in m
   const dLat = deg2rad(lat2 - lat1); // deg2rad below
   const dLng = deg2rad(lng2 - lng1);
@@ -234,11 +236,13 @@ var getDistanceFromLatLngInM = function(lat1, lng1, lat2, lng2) {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const d = R * c; // Distance in m
   return d;
-};
+}
 
-var deg2rad = deg => deg * (Math.PI / 180);
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
+}
 
-var processGeoIntersectsOperator = function(selector, list) {
+function processGeoIntersectsOperator(selector, list) {
   for (var key in selector) {
     const value = selector[key];
     if ((value != null) && value['$geoIntersects']) {
@@ -261,4 +265,4 @@ var processGeoIntersectsOperator = function(selector, list) {
   }
 
   return list;
-};
+}

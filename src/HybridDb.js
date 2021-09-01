@@ -1,3 +1,5 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
 
 Database which caches locally in a localDb but pulls results
@@ -8,7 +10,7 @@ ultimately from a RemoteDb
 let HybridDb;
 import _ from 'lodash';
 import { processFind } from './utils';
-import utils from './utils';
+import * as utils from './utils';
 
 // Bridges a local and remote database, querying from the local first and then 
 // getting the remote. Also uploads changes from local to remote.
@@ -40,7 +42,7 @@ export default HybridDb = class HybridDb {
   upload(success, error) {
     const cols = _.values(this.collections);
 
-    var uploadCols = function(cols, success, error) {
+    function uploadCols(cols, success, error) {
       const col = _.first(cols);
       if (col) {
         return col.upload(() => uploadCols(_.rest(cols), success, error)
@@ -48,7 +50,8 @@ export default HybridDb = class HybridDb {
       } else {
         return success();
       }
-    };
+    }
+
     return uploadCols(cols, success, error);
   }
 
@@ -147,7 +150,6 @@ class HybridCollection {
     // Get pending removes and upserts immediately to avoid odd race conditions
     return this.localCol.pendingUpserts(upserts => {
       return this.localCol.pendingRemoves(removes => {
-
         const step2 = localData => {
           // Setup remote options
           const remoteOptions = _.cloneDeep(options);
@@ -182,13 +184,14 @@ class HybridCollection {
               // Cache locally
               const cacheSuccess = () => {
                 // Get local data again
-                const localSuccess2 = function(localData2) {
+                function localSuccess2(localData2) {
                   // Check if different or not interim
                   if (!options.interim || !_.isEqual(localData, localData2)) {
                     // Send again
                     return success(localData2);
                   }
-                };
+                }
+
                 return this.localCol.find(selector, options).fetch(localSuccess2, error);
               };
 
@@ -272,13 +275,13 @@ class HybridCollection {
           return this.remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError);
         };
 
-        const localSuccess = function(localData) {
+        function localSuccess(localData) {
           // If interim, return data immediately
           if (options.interim) {
             success(localData);
           }
           return step2(localData);
-        };
+        }
 
         // Always get local data first
         return this.localCol.find(selector, options).fetch(localSuccess, error);

@@ -1,8 +1,10 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 import chai from 'chai';
 const {
   assert
 } = chai;
-import utils from "../src/utils";
+import * as utils from "../src/utils";
 import db_queries from "./db_queries";
 import db_caching from "./db_caching";
 import _ from 'lodash';

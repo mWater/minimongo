@@ -1,3 +1,5 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 import _ from 'lodash';
 import chai from 'chai';
 const {
@@ -10,9 +12,9 @@ import HybridDb from "../src/HybridDb";
 import db_queries from "./db_queries";
 
 // Note: Assumes local db is synchronous!
-const fail = function() {
+function fail() {
   throw new Error("failed");
-};
+}
 
 describe('HybridDb', function() {
   before(function(done) {

@@ -1,3 +1,5 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 let WebSQLDb;
 import _ from 'lodash';
 import async from 'async';
@@ -6,7 +8,7 @@ import { processFind } from './utils';
 import { compileSort } from './selector';
 
 // Do nothing callback for success
-const doNothing = function() {  };
+function doNothing() {  }
 
 export default WebSQLDb = class WebSQLDb {
   constructor(options, success, error) {

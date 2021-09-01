@@ -1,12 +1,14 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 let WebSQLDb;
 import _ from 'lodash';
 import async from 'async';
-import utils from './utils';
+import * as utils from './utils';
 import { processFind } from './utils';
 import { compileSort } from './selector';
 
 // Do nothing callback for success
-const doNothing = function() {  };
+function doNothing() {  }
 
 // WebSQLDb adapter for minimongo DB
 // Supports sqlite plugin, if available and specified in option as {storage: 'sqlite'}

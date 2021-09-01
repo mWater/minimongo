@@ -1,13 +1,15 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 import _ from 'lodash';
 import chai from 'chai';
 const {
   assert
 } = chai;
 
-const error = function(err) {
+function error(err) {
   console.log(err);
   return assert.fail(JSON.stringify(err));
-};
+}
 
 // Runs queries on @col which must be a collection (with a:<string>, b:<integer>, c:<json>, geo:<geojson>, stringarr: <json array of strings>)
 // When present:
@@ -660,4 +662,4 @@ export default function() {
       });
     });
   });
-};
+}

@@ -1,3 +1,5 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 import _ from 'lodash';
 import sha1 from 'js-sha1';
 import { compileSort } from './selector';
@@ -76,7 +78,7 @@ export function decodeResponse(encodedResponse, clientRows, sort) {
   return serverRows;
 }
 
-var hashRows = function(rows) {
+function hashRows(rows) {
   const hash = sha1.create();
   for (let row of _.sortBy(rows, "_id")) {
     hash.update(row._id + ":" + (row._rev || "") + "|");
@@ -84,4 +86,4 @@ var hashRows = function(rows) {
   
   // 80 bits is enough for uniqueness
   return hash.hex().substr(0, 20);
-};
+}

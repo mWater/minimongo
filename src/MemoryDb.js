@@ -1,7 +1,9 @@
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 let MemoryDb;
 import _ from 'lodash';
 import async from 'async';
-import utils from './utils';
+import * as utils from './utils';
 import { processFind } from './utils';
 import { compileSort } from './selector';
 
@@ -34,7 +36,6 @@ export default MemoryDb = class MemoryDb {
 // Stores data in memory
 class Collection {
   constructor(name, options) {
-    this._applySafety = this._applySafety.bind(this);
     this.name = name;
 
     this.items = {};
@@ -78,7 +79,7 @@ class Collection {
   }
 
   // Applies safety (either freezing or cloning to object or array)
-  _applySafety(items) {
+  _applySafety = items => {
     if (!items) {
       return items;
     }
@@ -94,7 +95,7 @@ class Collection {
     }
 
     throw new Error(`Unsupported safety ${this.options.safety}`);
-  }
+  };
 
   upsert(docs, bases, success, error) {
     let items;
