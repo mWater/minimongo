@@ -1,20 +1,10 @@
-// TODO: This file was created by bulk-decaffeinate.
-// Sanity-check the conversion and remove this comment.
-/*
-
-Database which caches locally in a localDb but pulls results
-ultimately from a RemoteDb
-
-*/
-
-let HybridDb
 import _ from "lodash"
 import { processFind } from "./utils"
 import * as utils from "./utils"
 
 // Bridges a local and remote database, querying from the local first and then
 // getting the remote. Also uploads changes from local to remote.
-export default HybridDb = class HybridDb {
+export default class HybridDb {
   constructor(localDb: any, remoteDb: any) {
     this.localDb = localDb
     this.remoteDb = remoteDb
@@ -52,7 +42,7 @@ export default HybridDb = class HybridDb {
         return col.upload(
           () => uploadCols(_.rest(cols), success, error),
           (err: any) => error(err)
-        );
+        )
       } else {
         return success()
       }
@@ -91,7 +81,7 @@ class HybridCollection {
       fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    };
+    }
   }
 
   // Finds one row.
@@ -128,7 +118,7 @@ class HybridCollection {
           // If nothing found, always report it, as interim find doesn't return null
           return success(null)
         }
-      }, error);
+      }, error)
     }
 
     // If interim or shortcut, get local first
@@ -149,7 +139,7 @@ class HybridCollection {
           return step2(localDoc)
         },
         error
-      );
+      )
     } else {
       return step2()
     }
@@ -208,7 +198,9 @@ class HybridCollection {
               }
 
               // Exclude any recent upserts/removes to prevent race condition
-              const cacheOptions = _.extend({}, options, { exclude: removes.concat(_.map(upserts, (u: any) => u.doc._id)) })
+              const cacheOptions = _.extend({}, options, {
+                exclude: removes.concat(_.map(upserts, (u: any) => u.doc._id))
+              })
               return this.localCol.cache(remoteData, selector, cacheOptions, cacheSuccess, error)
             } else {
               // Remove local remotes
@@ -303,15 +295,15 @@ class HybridCollection {
 
         // Always get local data first
         return this.localCol.find(selector, options).fetch(localSuccess, error)
-      }, error);
-    }, error);
+      }, error)
+    }, error)
   }
 
   upsert(docs: any, bases: any, success: any, error: any) {
     let items
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
-    return this.localCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), (result: any) => success?.(docs), error);
+    return this.localCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), (result: any) => success?.(docs), error)
   }
 
   remove(id: any, success: any, error: any) {
@@ -385,7 +377,7 @@ class HybridCollection {
               return error(err)
             }
           }
-        );
+        )
       } else {
         return success()
       }
@@ -419,7 +411,7 @@ class HybridCollection {
             }
           },
           error
-        );
+        )
       } else {
         return success()
       }
@@ -435,10 +427,10 @@ class HybridCollection {
       return uploadUpserts(
         upserts,
         () => {
-          return this.localCol.pendingRemoves((removes: any) => uploadRemoves(removes, success, error), error);
+          return this.localCol.pendingRemoves((removes: any) => uploadRemoves(removes, success, error), error)
         },
         error
-      );
-    }, error);
+      )
+    }, error)
   }
 }

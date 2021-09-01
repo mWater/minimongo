@@ -60,7 +60,7 @@ var builtinConverters = [
       }
       return _.any(builtinConverters, function (converter: any) {
         return converter.matchJSONValue(obj)
-      });
+      })
     },
     toJSONValue: function (obj: any) {
       var newObj = {}

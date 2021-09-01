@@ -1,6 +1,3 @@
-// TODO: This file was created by bulk-decaffeinate.
-// Sanity-check the conversion and remove this comment.
-let RemoteDb
 import _ from "lodash"
 import $ from "jquery"
 import async from "async"
@@ -8,7 +5,7 @@ import * as utils from "./utils"
 import jQueryHttpClient from "./jQueryHttpClient"
 import * as quickfind from "./quickfind"
 
-export default RemoteDb = class RemoteDb {
+export default class RemoteDb {
   // Url must have trailing /, can be an arrau of URLs
   // useQuickFind enables the quickfind protocol for finds
   // usePostFind enables POST for find
@@ -207,9 +204,9 @@ class Collection {
             return success(response)
           },
           error
-        );
+        )
       }
-    };
+    }
   }
 
   // error is called with jqXHR
@@ -243,7 +240,7 @@ class Collection {
         }
       },
       error
-    );
+    )
   }
 
   // error is called with jqXHR
@@ -282,7 +279,7 @@ class Collection {
               return error(err)
             }
           }
-        );
+        )
       } else {
         return this.httpClient(
           "POST",
@@ -301,7 +298,7 @@ class Collection {
               return error(err)
             }
           }
-        );
+        )
       }
     } else {
       // POST if no base, PATCH otherwise
@@ -317,7 +314,7 @@ class Collection {
               return error(err)
             }
           }
-        );
+        )
       } else {
         return this.httpClient(
           "POST",
@@ -330,7 +327,7 @@ class Collection {
               return error(err)
             }
           }
-        );
+        )
       }
     }
   }
@@ -349,6 +346,6 @@ class Collection {
       } else {
         return error(err)
       }
-    });
+    })
   }
 }

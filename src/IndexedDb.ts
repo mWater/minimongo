@@ -1,6 +1,3 @@
-// TODO: This file was created by bulk-decaffeinate.
-// Sanity-check the conversion and remove this comment.
-let IndexedDb
 import _ from "lodash"
 import async from "async"
 import IDBStore from "idb-wrapper"
@@ -9,7 +6,7 @@ import { processFind } from "./utils"
 import { compileSort } from "./selector"
 
 // Create a database backed by IndexedDb. options must contain namespace: <string to uniquely identify database>
-export default IndexedDb = class IndexedDb {
+export default class IndexedDb {
   constructor(options: any, success: any, error: any) {
     this.collections = {}
 
@@ -73,7 +70,7 @@ export default IndexedDb = class IndexedDb {
         }
       },
       { index: "col", keyRange: this.store.makeKeyRange({ only: name }), onError: error }
-    );
+    )
   }
 
   getCollectionNames() {
@@ -93,7 +90,7 @@ class Collection {
       fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    };
+    }
   }
 
   findOne(selector: any, options: any, success: any, error: any) {
@@ -105,7 +102,7 @@ class Collection {
       if (success != null) {
         return success(results.length > 0 ? results[0] : null)
       }
-    }, error);
+    }, error)
   }
 
   _findFetch(selector: any, options: any, success: any, error: any) {
@@ -119,7 +116,7 @@ class Collection {
         }
       },
       { index: "col", keyRange: this.store.makeKeyRange({ only: this.name }), onError: error }
-    );
+    )
   }
 
   upsert(docs: any, bases: any, success: any, error: any) {
@@ -163,7 +160,7 @@ class Collection {
         )
       },
       error
-    );
+    )
   }
 
   remove(id: any, success: any, error: any) {
@@ -176,7 +173,7 @@ class Collection {
             return this.remove(row._id, () => cb(), cb)
           },
           () => success()
-        );
+        )
       }, error)
       return
     }
@@ -204,7 +201,7 @@ class Collection {
         },
         error
       )
-    });
+    })
   }
 
   cache(docs: any, selector: any, options: any, success: any, error: any) {
@@ -276,8 +273,8 @@ class Collection {
             }
           },
           error
-        );
-      }, error);
+        )
+      }, error)
     }
 
     if (docs.length === 0) {
@@ -318,7 +315,7 @@ class Collection {
         }
       },
       error
-    );
+    )
   }
 
   pendingUpserts(success: any, error: any) {
@@ -333,7 +330,7 @@ class Collection {
         }
       },
       { index: "col-state", keyRange: this.store.makeKeyRange({ only: [this.name, "upserted"] }), onError: error }
-    );
+    )
   }
 
   pendingRemoves(success: any, error: any) {
@@ -344,7 +341,7 @@ class Collection {
         }
       },
       { index: "col-state", keyRange: this.store.makeKeyRange({ only: [this.name, "removed"] }), onError: error }
-    );
+    )
   }
 
   resolveUpserts(upserts: any, success: any, error: any) {
@@ -387,7 +384,7 @@ class Collection {
         }
       },
       error
-    );
+    )
   }
 
   resolveRemove(id: any, success: any, error: any) {
@@ -412,7 +409,7 @@ class Collection {
           error
         )
       }
-    });
+    })
   }
 
   // Add but do not overwrite or record as upsert
@@ -458,7 +455,7 @@ class Collection {
         }
       },
       error
-    );
+    )
   }
 
   // Add but do not overwrite upsert/removed and do not record as upsert
@@ -515,7 +512,7 @@ class Collection {
         }
       },
       error
-    );
+    )
   }
 
   uncache(selector: any, success: any, error: any) {
@@ -544,7 +541,7 @@ class Collection {
         }
       },
       { index: "col", keyRange: this.store.makeKeyRange({ only: this.name }), onError: error }
-    );
+    )
   }
 
   uncacheList(ids: any, success: any, error: any) {
@@ -576,6 +573,6 @@ class Collection {
         }
       },
       { index: "col", keyRange: this.store.makeKeyRange({ only: this.name }), onError: error }
-    );
+    )
   }
 }

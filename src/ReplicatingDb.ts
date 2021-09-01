@@ -1,6 +1,3 @@
-// TODO: This file was created by bulk-decaffeinate.
-// Sanity-check the conversion and remove this comment.
-let ReplicatingDb
 import _ from "lodash"
 import * as utils from "./utils"
 import { compileSort } from "./selector"
@@ -8,7 +5,7 @@ import { compileSort } from "./selector"
 // Replicates data into a both a master and a replica db. Assumes both are identical at start
 // and then only uses master for finds and does all changes to both
 // Warning: removing a collection removes it from the underlying master and replica!
-export default ReplicatingDb = class ReplicatingDb {
+export default class ReplicatingDb {
   constructor(masterDb: any, replicaDb: any) {
     this.collections = {}
 
@@ -70,10 +67,10 @@ class Collection {
             return success(docs)
           },
           error
-        );
+        )
       },
       error
-    );
+    )
   }
 
   remove(id: any, success: any, error: any) {
@@ -206,7 +203,7 @@ class Collection {
           }
         })
       })
-    }, error);
+    }, error)
   }
 
   pendingUpserts(success: any, error: any) {

@@ -65,7 +65,7 @@ export function autoselectLocalDb(options: any, success: any, error: any) {
       console.log("Failed to create IndexedDb: " + (err ? err.message : undefined))
       // Create memory db instead
       return new MemoryDb(options, success)
-    });
+    })
   }
 
   // Use WebSQL in Android, Chrome,  Opera, Blackberry if supports it
@@ -80,8 +80,8 @@ export function autoselectLocalDb(options: any, success: any, error: any) {
           console.log("Failed to create IndexedDb: " + (err ? err.message : undefined))
           // Create memory db instead
           return new MemoryDb(options, success)
-        });
-      });
+        })
+      })
     } else {
       // Fallback to IndexedDb
       console.log("Selecting IndexedDb for browser as WebSQL not supported")
@@ -89,7 +89,7 @@ export function autoselectLocalDb(options: any, success: any, error: any) {
         console.log("Failed to create IndexedDb: " + (err ? err.message : undefined))
         // Create memory db instead
         return new MemoryDb(options, success)
-      });
+      })
     }
   }
 
@@ -100,7 +100,7 @@ export function autoselectLocalDb(options: any, success: any, error: any) {
       console.log("Failed to create IndexedDb: " + (err ? err.message : undefined))
       // Create memory db instead
       return new MemoryDb(options, success)
-    });
+    })
   }
 
   // Use Local Storage otherwise
@@ -169,16 +169,16 @@ export function cloneLocalDb(fromDb: any, toDb: any, success: any, error: any) {
                         )
                       },
                       cb
-                    );
-                  }, cb);
+                    )
+                  }, cb)
                 },
                 cb
-              );
-            }, cb);
+              )
+            }, cb)
           },
           cb
-        );
-      }, cb);
+        )
+      }, cb)
     },
     (err: any) => {
       if (err) {
@@ -187,7 +187,7 @@ export function cloneLocalDb(fromDb: any, toDb: any, success: any, error: any) {
 
       return success()
     }
-  );
+  )
 }
 
 // Clone a local database collection's caches, pending upserts and removes from one database to another
@@ -224,16 +224,16 @@ export function cloneLocalCollection(fromCol: any, toCol: any, success: any, err
                     }
                     return success()
                   }
-                );
-              }, error);
+                )
+              }, error)
             },
             error
-          );
-        }, error);
+          )
+        }, error)
       },
       error
-    );
-  }, error);
+    )
+  }, error)
 }
 
 // Processes a find with sorting and filtering and limiting
@@ -334,7 +334,7 @@ export function filterFields(items: any, fields = {}) {
 
       return item
     }
-  });
+  })
 }
 
 // Creates a unique identifier string
@@ -343,7 +343,7 @@ export function createUid() {
     const r = (Math.random() * 16) | 0
     const v = c === "x" ? r : (r & 0x3) | 0x8
     return v.toString(16)
-  });
+  })
 }
 
 function processNearOperator(selector: any, list: any) {

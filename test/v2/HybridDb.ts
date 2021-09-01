@@ -49,7 +49,7 @@ export default HybridDb = class HybridDb {
         return col.upload(
           () => uploadCols(_.rest(cols), success, error),
           (err: any) => error(err)
-        );
+        )
       } else {
         return success()
       }
@@ -85,7 +85,7 @@ class HybridCollection {
       fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    };
+    }
   }
 
   // options.mode defaults to "hybrid".
@@ -128,7 +128,7 @@ class HybridCollection {
                 } else if (!localDoc) {
                   return success(null)
                 }
-              });
+              })
             }
 
             const docs = remoteDoc ? [remoteDoc] : []
@@ -146,7 +146,7 @@ class HybridCollection {
           return this.remoteCol.findOne(selector, _.omit(options, "fields"), remoteSuccess, remoteError)
         },
         error
-      );
+      )
     } else if (mode === "remote") {
       // If _id specified, use remote findOne
       if (selector._id) {
@@ -166,8 +166,8 @@ class HybridCollection {
               }
 
               return success(remoteData)
-            });
-          }, error);
+            })
+          }, error)
         }
 
         // Get remote response
@@ -195,7 +195,7 @@ class HybridCollection {
               }
             }
           }
-        );
+        )
       }
     } else {
       throw new Error("Unknown mode")
@@ -261,8 +261,8 @@ class HybridCollection {
             }
 
             return success(data)
-          });
-        });
+          })
+        })
       }
 
       const remoteError = (err: any) => {
@@ -292,7 +292,7 @@ class HybridCollection {
         }
       },
       error
-    );
+    )
   }
 
   remove(id: any, success: any, error: any) {
@@ -365,7 +365,7 @@ class HybridCollection {
               return error(err)
             }
           }
-        );
+        )
       } else {
         return success()
       }
@@ -399,7 +399,7 @@ class HybridCollection {
             }
           },
           error
-        );
+        )
       } else {
         return success()
       }
@@ -410,10 +410,10 @@ class HybridCollection {
       return uploadUpserts(
         upserts,
         () => {
-          return this.localCol.pendingRemoves((removes: any) => uploadRemoves(removes, success, error), error);
+          return this.localCol.pendingRemoves((removes: any) => uploadRemoves(removes, success, error), error)
         },
         error
-      );
-    }, error);
+      )
+    }, error)
   }
 }

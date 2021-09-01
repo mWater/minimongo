@@ -64,9 +64,9 @@ class Collection {
           if (error) {
             return error(jqXHR)
           }
-        });
+        })
       }
-    };
+    }
   }
 
   // error is called with jqXHR
@@ -97,7 +97,7 @@ class Collection {
       if (error) {
         return error(jqXHR)
       }
-    });
+    })
   }
 
   // error is called with jqXHR
@@ -128,7 +128,7 @@ class Collection {
       if (error) {
         return error(jqXHR)
       }
-    });
+    })
   }
 
   // error is called with jqXHR
@@ -146,6 +146,6 @@ class Collection {
       } else if (error) {
         return error(jqXHR)
       }
-    });
+    })
   }
 }

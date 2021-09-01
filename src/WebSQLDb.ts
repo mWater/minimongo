@@ -1,6 +1,3 @@
-// TODO: This file was created by bulk-decaffeinate.
-// Sanity-check the conversion and remove this comment.
-let WebSQLDb
 import _ from "lodash"
 import async from "async"
 import * as utils from "./utils"
@@ -12,7 +9,7 @@ function doNothing() {}
 
 // WebSQLDb adapter for minimongo DB
 // Supports sqlite plugin, if available and specified in option as {storage: 'sqlite'}
-export default WebSQLDb = class WebSQLDb {
+export default class WebSQLDb {
   constructor(options: any, success: any, error: any) {
     this.collections = {}
 
@@ -85,26 +82,28 @@ PRIMARY KEY (col, id));`,
       }
     }
 
-    const migrateToV1 = (tx: any) => tx.executeSql(
-      `\
+    const migrateToV1 = (tx: any) =>
+      tx.executeSql(
+        `\
 CREATE TABLE docs (
 col TEXT NOT NULL,
 id TEXT NOT NULL,
 state TEXT NOT NULL,
 doc TEXT,
 PRIMARY KEY (col, id));`,
-      [],
-      doNothing,
-      (tx: any, err: any) => error(err)
-    )
+        [],
+        doNothing,
+        (tx: any, err: any) => error(err)
+      )
 
-    const migrateToV2 = (tx: any) => tx.executeSql(
-      `\
+    const migrateToV2 = (tx: any) =>
+      tx.executeSql(
+        `\
 ALTER TABLE docs ADD COLUMN base TEXT;`,
-      [],
-      doNothing,
-      (tx: any, err: any) => error(err)
-    )
+        [],
+        doNothing,
+        (tx: any, err: any) => error(err)
+      )
 
     // Check if at v2 version
     const checkV2 = () => {
@@ -151,7 +150,7 @@ ALTER TABLE docs ADD COLUMN base TEXT;`,
     return this.db.transaction(
       (tx: any) => tx.executeSql("DELETE FROM docs WHERE col = ?", [name], success, (tx: any, err: any) => error(err)),
       error
-    );
+    )
   }
 
   getCollectionNames() {
@@ -171,7 +170,7 @@ class Collection {
       fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    };
+    }
   }
 
   findOne(selector: any, options: any, success: any, error: any) {
@@ -183,7 +182,7 @@ class Collection {
       if (success != null) {
         return success(results.length > 0 ? results[0] : null)
       }
-    }, error);
+    }, error)
   }
 
   _findFetch(selector: any, options: any, success: any, error: any) {
@@ -208,8 +207,8 @@ class Collection {
           }
         },
         (tx: any, err: any) => error(err)
-      );
-    }, error);
+      )
+    }, error)
   }
 
   upsert(docs: any, bases: any, success: any, error: any) {
@@ -244,7 +243,7 @@ class Collection {
                 return callback()
               },
               (tx: any, err: any) => error(err)
-            );
+            )
           },
           () => {
             return (() => {
@@ -271,9 +270,9 @@ class Collection {
                 )
               }
               return result
-            })();
+            })()
           }
-        );
+        )
       },
       error,
       function () {
@@ -281,7 +280,7 @@ class Collection {
           return success(docs)
         }
       }
-    );
+    )
   }
 
   remove(id: any, success: any, error: any) {
@@ -294,7 +293,7 @@ class Collection {
             return this.remove(row._id, () => cb(), cb)
           },
           () => success()
-        );
+        )
       }, error)
       return
     }
@@ -319,7 +318,7 @@ class Collection {
                 }
               },
               (tx: any, err: any) => error(err)
-            );
+            )
           } else {
             return tx.executeSql(
               "INSERT INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)",
@@ -330,12 +329,12 @@ class Collection {
                 }
               },
               (tx: any, err: any) => error(err)
-            );
+            )
           }
         },
         (tx: any, err: any) => error(err)
-      );
-    }, error);
+      )
+    }, error)
   }
 
   cache(docs: any, selector: any, options: any, success: any, error: any) {
@@ -369,7 +368,7 @@ class Collection {
                     [this.name, doc._id, "cached", JSON.stringify(doc)],
                     () => callback(),
                     (tx: any, err: any) => error(err)
-                  );
+                  )
                 } else {
                   return callback()
                 }
@@ -378,7 +377,7 @@ class Collection {
               }
             },
             (tx: any, err: any) => error(err)
-          );
+          )
         },
         (err: any) => {
           let sort: any
@@ -432,13 +431,13 @@ class Collection {
                           [this.name, result._id],
                           () => callback(),
                           (tx: any, err: any) => error(err)
-                        );
+                        )
                       } else {
                         return callback()
                       }
                     },
                     (tx: any, err: any) => error(err)
-                  );
+                  )
                 },
                 function (err: any) {
                   if (err != null) {
@@ -451,12 +450,12 @@ class Collection {
                     return success()
                   }
                 }
-              );
-            }, error);
-          }, error);
+              )
+            }, error)
+          }, error)
         }
-      );
-    }, error);
+      )
+    }, error)
   }
 
   pendingUpserts(success: any, error: any) {
@@ -478,8 +477,8 @@ class Collection {
           }
         },
         (tx: any, err: any) => error(err)
-      );
-    }, error);
+      )
+    }, error)
   }
 
   pendingRemoves(success: any, error: any) {
@@ -501,8 +500,8 @@ class Collection {
           }
         },
         (tx: any, err: any) => error(err)
-      );
-    }, error);
+      )
+    }, error)
   }
 
   resolveUpserts(upserts: any, success: any, error: any) {
@@ -543,7 +542,7 @@ class Collection {
               }
             },
             (tx: any, err: any) => error(err)
-          );
+          )
         },
         function (err: any) {
           if (err) {
@@ -555,8 +554,8 @@ class Collection {
             return success()
           }
         }
-      );
-    }, error);
+      )
+    }, error)
   }
 
   resolveRemove(id: any, success: any, error: any) {
@@ -575,8 +574,8 @@ class Collection {
           }
         },
         (tx: any, err: any) => error(err)
-      );
-    }, error);
+      )
+    }, error)
   }
 
   // Add but do not overwrite or record as upsert
@@ -605,13 +604,13 @@ class Collection {
                   [this.name, doc._id, "cached", JSON.stringify(doc)],
                   () => callback(),
                   (tx: any, err: any) => error(err)
-                );
+                )
               } else {
                 return callback()
               }
             },
             (tx: any, err: any) => error(err)
-          );
+          )
         },
         (err: any) => {
           if (err) {
@@ -624,8 +623,8 @@ class Collection {
             }
           }
         }
-      );
-    }, error);
+      )
+    }, error)
   }
 
   // Add but do not overwrite upsert/removed and do not record as upsert
@@ -657,7 +656,7 @@ class Collection {
                     [this.name, doc._id, "cached", JSON.stringify(doc)],
                     () => callback(),
                     (tx: any, err: any) => callback(err)
-                  );
+                  )
                 } else {
                   return callback()
                 }
@@ -666,7 +665,7 @@ class Collection {
               }
             },
             (tx: any, err: any) => callback(err)
-          );
+          )
         },
         (err: any) => {
           if (err) {
@@ -679,8 +678,8 @@ class Collection {
             }
           }
         }
-      );
-    }, error);
+      )
+    }, error)
   }
 
   uncache(selector: any, success: any, error: any) {
@@ -714,7 +713,7 @@ class Collection {
                 [this.name, id],
                 () => callback(),
                 (tx: any, err: any) => error(err)
-              );
+              )
             },
             (err: any) => {
               if (err) {
@@ -727,11 +726,11 @@ class Collection {
                 }
               }
             }
-          );
+          )
         },
         (tx: any, err: any) => error(err)
-      );
-    }, error);
+      )
+    }, error)
   }
 
   uncacheList(ids: any, success: any, error: any) {
@@ -749,7 +748,7 @@ class Collection {
             [this.name, id],
             () => callback(),
             (tx: any, err: any) => error(err)
-          );
+          )
         },
         (err: any) => {
           if (err) {
@@ -762,7 +761,7 @@ class Collection {
             }
           }
         }
-      );
-    }, error);
+      )
+    }, error)
   }
 }

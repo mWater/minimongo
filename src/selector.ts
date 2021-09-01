@@ -59,8 +59,8 @@ var compileValueSelector = function (valueSelector: any) {
     return function (value: any) {
       return _anyIfArray(value, function (x: any) {
         return x == null // undefined or null
-      });
-    };
+      })
+    }
   }
 
   // Selector is a non-null primitive (and not an array or RegExp either).
@@ -68,8 +68,8 @@ var compileValueSelector = function (valueSelector: any) {
     return function (value: any) {
       return _anyIfArray(value, function (x: any) {
         return x === valueSelector
-      });
-    };
+      })
+    }
   }
 
   if (valueSelector instanceof RegExp) {
@@ -77,8 +77,8 @@ var compileValueSelector = function (valueSelector: any) {
       if (value === undefined) return false
       return _anyIfArray(value, function (x: any) {
         return valueSelector.test(x)
-      });
-    };
+      })
+    }
   }
 
   // Arrays match either identical arrays or arrays that contain it as a value.
@@ -87,8 +87,8 @@ var compileValueSelector = function (valueSelector: any) {
       if (!isArray(value)) return false
       return _anyIfArrayPlus(value, function (x: any) {
         return LocalCollection._f._equal(valueSelector, x)
-      });
-    };
+      })
+    }
   }
 
   // It's an object, but not an array or regexp.
@@ -101,8 +101,8 @@ var compileValueSelector = function (valueSelector: any) {
     return function (value: any) {
       return _.all(operatorFunctions, function (f: any) {
         return f(value)
-      });
-    };
+      })
+    }
   }
 
   // It's a literal; compare value (or element of value array) directly to the
@@ -110,8 +110,8 @@ var compileValueSelector = function (valueSelector: any) {
   return function (value: any) {
     return _anyIfArray(value, function (x: any) {
       return LocalCollection._f._equal(valueSelector, x)
-    });
-  };
+    })
+  }
 }
 
 // XXX can factor out common logic below
@@ -122,8 +122,8 @@ var LOGICAL_OPERATORS = {
     return function (doc: any) {
       return _.all(subSelectorFunctions, function (f: any) {
         return f(doc)
-      });
-    };
+      })
+    }
   },
 
   $or: function (subSelector: any) {
@@ -132,8 +132,8 @@ var LOGICAL_OPERATORS = {
     return function (doc: any) {
       return _.any(subSelectorFunctions, function (f: any) {
         return f(doc)
-      });
-    };
+      })
+    }
   },
 
   $nor: function (subSelector: any) {
@@ -142,8 +142,8 @@ var LOGICAL_OPERATORS = {
     return function (doc: any) {
       return _.all(subSelectorFunctions, function (f: any) {
         return !f(doc)
-      });
-    };
+      })
+    }
   },
 
   $where: function (selectorValue: any) {
@@ -152,7 +152,7 @@ var LOGICAL_OPERATORS = {
     }
     return function (doc: any) {
       return selectorValue.call(doc)
-    };
+    }
   }
 }
 
@@ -170,9 +170,9 @@ var VALUE_OPERATORS = {
 
         return _.any(operand, function (operandElt: any) {
           return LocalCollection._f._equal(operandElt, x)
-        });
-      });
-    };
+        })
+      })
+    }
   },
 
   $all: function (operand: any) {
@@ -182,49 +182,49 @@ var VALUE_OPERATORS = {
       return _.all(operand, function (operandElt: any) {
         return _.any(value, function (valueElt: any) {
           return LocalCollection._f._equal(operandElt, valueElt)
-        });
-      });
-    };
+        })
+      })
+    }
   },
 
   $lt: function (operand: any) {
     return function (value: any) {
       return _anyIfArray(value, function (x: any) {
         return LocalCollection._f._cmp(x, operand) < 0
-      });
-    };
+      })
+    }
   },
 
   $lte: function (operand: any) {
     return function (value: any) {
       return _anyIfArray(value, function (x: any) {
         return LocalCollection._f._cmp(x, operand) <= 0
-      });
-    };
+      })
+    }
   },
 
   $gt: function (operand: any) {
     return function (value: any) {
       return _anyIfArray(value, function (x: any) {
         return LocalCollection._f._cmp(x, operand) > 0
-      });
-    };
+      })
+    }
   },
 
   $gte: function (operand: any) {
     return function (value: any) {
       return _anyIfArray(value, function (x: any) {
         return LocalCollection._f._cmp(x, operand) >= 0
-      });
-    };
+      })
+    }
   },
 
   $ne: function (operand: any) {
     return function (value: any) {
       return !_anyIfArrayPlus(value, function (x: any) {
         return LocalCollection._f._equal(x, operand)
-      });
-    };
+      })
+    }
   },
 
   $nin: function (operand: any) {
@@ -234,13 +234,13 @@ var VALUE_OPERATORS = {
       // Field doesn't exist, so it's not-in operand
       if (value === undefined) return true
       return !inFunction(value)
-    };
+    }
   },
 
   $exists: function (operand: any) {
     return function (value: any) {
       return operand === (value !== undefined)
-    };
+    }
   },
 
   $mod: function (operand: any) {
@@ -249,14 +249,14 @@ var VALUE_OPERATORS = {
     return function (value: any) {
       return _anyIfArray(value, function (x: any) {
         return x % divisor === remainder
-      });
-    };
+      })
+    }
   },
 
   $size: function (operand: any) {
     return function (value: any) {
       return isArray(value) && operand === value.length
-    };
+    }
   },
 
   $type: function (operand: any) {
@@ -267,8 +267,8 @@ var VALUE_OPERATORS = {
       // arrays as elements according to the Mongo docs.
       return _anyIfArray(value, function (x: any) {
         return LocalCollection._f._type(x) === operand
-      });
-    };
+      })
+    }
   },
 
   $regex: function (operand: any, options: any) {
@@ -291,15 +291,15 @@ var VALUE_OPERATORS = {
       if (value === undefined) return false
       return _anyIfArray(value, function (x: any) {
         return operand.test(x)
-      });
-    };
+      })
+    }
   },
 
   $options: function (operand: any) {
     // evaluation happens at the $regex function above
     return function (value: any) {
       return true
-    };
+    }
   },
 
   $elemMatch: function (operand: any) {
@@ -308,29 +308,29 @@ var VALUE_OPERATORS = {
       if (!isArray(value)) return false
       return _.any(value, function (x: any) {
         return matcher(x)
-      });
-    };
+      })
+    }
   },
 
   $not: function (operand: any) {
     var matcher = compileValueSelector(operand)
     return function (value: any) {
       return !matcher(value)
-    };
+    }
   },
 
   $near: function (operand: any) {
     // Always returns true. Must be handled in post-filter/sort/limit
     return function (value: any) {
       return true
-    };
+    }
   },
 
   $geoIntersects: function (operand: any) {
     // Always returns true. Must be handled in post-filter/sort/limit
     return function (value: any) {
       return true
-    };
+    }
   }
 }
 
@@ -551,7 +551,7 @@ LocalCollection._makeLookupFunction = function (key: any) {
     // https://github.com/mongodb/mongo/blob/master/jstests/array_match2.js
     if (!isArray(firstLevel) || nextIsNumeric) firstLevel = [firstLevel]
     return Array.prototype.concat.apply([], _.map(firstLevel, lookupRest))
-  };
+  }
 }
 
 // The main compilation function for a given selector.
@@ -579,8 +579,8 @@ var compileDocumentSelector = function (docSelector: any) {
   return function (doc: any) {
     return _.all(perKeySelectors, function (f: any) {
       return f(doc)
-    });
-  };
+    })
+  }
 }
 
 // Given a selector, return a function that takes one argument, a
@@ -591,13 +591,13 @@ LocalCollection._compileSelector = function (selector: any) {
   if (selector instanceof Function)
     return function (doc: any) {
       return selector.call(doc)
-    };
+    }
 
   // shorthand -- scalars match _id
   if (LocalCollection._selectorIsId(selector)) {
     return function (doc: any) {
       return EJSON.equals(doc._id, selector)
-    };
+    }
   }
 
   // protect against dangerous selectors.  falsey and {_id: falsey} are both
@@ -606,7 +606,7 @@ LocalCollection._compileSelector = function (selector: any) {
   if (!selector || ("_id" in selector && !selector._id))
     return function (doc: any) {
       return false
-    };
+    }
 
   // Top level can't be an array or true or binary.
   if (typeof selector === "boolean" || isArray(selector) || EJSON.isBinary(selector))
@@ -705,7 +705,7 @@ LocalCollection._compileSort = function (spec: any) {
       if (compare !== 0) return specPart.ascending ? compare : -compare
     }
     return 0
-  };
+  }
 }
 
 exports.compileDocumentSelector = compileDocumentSelector

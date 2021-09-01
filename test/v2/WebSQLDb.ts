@@ -26,18 +26,19 @@ export default WebSQLDb = class WebSQLDb {
       return error("Failed to create database")
     }
 
-    const createTables = (tx: any) => tx.executeSql(
-      `\
+    const createTables = (tx: any) =>
+      tx.executeSql(
+        `\
 CREATE TABLE IF NOT EXISTS docs (
 col TEXT NOT NULL,
 id TEXT NOT NULL,
 state TEXT NOT NULL,
 doc TEXT,
 PRIMARY KEY (col, id));`,
-      [],
-      doNothing,
-      error
-    )
+        [],
+        doNothing,
+        error
+      )
 
     // Create tables
     this.db.transaction(createTables, error, () => {
@@ -61,7 +62,10 @@ PRIMARY KEY (col, id));`,
     delete this.collections[name]
 
     // Remove all documents of collection
-    return this.db.transaction((tx: any) => tx.executeSql("DELETE FROM docs WHERE col = ?", [name], success, error), error);
+    return this.db.transaction(
+      (tx: any) => tx.executeSql("DELETE FROM docs WHERE col = ?", [name], success, error),
+      error
+    )
   }
 }
 
@@ -77,7 +81,7 @@ class Collection {
       fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    };
+    }
   }
 
   findOne(selector: any, options: any, success: any, error: any) {
@@ -89,7 +93,7 @@ class Collection {
       if (success != null) {
         return success(results.length > 0 ? results[0] : null)
       }
-    }, error);
+    }, error)
   }
 
   _findFetch(selector: any, options: any, success: any, error: any) {
@@ -114,8 +118,8 @@ class Collection {
           }
         },
         error
-      );
-    }, error);
+      )
+    }, error)
   }
 
   upsert(doc: any, success: any, error: any) {
@@ -158,7 +162,7 @@ class Collection {
           return success(doc)
         }
       }
-    );
+    )
   }
 
   remove(id: any, success: any, error: any) {
@@ -197,8 +201,8 @@ class Collection {
           }
         },
         error
-      );
-    }, error);
+      )
+    }, error)
   }
 
   cache(docs: any, selector: any, options: any, success: any, error: any) {
@@ -236,7 +240,7 @@ class Collection {
             },
             callback,
             error
-          );
+          )
         },
         (err: any) => {
           let sort: any
@@ -286,7 +290,7 @@ class Collection {
                     },
                     callback,
                     error
-                  );
+                  )
                 },
                 function (err: any) {
                   if (err != null) {
@@ -299,12 +303,12 @@ class Collection {
                     return success()
                   }
                 }
-              );
-            }, error);
-          }, error);
+              )
+            }, error)
+          }, error)
         }
-      );
-    }, error);
+      )
+    }, error)
   }
 
   pendingUpserts(success: any, error: any) {
@@ -326,8 +330,8 @@ class Collection {
           }
         },
         error
-      );
-    }, error);
+      )
+    }, error)
   }
 
   pendingRemoves(success: any, error: any) {
@@ -349,8 +353,8 @@ class Collection {
           }
         },
         error
-      );
-    }, error);
+      )
+    }, error)
   }
 
   resolveUpsert(doc: any, success: any, error: any) {
@@ -394,7 +398,7 @@ class Collection {
               }
             },
             error
-          );
+          )
         },
         function (err: any) {
           if (err) {
@@ -406,8 +410,8 @@ class Collection {
             return success(doc)
           }
         }
-      );
-    }, error);
+      )
+    }, error)
   }
 
   resolveRemove(id: any, success: any, error: any) {
@@ -427,7 +431,7 @@ class Collection {
         },
         error
       )
-    }, error);
+    }, error)
   }
 
   // Add but do not overwrite or record as upsert
@@ -459,8 +463,8 @@ class Collection {
           }
         },
         error
-      );
-    }, error);
+      )
+    }, error)
   }
 
   // Add but do not overwrite upsert/removed and do not record as upsert
@@ -501,7 +505,7 @@ class Collection {
           }
         },
         error
-      );
-    }, error);
+      )
+    }, error)
   }
 }

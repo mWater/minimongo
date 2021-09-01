@@ -15,8 +15,8 @@ function error(err: any) {
 }
 
 describe("ReplicatingDb", function () {
-  describe("passes queries", function(this: any) {
-    before(function(
+  describe("passes queries", function (this: any) {
+    before(function (
       this: any,
       this: any,
       this: any,
@@ -49,8 +49,8 @@ describe("ReplicatingDb", function () {
     return db_queries.call(this)
   })
 
-  describe("passes caching", function(this: any) {
-    before(function(
+  describe("passes caching", function (this: any) {
+    before(function (
       this: any,
       this: any,
       this: any,
@@ -83,8 +83,8 @@ describe("ReplicatingDb", function () {
     return db_caching.call(this)
   })
 
-  return describe("passes caching with find on replica", function(this: any) {
-    before(function(
+  return describe("passes caching with find on replica", function (this: any) {
+    before(function (
       this: any,
       this: any,
       this: any,
@@ -126,5 +126,5 @@ describe("ReplicatingDb", function () {
     })
 
     return db_caching.call(this)
-  });
+  })
 })

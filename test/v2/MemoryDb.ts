@@ -48,7 +48,7 @@ class Collection {
       fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    };
+    }
   }
 
   findOne(selector: any, options: any, success: any, error: any) {
@@ -60,7 +60,7 @@ class Collection {
       if (success != null) {
         return success(results.length > 0 ? results[0] : null)
       }
-    }, error);
+    }, error)
   }
 
   _findFetch(selector: any, options: any, success: any, error: any) {
@@ -135,7 +135,7 @@ class Collection {
       if (success != null) {
         return success()
       }
-    }, error);
+    }, error)
   }
 
   pendingUpserts(success: any) {

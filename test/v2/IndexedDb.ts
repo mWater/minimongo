@@ -66,7 +66,7 @@ export default IndexedDb = class IndexedDb {
         }
       },
       { index: "col", keyRange: this.store.makeKeyRange({ only: name }), onError: error }
-    );
+    )
   }
 }
 
@@ -82,7 +82,7 @@ class Collection {
       fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    };
+    }
   }
 
   findOne(selector: any, options: any, success: any, error: any) {
@@ -94,7 +94,7 @@ class Collection {
       if (success != null) {
         return success(results.length > 0 ? results[0] : null)
       }
-    }, error);
+    }, error)
   }
 
   _findFetch(selector: any, options: any, success: any, error: any) {
@@ -108,7 +108,7 @@ class Collection {
         }
       },
       { index: "col", keyRange: this.store.makeKeyRange({ only: this.name }), onError: error }
-    );
+    )
   }
 
   upsert(doc: any, success: any, error: any) {
@@ -167,7 +167,7 @@ class Collection {
         },
         error
       )
-    });
+    })
   }
 
   cache(docs: any, selector: any, options: any, success: any, error: any) {
@@ -229,8 +229,8 @@ class Collection {
             }
           },
           error
-        );
-      }, error);
+        )
+      }, error)
     }
 
     if (docs.length === 0) {
@@ -267,7 +267,7 @@ class Collection {
         }
       },
       error
-    );
+    )
   }
 
   pendingUpserts(success: any, error: any) {
@@ -278,7 +278,7 @@ class Collection {
         }
       },
       { index: "col-state", keyRange: this.store.makeKeyRange({ only: [this.name, "upserted"] }), onError: error }
-    );
+    )
   }
 
   pendingRemoves(success: any, error: any) {
@@ -289,7 +289,7 @@ class Collection {
         }
       },
       { index: "col-state", keyRange: this.store.makeKeyRange({ only: [this.name, "removed"] }), onError: error }
-    );
+    )
   }
 
   resolveUpsert(doc: any, success: any, error: any) {
@@ -333,7 +333,7 @@ class Collection {
         }
       },
       error
-    );
+    )
   }
 
   resolveRemove(id: any, success: any, error: any) {
@@ -350,7 +350,7 @@ class Collection {
           error
         )
       }
-    });
+    })
   }
 
   // Add but do not overwrite or record as upsert
@@ -376,7 +376,7 @@ class Collection {
           return success()
         }
       }
-    });
+    })
   }
 
   // Add but do not overwrite upsert/removed and do not record as upsert
@@ -413,6 +413,6 @@ class Collection {
           return success()
         }
       }
-    });
+    })
   }
 }

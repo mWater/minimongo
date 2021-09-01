@@ -1,13 +1,10 @@
-// TODO: This file was created by bulk-decaffeinate.
-// Sanity-check the conversion and remove this comment.
-let LocalStorageDb
 import _ from "lodash"
 import async from "async"
 import * as utils from "./utils"
 import { processFind } from "./utils"
 import { compileSort } from "./selector"
 
-export default LocalStorageDb = class LocalStorageDb {
+export default class LocalStorageDb {
   constructor(options: any, success: any) {
     this.collections = {}
 
@@ -116,7 +113,7 @@ class Collection {
       fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    };
+    }
   }
 
   findOne(selector: any, options: any, success: any, error: any) {
@@ -128,7 +125,7 @@ class Collection {
       if (success != null) {
         return success(results.length > 0 ? results[0] : null)
       }
-    }, error);
+    }, error)
   }
 
   _findFetch(selector: any, options: any, success: any, error: any) {
@@ -179,7 +176,7 @@ class Collection {
             return this.remove(row._id, () => cb(), cb)
           },
           () => success()
-        );
+        )
       }, error)
       return
     }
@@ -286,7 +283,7 @@ class Collection {
       if (success != null) {
         return success()
       }
-    }, error);
+    }, error)
   }
 
   pendingUpserts(success: any) {
