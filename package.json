@@ -4,7 +4,7 @@
   "description": "Client-side mongo database with server sync over http",
   "main": "lib/index.js",
   "scripts": {
-    "build": "node_modules/build-library/build",
+    "build": "node_modules/build-library/build ; npx gulp build",
     "test": "gulp test"
   },
   "repository": {
