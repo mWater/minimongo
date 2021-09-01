@@ -1,8 +1,8 @@
 // TODO: This file was created by bulk-decaffeinate.
 // Sanity-check the conversion and remove this comment.
-import _ from 'lodash';
-import sha1 from 'js-sha1';
-import { compileSort } from './selector';
+import _ from "lodash"
+import sha1 from "js-sha1"
+import { compileSort } from "./selector"
 
 /*
 
@@ -25,65 +25,65 @@ Interaction of sort, limit and fields:
 */
 
 // Characters to shard by of _id
-const shardLength = 2;
+const shardLength = 2
 
 // Given an array of client rows, create a summary of which rows are present
 export function encodeRequest(clientRows) {
   // Index by shard
-  clientRows = _.groupBy(clientRows, row => row._id.substr(0, shardLength));
+  clientRows = _.groupBy(clientRows, (row) => row._id.substr(0, shardLength))
 
   // Hash each one
-  const request = _.mapValues(clientRows, rows => hashRows(rows));
+  const request = _.mapValues(clientRows, (rows) => hashRows(rows))
 
-  return request;
+  return request
 }
 
-// Given an array of rows on the server and an encoded request, create encoded response 
+// Given an array of rows on the server and an encoded request, create encoded response
 export function encodeResponse(serverRows, encodedRequest) {
   // Index by shard
-  serverRows = _.groupBy(serverRows, row => row._id.substr(0, shardLength));
+  serverRows = _.groupBy(serverRows, (row) => row._id.substr(0, shardLength))
 
   // Include any that are in encoded request but not present
   for (let key in encodedRequest) {
-    const value = encodedRequest[key];
+    const value = encodedRequest[key]
     if (!serverRows[key]) {
-      serverRows[key] = [];
+      serverRows[key] = []
     }
   }
 
   // Only keep ones where different from encoded request
-  const response = _.pick(serverRows, (rows, key) => hashRows(rows) !== encodedRequest[key]);
+  const response = _.pick(serverRows, (rows, key) => hashRows(rows) !== encodedRequest[key])
 
-  return response;
+  return response
 }
 
 // Given encoded response and array of client rows, create array of server rows
 export function decodeResponse(encodedResponse, clientRows, sort) {
   // Index by shard
-  clientRows = _.groupBy(clientRows, row => row._id.substr(0, shardLength));
+  clientRows = _.groupBy(clientRows, (row) => row._id.substr(0, shardLength))
 
   // Overwrite with response
-  let serverRows = _.extend(clientRows, encodedResponse);
+  let serverRows = _.extend(clientRows, encodedResponse)
 
   // Flatten
-  serverRows = _.flatten(_.values(serverRows));
+  serverRows = _.flatten(_.values(serverRows))
 
   // Sort
   if (sort) {
-    serverRows.sort(compileSort(sort));
+    serverRows.sort(compileSort(sort))
   } else {
-    serverRows = _.sortBy(serverRows, "_id");
+    serverRows = _.sortBy(serverRows, "_id")
   }
 
-  return serverRows;
+  return serverRows
 }
 
 function hashRows(rows) {
-  const hash = sha1.create();
+  const hash = sha1.create()
   for (let row of _.sortBy(rows, "_id")) {
-    hash.update(row._id + ":" + (row._rev || "") + "|");
+    hash.update(row._id + ":" + (row._rev || "") + "|")
   }
-  
+
   // 80 bits is enough for uniqueness
-  return hash.hex().substr(0, 20);
+  return hash.hex().substr(0, 20)
 }
