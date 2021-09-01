@@ -9,17 +9,26 @@ import _ from "lodash"
 import async from "async"
 import OldWebSQLDb from "./v2/WebSQLDb"
 
-function error(err) {
+function error(err: any) {
   console.log(err)
   return assert.fail(JSON.stringify(err))
 }
 
-describe("WebSQLDb", function () {
+describe("WebSQLDb", function(this: any) {
   this.timeout(5000)
 
-  before(function (done) {
-    this.reset = (done) => {
-      return new WebSQLDb({ namespace: "db.scratch" }, (db) => {
+  before(function(
+    this: any,
+    this: any,
+    this: any,
+    this: any,
+    this: any,
+    this: any,
+    this: any,
+    done: any
+  ) {
+    this.reset = (done: any) => {
+      return new WebSQLDb({ namespace: "db.scratch" }, (db: any) => {
         this.db = db
         return this.db.removeCollection("scratch", () => {
           return this.db.addCollection("scratch", () => {
@@ -27,85 +36,82 @@ describe("WebSQLDb", function () {
             return done()
           })
         })
-      })
+      });
     }
     return this.reset(done)
   })
 
-  describe("passes queries", function () {
+  describe("passes queries", function(this: any) {
     return db_queries.call(this)
   })
 
-  return describe("passes caching", function () {
+  return describe("passes caching", function(this: any) {
     return db_caching.call(this)
-  })
+  });
 })
 
 describe("WebSQLDb storage", function () {
-  beforeEach(function (done) {
-    return new WebSQLDb({ namespace: "db.scratch" }, (db) => {
+  beforeEach(function(this: any, this: any, this: any, done: any) {
+    return new WebSQLDb({ namespace: "db.scratch" }, (db: any) => {
       this.db = db
       return this.db.removeCollection("scratch", () => {
         return this.db.addCollection("scratch", () => done())
       })
-    })
+    });
   })
 
-  it("retains items", function (done) {
+  it("retains items", function(this: any, done: any) {
     return this.db.scratch.upsert(
       { _id: "1", a: "Alice" },
       () =>
-        new WebSQLDb({ namespace: "db.scratch" }, (db2) =>
-          db2.addCollection("scratch", () =>
-            db2.scratch.find({}).fetch(function (results) {
-              assert.equal(results[0].a, "Alice")
-              return done()
-            })
-          )
+        new WebSQLDb({ namespace: "db.scratch" }, (db2: any) => db2.addCollection("scratch", () =>
+          db2.scratch.find({}).fetch(function (results: any) {
+            assert.equal(results[0].a, "Alice")
+            return done()
+          })
         )
-    )
+        )
+    );
   })
 
-  it("retains upserts", function (done) {
+  it("retains upserts", function(this: any, this: any, done: any) {
     return this.db.scratch.cacheOne({ _id: "1", a: "Alice" }, () => {
       return this.db.scratch.upsert(
         { _id: "1", a: "Bob" },
         () =>
-          new WebSQLDb({ namespace: "db.scratch" }, (db2) =>
-            db2.addCollection("scratch", () =>
-              db2.scratch.find({}).fetch(function (results) {
-                assert.deepEqual(results, [{ _id: "1", a: "Bob" }])
-                return db2.scratch.pendingUpserts(function (upserts) {
-                  assert.equal(upserts.length, 1)
-                  assert.deepEqual(upserts[0].doc, { _id: "1", a: "Bob" })
-                  assert.deepEqual(upserts[0].base, { _id: "1", a: "Alice" })
-                  return done()
-                })
-              })
-            )
+          new WebSQLDb({ namespace: "db.scratch" }, (db2: any) => db2.addCollection("scratch", () =>
+            db2.scratch.find({}).fetch(function (results: any) {
+              assert.deepEqual(results, [{ _id: "1", a: "Bob" }])
+              return db2.scratch.pendingUpserts(function (upserts: any) {
+                assert.equal(upserts.length, 1)
+                assert.deepEqual(upserts[0].doc, { _id: "1", a: "Bob" })
+                assert.deepEqual(upserts[0].base, { _id: "1", a: "Alice" })
+                return done()
+              });
+            })
           )
-      )
-    })
+          )
+      );
+    });
   })
 
-  it("retains removes", function (done) {
+  it("retains removes", function(this: any, this: any, done: any) {
     return this.db.scratch.seed({ _id: "1", a: "Alice" }, () => {
       return this.db.scratch.remove(
         "1",
         () =>
-          new WebSQLDb({ namespace: "db.scratch" }, (db2) =>
-            db2.addCollection("scratch", () =>
-              db2.scratch.pendingRemoves(function (removes) {
-                assert.deepEqual(removes, ["1"])
-                return done()
-              })
-            )
+          new WebSQLDb({ namespace: "db.scratch" }, (db2: any) => db2.addCollection("scratch", () =>
+            db2.scratch.pendingRemoves(function (removes: any) {
+              assert.deepEqual(removes, ["1"])
+              return done()
+            })
           )
-      )
-    })
+          )
+      );
+    });
   })
 
-  return it("inserts 1000 documents at once", function (done) {
+  return it("inserts 1000 documents at once", function(this: any, this: any, this: any, done: any) {
     this.timeout(30000)
     const docs = []
     for (let i = 0; i < 1000; i++) {
@@ -115,14 +121,14 @@ describe("WebSQLDb storage", function () {
     return this.db.scratch.upsert(
       docs,
       () => {
-        return this.db.scratch.find({}).fetch(function (results) {
+        return this.db.scratch.find({}).fetch(function (results: any) {
           assert.equal(results.length, 1000)
           return done()
-        }, error)
+        }, error);
       },
       error
-    )
-  })
+    );
+  });
 })
 
 // describe 'WebSQLDb upgrade', ->

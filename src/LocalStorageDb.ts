@@ -8,7 +8,7 @@ import { processFind } from "./utils"
 import { compileSort } from "./selector"
 
 export default LocalStorageDb = class LocalStorageDb {
-  constructor(options, success) {
+  constructor(options: any, success: any) {
     this.collections = {}
 
     if (options && options.namespace && window.localStorage) {
@@ -20,7 +20,7 @@ export default LocalStorageDb = class LocalStorageDb {
     }
   }
 
-  addCollection(name, success, error) {
+  addCollection(name: any, success: any, error: any) {
     // Set namespace for collection
     let namespace
     if (this.namespace) {
@@ -35,7 +35,7 @@ export default LocalStorageDb = class LocalStorageDb {
     }
   }
 
-  removeCollection(name, success, error) {
+  removeCollection(name: any, success: any, error: any) {
     if (this.namespace && window.localStorage) {
       const keys = []
       for (let i = 0, end = window.localStorage.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
@@ -64,7 +64,7 @@ export default LocalStorageDb = class LocalStorageDb {
 
 // Stores data in memory, optionally backed by local storage
 class Collection {
-  constructor(name, namespace) {
+  constructor(name: any, namespace: any) {
     this.name = name
     this.namespace = namespace
 
@@ -111,34 +111,34 @@ class Collection {
     return (this.removes = _.object(_.pluck(removeItems, "_id"), removeItems))
   }
 
-  find(selector, options) {
+  find(selector: any, options: any) {
     return {
-      fetch: (success, error) => {
+      fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    }
+    };
   }
 
-  findOne(selector, options, success, error) {
+  findOne(selector: any, options: any, success: any, error: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
 
-    return this.find(selector, options).fetch(function (results) {
+    return this.find(selector, options).fetch(function (results: any) {
       if (success != null) {
         return success(results.length > 0 ? results[0] : null)
       }
-    }, error)
+    }, error);
   }
 
-  _findFetch(selector, options, success, error) {
+  _findFetch(selector: any, options: any, success: any, error: any) {
     // Deep clone to prevent modification
     if (success != null) {
       return success(processFind(_.cloneDeep(_.values(this.items)), selector, options))
     }
   }
 
-  upsert(docs, bases, success, error) {
+  upsert(docs: any, bases: any, success: any, error: any) {
     let items
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
@@ -169,17 +169,17 @@ class Collection {
     }
   }
 
-  remove(id, success, error) {
+  remove(id: any, success: any, error: any) {
     // Special case for filter-type remove
     if (_.isObject(id)) {
-      this.find(id).fetch((rows) => {
+      this.find(id).fetch((rows: any) => {
         return async.each(
           rows,
-          (row, cb) => {
+          (row: any, cb: any) => {
             return this.remove(row._id, () => cb(), cb)
           },
           () => success()
-        )
+        );
       }, error)
       return
     }
@@ -197,21 +197,21 @@ class Collection {
     }
   }
 
-  _putItem(doc) {
+  _putItem(doc: any) {
     this.items[doc._id] = doc
     if (this.namespace) {
       return (window.localStorage[this.itemNamespace + doc._id] = JSON.stringify(doc))
     }
   }
 
-  _deleteItem(id) {
+  _deleteItem(id: any) {
     delete this.items[id]
     if (this.namespace) {
       return window.localStorage.removeItem(this.itemNamespace + id)
     }
   }
 
-  _putUpsert(upsert) {
+  _putUpsert(upsert: any) {
     this.upserts[upsert.doc._id] = upsert
     if (this.namespace) {
       window.localStorage[this.namespace + "upserts"] = JSON.stringify(_.keys(this.upserts))
@@ -219,30 +219,30 @@ class Collection {
     }
   }
 
-  _deleteUpsert(id) {
+  _deleteUpsert(id: any) {
     delete this.upserts[id]
     if (this.namespace) {
       return (window.localStorage[this.namespace + "upserts"] = JSON.stringify(_.keys(this.upserts)))
     }
   }
 
-  _putRemove(doc) {
+  _putRemove(doc: any) {
     this.removes[doc._id] = doc
     if (this.namespace) {
       return (window.localStorage[this.namespace + "removes"] = JSON.stringify(_.values(this.removes)))
     }
   }
 
-  _deleteRemove(id) {
+  _deleteRemove(id: any) {
     delete this.removes[id]
     if (this.namespace) {
       return (window.localStorage[this.namespace + "removes"] = JSON.stringify(_.values(this.removes)))
     }
   }
 
-  cache(docs, selector, options, success, error) {
+  cache(docs: any, selector: any, options: any, success: any, error: any) {
     // Add all non-local that are not upserted or removed
-    let sort
+    let sort: any
     for (let doc of docs) {
       // Exclude any excluded _ids from being cached/uncached
       if (options && options.exclude && options.exclude.includes(doc._id)) {
@@ -259,7 +259,7 @@ class Collection {
     }
 
     // Perform query, removing rows missing in docs from local db
-    return this.find(selector, options).fetch((results) => {
+    return this.find(selector, options).fetch((results: any) => {
       for (let result of results) {
         if (!docsMap[result._id] && !_.has(this.upserts, result._id)) {
           // Exclude any excluded _ids from being cached/uncached
@@ -286,18 +286,18 @@ class Collection {
       if (success != null) {
         return success()
       }
-    }, error)
+    }, error);
   }
 
-  pendingUpserts(success) {
+  pendingUpserts(success: any) {
     return success(_.values(this.upserts))
   }
 
-  pendingRemoves(success) {
+  pendingRemoves(success: any) {
     return success(_.pluck(this.removes, "_id"))
   }
 
-  resolveUpserts(upserts, success) {
+  resolveUpserts(upserts: any, success: any) {
     for (let upsert of upserts) {
       if (this.upserts[upsert.doc._id]) {
         // Only safely remove upsert if item is unchanged
@@ -315,7 +315,7 @@ class Collection {
     }
   }
 
-  resolveRemove(id, success) {
+  resolveRemove(id: any, success: any) {
     this._deleteRemove(id)
     if (success != null) {
       return success()
@@ -323,7 +323,7 @@ class Collection {
   }
 
   // Add but do not overwrite or record as upsert
-  seed(docs, success) {
+  seed(docs: any, success: any) {
     if (!_.isArray(docs)) {
       docs = [docs]
     }
@@ -339,12 +339,12 @@ class Collection {
   }
 
   // Add but do not overwrite upserts or removes
-  cacheOne(doc, success, error) {
+  cacheOne(doc: any, success: any, error: any) {
     return this.cacheList([doc], success, error)
   }
 
   // Add but do not overwrite upserts or removes
-  cacheList(docs, success) {
+  cacheList(docs: any, success: any) {
     for (let doc of docs) {
       if (!_.has(this.upserts, doc._id) && !_.has(this.removes, doc._id)) {
         const existing = this.items[doc._id]
@@ -360,7 +360,7 @@ class Collection {
     }
   }
 
-  uncache(selector, success, error) {
+  uncache(selector: any, success: any, error: any) {
     const compiledSelector = utils.compileDocumentSelector(selector)
 
     for (let item of _.values(this.items)) {
@@ -374,7 +374,7 @@ class Collection {
     }
   }
 
-  uncacheList(ids, success, error) {
+  uncacheList(ids: any, success: any, error: any) {
     for (let id of ids) {
       if (this.upserts[id] == null) {
         this._deleteItem(id)

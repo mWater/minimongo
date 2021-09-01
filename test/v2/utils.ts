@@ -9,7 +9,7 @@ import { compileDocumentSelector } from "./selector"
 import { compileSort } from "./selector"
 
 // Select appropriate local database, prefering IndexedDb, then WebSQLDb, then LocalStorageDb, then MemoryDb
-export function autoselectLocalDb(options, success, error) {
+export function autoselectLocalDb(options: any, success: any, error: any) {
   // Here due to browserify circularity quirks
   const IndexedDb = require("./IndexedDb")
   const WebSQLDb = require("./WebSQLDb")
@@ -44,7 +44,7 @@ export function autoselectLocalDb(options, success, error) {
 
 // Migrates a local database's pending upserts and removes from one database to another
 // Useful for upgrading from one type of database to another
-export function migrateLocalDb(fromDb, toDb, success, error) {
+export function migrateLocalDb(fromDb: any, toDb: any, success: any, error: any) {
   // Migrate collection using a HybridDb
   // Here due to browserify circularity quirks
   const HybridDb = require("./HybridDb")
@@ -60,7 +60,7 @@ export function migrateLocalDb(fromDb, toDb, success, error) {
 }
 
 // Processes a find with sorting and filtering and limiting
-export function processFind(items, selector, options) {
+export function processFind(items: any, selector: any, options: any) {
   let filtered = _.filter(_.values(items), compileDocumentSelector(selector))
 
   // Handle geospatial operators
@@ -78,7 +78,7 @@ export function processFind(items, selector, options) {
   // Clone to prevent accidental updates, or apply fields if present
   if (options && options.fields) {
     // For each item
-    filtered = _.map(filtered, function (item) {
+    filtered = _.map(filtered, function (item: any) {
       let field, obj, path, pathElem
       item = _.cloneDeep(item)
 
@@ -142,7 +142,7 @@ export function processFind(items, selector, options) {
       }
     })
   } else {
-    filtered = _.map(filtered, (doc) => _.cloneDeep(doc))
+    filtered = _.map(filtered, (doc: any) => _.cloneDeep(doc))
   }
 
   return filtered
@@ -154,10 +154,10 @@ export function createUid() {
     const r = (Math.random() * 16) | 0
     const v = c === "x" ? r : (r & 0x3) | 0x8
     return v.toString(16)
-  })
+  });
 }
 
-function processNearOperator(selector, list) {
+function processNearOperator(selector: any, list: any) {
   for (var key in selector) {
     var value = selector[key]
     if (value != null && value["$near"]) {
@@ -166,10 +166,10 @@ function processNearOperator(selector, list) {
         break
       }
 
-      list = _.filter(list, (doc) => doc[key] && doc[key].type === "Point")
+      list = _.filter(list, (doc: any) => doc[key] && doc[key].type === "Point")
 
       // Get distances
-      let distances = _.map(list, (doc) => ({
+      let distances = _.map(list, (doc: any) => ({
         doc,
 
         distance: getDistanceFromLatLngInM(
@@ -181,14 +181,14 @@ function processNearOperator(selector, list) {
       }))
 
       // Filter non-points
-      distances = _.filter(distances, (item) => item.distance >= 0)
+      distances = _.filter(distances, (item: any) => item.distance >= 0)
 
       // Sort by distance
       distances = _.sortBy(distances, "distance")
 
       // Filter by maxDistance
       if (value["$near"]["$maxDistance"]) {
-        distances = _.filter(distances, (item) => item.distance <= value["$near"]["$maxDistance"])
+        distances = _.filter(distances, (item: any) => item.distance <= value["$near"]["$maxDistance"])
       }
 
       // Limit to 100
@@ -202,7 +202,7 @@ function processNearOperator(selector, list) {
 }
 
 // Very simple polygon check. Assumes that is a square
-function pointInPolygon(point, polygon) {
+function pointInPolygon(this: any, this: any, this: any, this: any, point: any, polygon: any) {
   // Check that first == last
   if (!_.isEqual(_.first(polygon.coordinates[0]), _.last(polygon.coordinates[0]))) {
     throw new Error("First must equal last")
@@ -213,7 +213,7 @@ function pointInPolygon(point, polygon) {
     point.coordinates[0] <
     Math.min.apply(
       this,
-      _.map(polygon.coordinates[0], (coord) => coord[0])
+      _.map(polygon.coordinates[0], (coord: any) => coord[0])
     )
   ) {
     return false
@@ -222,7 +222,7 @@ function pointInPolygon(point, polygon) {
     point.coordinates[1] <
     Math.min.apply(
       this,
-      _.map(polygon.coordinates[0], (coord) => coord[1])
+      _.map(polygon.coordinates[0], (coord: any) => coord[1])
     )
   ) {
     return false
@@ -231,7 +231,7 @@ function pointInPolygon(point, polygon) {
     point.coordinates[0] >
     Math.max.apply(
       this,
-      _.map(polygon.coordinates[0], (coord) => coord[0])
+      _.map(polygon.coordinates[0], (coord: any) => coord[0])
     )
   ) {
     return false
@@ -240,7 +240,7 @@ function pointInPolygon(point, polygon) {
     point.coordinates[1] >
     Math.max.apply(
       this,
-      _.map(polygon.coordinates[0], (coord) => coord[1])
+      _.map(polygon.coordinates[0], (coord: any) => coord[1])
     )
   ) {
     return false
@@ -249,7 +249,7 @@ function pointInPolygon(point, polygon) {
 }
 
 // From http://www.movable-type.co.uk/scripts/latlong.html
-function getDistanceFromLatLngInM(lat1, lng1, lat2, lng2) {
+function getDistanceFromLatLngInM(lat1: any, lng1: any, lat2: any, lng2: any) {
   const R = 6371000 // Radius of the earth in m
   const dLat = deg2rad(lat2 - lat1) // deg2rad below
   const dLng = deg2rad(lng2 - lng1)
@@ -261,11 +261,11 @@ function getDistanceFromLatLngInM(lat1, lng1, lat2, lng2) {
   return d
 }
 
-function deg2rad(deg) {
+function deg2rad(deg: any) {
   return deg * (Math.PI / 180)
 }
 
-function processGeoIntersectsOperator(selector, list) {
+function processGeoIntersectsOperator(selector: any, list: any) {
   for (var key in selector) {
     const value = selector[key]
     if (value != null && value["$geoIntersects"]) {
@@ -275,7 +275,7 @@ function processGeoIntersectsOperator(selector, list) {
       }
 
       // Check within for each
-      list = _.filter(list, function (doc) {
+      list = _.filter(list, function (doc: any) {
         // Reject non-points
         if (!doc[key] || doc[key].type !== "Point") {
           return false

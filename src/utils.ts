@@ -30,7 +30,7 @@ function isLocalStorageSupported() {
 export { compileDocumentSelector }
 
 // Select appropriate local database, prefering IndexedDb, then WebSQLDb, then LocalStorageDb, then MemoryDb
-export function autoselectLocalDb(options, success, error) {
+export function autoselectLocalDb(options: any, success: any, error: any) {
   // Here due to browserify circularity quirks
   const IndexedDb = require("./IndexedDb")
   const WebSQLDb = require("./WebSQLDb")
@@ -61,46 +61,46 @@ export function autoselectLocalDb(options, success, error) {
   // Use IndexedDb for ios, Safari
   if (browser.ios || browser.safari) {
     // Fallback to IndexedDb
-    return new IndexedDb(options, success, (err) => {
+    return new IndexedDb(options, success, (err: any) => {
       console.log("Failed to create IndexedDb: " + (err ? err.message : undefined))
       // Create memory db instead
       return new MemoryDb(options, success)
-    })
+    });
   }
 
   // Use WebSQL in Android, Chrome,  Opera, Blackberry if supports it
   if (browser.android || browser.chrome || browser.opera || browser.blackberry) {
     if (typeof window.openDatabase === "function") {
       console.log("Selecting WebSQLDb for browser")
-      return new WebSQLDb(options, success, (err) => {
+      return new WebSQLDb(options, success, (err: any) => {
         console.log("Failed to create WebSQLDb: " + (err ? err.message : undefined))
 
         // Fallback to IndexedDb
-        return new IndexedDb(options, success, (err) => {
+        return new IndexedDb(options, success, (err: any) => {
           console.log("Failed to create IndexedDb: " + (err ? err.message : undefined))
           // Create memory db instead
           return new MemoryDb(options, success)
-        })
-      })
+        });
+      });
     } else {
       // Fallback to IndexedDb
       console.log("Selecting IndexedDb for browser as WebSQL not supported")
-      return new IndexedDb(options, success, (err) => {
+      return new IndexedDb(options, success, (err: any) => {
         console.log("Failed to create IndexedDb: " + (err ? err.message : undefined))
         // Create memory db instead
         return new MemoryDb(options, success)
-      })
+      });
     }
   }
 
   // Use IndexedDb on Firefox >= 16
   if (browser.firefox && browser.version >= 16) {
     console.log("Selecting IndexedDb for browser")
-    return new IndexedDb(options, success, (err) => {
+    return new IndexedDb(options, success, (err: any) => {
       console.log("Failed to create IndexedDb: " + (err ? err.message : undefined))
       // Create memory db instead
       return new MemoryDb(options, success)
-    })
+    });
   }
 
   // Use Local Storage otherwise
@@ -110,7 +110,7 @@ export function autoselectLocalDb(options, success, error) {
 
 // Migrates a local database's pending upserts and removes from one database to another
 // Useful for upgrading from one type of database to another
-export function migrateLocalDb(fromDb, toDb, success, error) {
+export function migrateLocalDb(fromDb: any, toDb: any, success: any, error: any) {
   // Migrate collection using a HybridDb
   // Here due to browserify circularity quirks
   const HybridDb = require("./HybridDb")
@@ -127,7 +127,7 @@ export function migrateLocalDb(fromDb, toDb, success, error) {
 
 // Clone a local database's caches, pending upserts and removes from one database to another
 // Useful for making a replica
-export function cloneLocalDb(fromDb, toDb, success, error) {
+export function cloneLocalDb(fromDb: any, toDb: any, success: any, error: any) {
   let name
   for (name in fromDb.collections) {
     // TODO Assumes synchronous addCollection
@@ -140,26 +140,26 @@ export function cloneLocalDb(fromDb, toDb, success, error) {
   // First cache all data
   return async.each(
     _.values(fromDb.collections),
-    (fromCol, cb) => {
+    (fromCol: any, cb: any) => {
       const toCol = toDb[fromCol.name]
 
       // Get all items
-      return fromCol.find({}).fetch((items) => {
+      return fromCol.find({}).fetch((items: any) => {
         // Seed items
         return toCol.seed(
           items,
           () => {
             // Copy upserts
-            return fromCol.pendingUpserts((upserts) => {
+            return fromCol.pendingUpserts((upserts: any) => {
               return toCol.upsert(
                 _.pluck(upserts, "doc"),
                 _.pluck(upserts, "base"),
                 () => {
                   // Copy removes
-                  return fromCol.pendingRemoves((removes) => {
+                  return fromCol.pendingRemoves((removes: any) => {
                     return async.eachSeries(
                       removes,
-                      (remove, cb2) => {
+                      (remove: any, cb2: any) => {
                         return toCol.remove(
                           remove,
                           () => {
@@ -169,47 +169,47 @@ export function cloneLocalDb(fromDb, toDb, success, error) {
                         )
                       },
                       cb
-                    )
-                  }, cb)
+                    );
+                  }, cb);
                 },
                 cb
-              )
-            }, cb)
+              );
+            }, cb);
           },
           cb
-        )
-      }, cb)
+        );
+      }, cb);
     },
-    (err) => {
+    (err: any) => {
       if (err) {
         return error(err)
       }
 
       return success()
     }
-  )
+  );
 }
 
 // Clone a local database collection's caches, pending upserts and removes from one database to another
 // Useful for making a replica
-export function cloneLocalCollection(fromCol, toCol, success, error) {
+export function cloneLocalCollection(fromCol: any, toCol: any, success: any, error: any) {
   // Get all items
-  return fromCol.find({}).fetch((items) => {
+  return fromCol.find({}).fetch((items: any) => {
     // Seed items
     return toCol.seed(
       items,
       () => {
         // Copy upserts
-        return fromCol.pendingUpserts((upserts) => {
+        return fromCol.pendingUpserts((upserts: any) => {
           return toCol.upsert(
             _.pluck(upserts, "doc"),
             _.pluck(upserts, "base"),
             () => {
               // Copy removes
-              return fromCol.pendingRemoves((removes) => {
+              return fromCol.pendingRemoves((removes: any) => {
                 return async.eachSeries(
                   removes,
-                  (remove, cb2) => {
+                  (remove: any, cb2: any) => {
                     return toCol.remove(
                       remove,
                       () => {
@@ -218,26 +218,26 @@ export function cloneLocalCollection(fromCol, toCol, success, error) {
                       cb2
                     )
                   },
-                  (err) => {
+                  (err: any) => {
                     if (err) {
                       return error(err)
                     }
                     return success()
                   }
-                )
-              }, error)
+                );
+              }, error);
             },
             error
-          )
-        }, error)
+          );
+        }, error);
       },
       error
-    )
-  }, error)
+    );
+  }, error);
 }
 
 // Processes a find with sorting and filtering and limiting
-export function processFind(items, selector, options) {
+export function processFind(items: any, selector: any, options: any) {
   let filtered = _.filter(items, compileDocumentSelector(selector))
 
   // Handle geospatial operators
@@ -264,14 +264,14 @@ export function processFind(items, selector, options) {
   return filtered
 }
 
-export function filterFields(items, fields = {}) {
+export function filterFields(items: any, fields = {}) {
   // Handle trivial case
   if (_.keys(fields).length === 0) {
     return items
   }
 
   // For each item
-  return _.map(items, function (item) {
+  return _.map(items, function (item: any) {
     let field, obj, path, pathElem
     const newItem = {}
 
@@ -334,7 +334,7 @@ export function filterFields(items, fields = {}) {
 
       return item
     }
-  })
+  });
 }
 
 // Creates a unique identifier string
@@ -343,10 +343,10 @@ export function createUid() {
     const r = (Math.random() * 16) | 0
     const v = c === "x" ? r : (r & 0x3) | 0x8
     return v.toString(16)
-  })
+  });
 }
 
-function processNearOperator(selector, list) {
+function processNearOperator(selector: any, list: any) {
   for (var key in selector) {
     var value = selector[key]
     if (value != null && value["$near"]) {
@@ -355,10 +355,10 @@ function processNearOperator(selector, list) {
         break
       }
 
-      list = _.filter(list, (doc) => doc[key] && doc[key].type === "Point")
+      list = _.filter(list, (doc: any) => doc[key] && doc[key].type === "Point")
 
       // Get distances
-      let distances = _.map(list, (doc) => ({
+      let distances = _.map(list, (doc: any) => ({
         doc,
 
         distance: getDistanceFromLatLngInM(
@@ -370,14 +370,14 @@ function processNearOperator(selector, list) {
       }))
 
       // Filter non-points
-      distances = _.filter(distances, (item) => item.distance >= 0)
+      distances = _.filter(distances, (item: any) => item.distance >= 0)
 
       // Sort by distance
       distances = _.sortBy(distances, "distance")
 
       // Filter by maxDistance
       if (value["$near"]["$maxDistance"]) {
-        distances = _.filter(distances, (item) => item.distance <= value["$near"]["$maxDistance"])
+        distances = _.filter(distances, (item: any) => item.distance <= value["$near"]["$maxDistance"])
       }
 
       // Extract docs
@@ -387,16 +387,16 @@ function processNearOperator(selector, list) {
   return list
 }
 
-function pointInPolygon(point, polygon) {
+function pointInPolygon(point: any, polygon: any) {
   return booleanPointInPolygon(point, polygon)
 }
 
-function polygonIntersection(polygon1, polygon2) {
+function polygonIntersection(polygon1: any, polygon2: any) {
   return intersect(polygon1, polygon2) != null
 }
 
 // From http://www.movable-type.co.uk/scripts/latlong.html
-function getDistanceFromLatLngInM(lat1, lng1, lat2, lng2) {
+function getDistanceFromLatLngInM(lat1: any, lng1: any, lat2: any, lng2: any) {
   const R = 6370986 // Radius of the earth in m
   const dLat = deg2rad(lat2 - lat1) // deg2rad below
   const dLng = deg2rad(lng2 - lng1)
@@ -408,11 +408,11 @@ function getDistanceFromLatLngInM(lat1, lng1, lat2, lng2) {
   return d
 }
 
-function deg2rad(deg) {
+function deg2rad(deg: any) {
   return deg * (Math.PI / 180)
 }
 
-function processGeoIntersectsOperator(selector, list) {
+function processGeoIntersectsOperator(selector: any, list: any) {
   for (var key in selector) {
     const value = selector[key]
     if (value != null && value["$geoIntersects"]) {
@@ -423,7 +423,7 @@ function processGeoIntersectsOperator(selector, list) {
       }
 
       // Check within for each
-      list = _.filter(list, function (doc) {
+      list = _.filter(list, function (doc: any) {
         // Ignore if null
         if (!doc[key]) {
           return false
@@ -456,7 +456,7 @@ function processGeoIntersectsOperator(selector, list) {
 // Tidy up upsert parameters to always be a list of { doc: <doc>, base: <base> },
 // doing basic error checking and making sure that _id is present
 // Returns [items, success, error]
-export function regularizeUpsert(docs, bases, success, error) {
+export function regularizeUpsert(docs: any, bases: any, success: any, error: any) {
   // Handle case of bases not present
   if (_.isFunction(bases)) {
     ;[bases, success, error] = [undefined, bases, success]

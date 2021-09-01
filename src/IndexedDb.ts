@@ -10,7 +10,7 @@ import { compileSort } from "./selector"
 
 // Create a database backed by IndexedDb. options must contain namespace: <string to uniquely identify database>
 export default IndexedDb = class IndexedDb {
-  constructor(options, success, error) {
+  constructor(options: any, success: any, error: any) {
     this.collections = {}
 
     // Create database
@@ -39,7 +39,7 @@ export default IndexedDb = class IndexedDb {
     }
   }
 
-  addCollection(name, success, error) {
+  addCollection(name: any, success: any, error: any) {
     const collection = new Collection(name, this.store)
     this[name] = collection
     this.collections[name] = collection
@@ -48,14 +48,14 @@ export default IndexedDb = class IndexedDb {
     }
   }
 
-  removeCollection(name, success, error) {
+  removeCollection(name: any, success: any, error: any) {
     delete this[name]
     delete this.collections[name]
 
     // Remove all documents
     return this.store.query(
-      (matches) => {
-        const keys = _.map(matches, (m) => [m.col, m.doc._id])
+      (matches: any) => {
+        const keys = _.map(matches, (m: any) => [m.col, m.doc._id])
         if (keys.length > 0) {
           return this.store.removeBatch(
             keys,
@@ -73,7 +73,7 @@ export default IndexedDb = class IndexedDb {
         }
       },
       { index: "col", keyRange: this.store.makeKeyRange({ only: name }), onError: error }
-    )
+    );
   }
 
   getCollectionNames() {
@@ -83,55 +83,55 @@ export default IndexedDb = class IndexedDb {
 
 // Stores data in indexeddb store
 class Collection {
-  constructor(name, store) {
+  constructor(name: any, store: any) {
     this.name = name
     this.store = store
   }
 
-  find(selector, options) {
+  find(selector: any, options: any) {
     return {
-      fetch: (success, error) => {
+      fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    }
+    };
   }
 
-  findOne(selector, options, success, error) {
+  findOne(selector: any, options: any, success: any, error: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
 
-    return this.find(selector, options).fetch(function (results) {
+    return this.find(selector, options).fetch(function (results: any) {
       if (success != null) {
         return success(results.length > 0 ? results[0] : null)
       }
-    }, error)
+    }, error);
   }
 
-  _findFetch(selector, options, success, error) {
+  _findFetch(selector: any, options: any, success: any, error: any) {
     // Get all docs from collection
     return this.store.query(
-      function (matches) {
+      function (matches: any) {
         // Filter removed docs
-        matches = _.filter(matches, (m) => m.state !== "removed")
+        matches = _.filter(matches, (m: any) => m.state !== "removed")
         if (success != null) {
           return success(processFind(_.pluck(matches, "doc"), selector, options))
         }
       },
       { index: "col", keyRange: this.store.makeKeyRange({ only: this.name }), onError: error }
-    )
+    );
   }
 
-  upsert(docs, bases, success, error) {
-    let items
+  upsert(docs: any, bases: any, success: any, error: any) {
+    let items: any
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
     // Get bases
-    const keys = _.map(items, (item) => [this.name, item.doc._id])
+    const keys = _.map(items, (item: any) => [this.name, item.doc._id])
     return this.store.getBatch(
       keys,
-      (records) => {
-        const puts = _.map(items, (item, i) => {
+      (records: any) => {
+        const puts = _.map(items, (item: any, i: any) => {
           // Prefer explicit base
           let base
           if (item.base !== undefined) {
@@ -163,26 +163,26 @@ class Collection {
         )
       },
       error
-    )
+    );
   }
 
-  remove(id, success, error) {
+  remove(id: any, success: any, error: any) {
     // Special case for filter-type remove
     if (_.isObject(id)) {
-      this.find(id).fetch((rows) => {
+      this.find(id).fetch((rows: any) => {
         return async.each(
           rows,
-          (row, cb) => {
+          (row: any, cb: any) => {
             return this.remove(row._id, () => cb(), cb)
           },
           () => success()
-        )
+        );
       }, error)
       return
     }
 
     // Find record
-    return this.store.get([this.name, id], (record) => {
+    return this.store.get([this.name, id], (record: any) => {
       // If not found, create placeholder record
       if (record == null) {
         record = {
@@ -204,13 +204,13 @@ class Collection {
         },
         error
       )
-    })
+    });
   }
 
-  cache(docs, selector, options, success, error) {
+  cache(docs: any, selector: any, options: any, success: any, error: any) {
     const step2 = () => {
       // Rows have been cached, now look for stale ones to remove
-      let sort
+      let sort: any
       const docsMap = _.object(_.pluck(docs, "_id"), docs)
 
       if (options.sort) {
@@ -218,9 +218,9 @@ class Collection {
       }
 
       // Perform query, removing rows missing in docs from local db
-      return this.find(selector, options).fetch((results) => {
-        const removes = []
-        const keys = _.map(results, (result) => [this.name, result._id])
+      return this.find(selector, options).fetch((results: any) => {
+        const removes: any = []
+        const keys = _.map(results, (result: any) => [this.name, result._id])
         if (keys.length === 0) {
           if (success != null) {
             success()
@@ -229,7 +229,7 @@ class Collection {
         }
         return this.store.getBatch(
           keys,
-          (records) => {
+          (records: any) => {
             for (let i = 0, end = records.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
               const record = records[i]
               const result = results[i]
@@ -276,8 +276,8 @@ class Collection {
             }
           },
           error
-        )
-      }, error)
+        );
+      }, error);
     }
 
     if (docs.length === 0) {
@@ -285,13 +285,13 @@ class Collection {
     }
 
     // Create keys to get items
-    const keys = _.map(docs, (doc) => [this.name, doc._id])
+    const keys = _.map(docs, (doc: any) => [this.name, doc._id])
 
     // Create batch of puts
-    const puts = []
+    const puts: any = []
     return this.store.getBatch(
       keys,
-      (records) => {
+      (records: any) => {
         // Add all non-local that are not upserted or removed
         for (let i = 0, end = records.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
           const record = records[i]
@@ -318,13 +318,13 @@ class Collection {
         }
       },
       error
-    )
+    );
   }
 
-  pendingUpserts(success, error) {
+  pendingUpserts(success: any, error: any) {
     return this.store.query(
-      function (matches) {
-        const upserts = _.map(matches, (m) => ({
+      function (matches: any) {
+        const upserts = _.map(matches, (m: any) => ({
           doc: m.doc,
           base: m.base || null
         }))
@@ -333,26 +333,26 @@ class Collection {
         }
       },
       { index: "col-state", keyRange: this.store.makeKeyRange({ only: [this.name, "upserted"] }), onError: error }
-    )
+    );
   }
 
-  pendingRemoves(success, error) {
+  pendingRemoves(success: any, error: any) {
     return this.store.query(
-      function (matches) {
+      function (matches: any) {
         if (success != null) {
           return success(_.pluck(_.pluck(matches, "doc"), "_id"))
         }
       },
       { index: "col-state", keyRange: this.store.makeKeyRange({ only: [this.name, "removed"] }), onError: error }
-    )
+    );
   }
 
-  resolveUpserts(upserts, success, error) {
+  resolveUpserts(upserts: any, success: any, error: any) {
     // Get items
-    const keys = _.map(upserts, (upsert) => [this.name, upsert.doc._id])
+    const keys = _.map(upserts, (upsert: any) => [this.name, upsert.doc._id])
     return this.store.getBatch(
       keys,
-      (records) => {
+      (records: any) => {
         const puts = []
         for (let i = 0, end = upserts.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
           const record = records[i]
@@ -387,11 +387,11 @@ class Collection {
         }
       },
       error
-    )
+    );
   }
 
-  resolveRemove(id, success, error) {
-    return this.store.get([this.name, id], (record) => {
+  resolveRemove(id: any, success: any, error: any) {
+    return this.store.get([this.name, id], (record: any) => {
       // Check if exists
       if (!record) {
         if (success != null) {
@@ -412,23 +412,23 @@ class Collection {
           error
         )
       }
-    })
+    });
   }
 
   // Add but do not overwrite or record as upsert
-  seed(docs, success, error) {
+  seed(docs: any, success: any, error: any) {
     if (!_.isArray(docs)) {
       docs = [docs]
     }
 
     // Create keys to get items
-    const keys = _.map(docs, (doc) => [this.name, doc._id])
+    const keys = _.map(docs, (doc: any) => [this.name, doc._id])
 
     // Create batch of puts
-    const puts = []
+    const puts: any = []
     return this.store.getBatch(
       keys,
-      (records) => {
+      (records: any) => {
         // Add all non-local that are not upserted or removed
         for (let i = 0, end = records.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
           const record = records[i]
@@ -458,23 +458,23 @@ class Collection {
         }
       },
       error
-    )
+    );
   }
 
   // Add but do not overwrite upsert/removed and do not record as upsert
-  cacheOne(doc, success, error) {
+  cacheOne(doc: any, success: any, error: any) {
     return this.cacheList([doc], success, error)
   }
 
-  cacheList(docs, success, error) {
+  cacheList(docs: any, success: any, error: any) {
     // Create keys to get items
-    const keys = _.map(docs, (doc) => [this.name, doc._id])
+    const keys = _.map(docs, (doc: any) => [this.name, doc._id])
 
     // Create batch of puts
-    const puts = []
+    const puts: any = []
     return this.store.getBatch(
       keys,
-      (records) => {
+      (records: any) => {
         for (let i = 0, end = records.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
           let record = records[i]
           const doc = docs[i]
@@ -515,18 +515,18 @@ class Collection {
         }
       },
       error
-    )
+    );
   }
 
-  uncache(selector, success, error) {
+  uncache(selector: any, success: any, error: any) {
     const compiledSelector = utils.compileDocumentSelector(selector)
 
     // Get all docs from collection
     return this.store.query(
-      (matches) => {
+      (matches: any) => {
         // Filter ones to remove
-        matches = _.filter(matches, (m) => m.state === "cached" && compiledSelector(m.doc))
-        const keys = _.map(matches, (m) => [this.name, m.doc._id])
+        matches = _.filter(matches, (m: any) => m.state === "cached" && compiledSelector(m.doc))
+        const keys = _.map(matches, (m: any) => [this.name, m.doc._id])
         if (keys.length > 0) {
           return this.store.removeBatch(
             keys,
@@ -544,10 +544,10 @@ class Collection {
         }
       },
       { index: "col", keyRange: this.store.makeKeyRange({ only: this.name }), onError: error }
-    )
+    );
   }
 
-  uncacheList(ids, success, error) {
+  uncacheList(ids: any, success: any, error: any) {
     const idIndex = _.indexBy(ids)
 
     // Android 2.x requires error callback
@@ -555,10 +555,10 @@ class Collection {
 
     // Get all docs from collection
     return this.store.query(
-      (matches) => {
+      (matches: any) => {
         // Filter ones to remove
-        matches = _.filter(matches, (m) => m.state === "cached" && idIndex[m.doc._id])
-        const keys = _.map(matches, (m) => [this.name, m.doc._id])
+        matches = _.filter(matches, (m: any) => m.state === "cached" && idIndex[m.doc._id])
+        const keys = _.map(matches, (m: any) => [this.name, m.doc._id])
         if (keys.length > 0) {
           return this.store.removeBatch(
             keys,
@@ -576,6 +576,6 @@ class Collection {
         }
       },
       { index: "col", keyRange: this.store.makeKeyRange({ only: this.name }), onError: error }
-    )
+    );
   }
 }

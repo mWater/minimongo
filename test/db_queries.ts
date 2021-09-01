@@ -4,7 +4,7 @@ import _ from "lodash"
 import chai from "chai"
 const { assert } = chai
 
-function error(err) {
+function error(err: any) {
   console.log(err)
   return assert.fail(JSON.stringify(err))
 }
@@ -15,18 +15,18 @@ function error(err) {
 // c.arrint is an array of integer values
 // @reset(done) must truncate the collection
 export default function () {
-  before(function () {
+  before(function(this: any) {
     // Test a filter to return specified rows (in order)
-    return (this.testFilter = function (filter, ids, done) {
-      return this.col.find(filter, { sort: ["_id"] }).fetch(function (results) {
+    return this.testFilter = function (filter: any, ids: any, done: any) {
+      return this.col.find(filter, { sort: ["_id"] }).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ids)
         return done()
-      })
-    })
+      });
+    };
   })
 
   context("With sample rows", function () {
-    beforeEach(function (done) {
+    beforeEach(function(this: any, this: any, this: any, this: any, done: any) {
       return this.reset(() => {
         return this.col.upsert({ _id: "1", a: "Alice", b: 1, c: { d: 1, e: 2 } }, () => {
           return this.col.upsert({ _id: "2", a: "Charlie", b: 2, c: { d: 2, e: 3 } }, () => {
@@ -36,144 +36,144 @@ export default function () {
       })
     })
 
-    it("finds all rows", function (done) {
-      return this.col.find({}).fetch(function (results) {
+    it("finds all rows", function(this: any, done: any) {
+      return this.col.find({}).fetch(function (results: any) {
         assert.equal(results.length, 3)
         return done()
-      })
+      });
     })
 
-    it("finds all rows with options", function (done) {
-      return this.col.find({}, {}).fetch(function (results) {
+    it("finds all rows with options", function(this: any, done: any) {
+      return this.col.find({}, {}).fetch(function (results: any) {
         assert.equal(3, results.length)
         return done()
-      })
+      });
     })
 
-    it("filters by id", function (done) {
+    it("filters by id", function(this: any, done: any) {
       return this.testFilter({ _id: "1" }, ["1"], done)
     })
 
-    it("filters by string", function (done) {
+    it("filters by string", function(this: any, done: any) {
       return this.testFilter({ a: "Alice" }, ["1"], done)
     })
 
-    it("filters by $in string", function (done) {
+    it("filters by $in string", function(this: any, done: any) {
       return this.testFilter({ a: { $in: ["Alice", "Charlie"] } }, ["1", "2"], done)
     })
 
-    it("filters by number", function (done) {
+    it("filters by number", function(this: any, done: any) {
       return this.testFilter({ b: 2 }, ["2"], done)
     })
 
-    it("filters by $in number", function (done) {
+    it("filters by $in number", function(this: any, done: any) {
       return this.testFilter({ b: { $in: [2, 3] } }, ["2", "3"], done)
     })
 
-    it("filters by $regex", function (done) {
+    it("filters by $regex", function(this: any, done: any) {
       return this.testFilter({ a: { $regex: "li" } }, ["1", "2"], done)
     })
 
-    it("filters by $regex case-sensitive", function (done) {
+    it("filters by $regex case-sensitive", function(this: any, done: any) {
       return this.testFilter({ a: { $regex: "A" } }, ["1"], done)
     })
 
-    it("filters by $regex case-insensitive", function (done) {
+    it("filters by $regex case-insensitive", function(this: any, done: any) {
       return this.testFilter({ a: { $regex: "A", $options: "i" } }, ["1", "2"], done)
     })
 
-    it("filters by $or", function (done) {
+    it("filters by $or", function(this: any, done: any) {
       return this.testFilter({ $or: [{ b: 1 }, { b: 2 }] }, ["1", "2"], done)
     })
 
-    it("filters by path", function (done) {
+    it("filters by path", function(this: any, done: any) {
       return this.testFilter({ "c.d": 2 }, ["2"], done)
     })
 
-    it("filters by $ne", function (done) {
+    it("filters by $ne", function(this: any, done: any) {
       return this.testFilter({ b: { $ne: 2 } }, ["1", "3"], done)
     })
 
-    it("filters by $gt", function (done) {
+    it("filters by $gt", function(this: any, done: any) {
       return this.testFilter({ b: { $gt: 1 } }, ["2", "3"], done)
     })
 
-    it("filters by $lt", function (done) {
+    it("filters by $lt", function(this: any, done: any) {
       return this.testFilter({ b: { $lt: 3 } }, ["1", "2"], done)
     })
 
-    it("filters by $gte", function (done) {
+    it("filters by $gte", function(this: any, done: any) {
       return this.testFilter({ b: { $gte: 2 } }, ["2", "3"], done)
     })
 
-    it("filters by $lte", function (done) {
+    it("filters by $lte", function(this: any, done: any) {
       return this.testFilter({ b: { $lte: 2 } }, ["1", "2"], done)
     })
 
-    it("filters by $not", function (done) {
+    it("filters by $not", function(this: any, done: any) {
       return this.testFilter({ b: { $not: { $lt: 3 } } }, ["3"], done)
     })
 
-    it("filters by $or", function (done) {
+    it("filters by $or", function(this: any, done: any) {
       return this.testFilter({ $or: [{ b: 3 }, { b: 1 }] }, ["1", "3"], done)
     })
 
-    it("filters by $exists: true", function (done) {
+    it("filters by $exists: true", function(this: any, done: any) {
       return this.testFilter({ c: { $exists: true } }, ["1", "2"], done)
     })
 
-    it("filters by $exists: false", function (done) {
+    it("filters by $exists: false", function(this: any, done: any) {
       return this.testFilter({ c: { $exists: false } }, ["3"], done)
     })
 
-    it("includes fields", function (done) {
-      return this.col.find({ _id: "1" }, { fields: { a: 1 } }).fetch(function (results) {
+    it("includes fields", function(this: any, done: any) {
+      return this.col.find({ _id: "1" }, { fields: { a: 1 } }).fetch(function (results: any) {
         assert.deepEqual(results[0], { _id: "1", a: "Alice" })
         return done()
-      })
+      });
     })
 
-    it("includes subfields", function (done) {
-      return this.col.find({ _id: "1" }, { fields: { "c.d": 1 } }).fetch(function (results) {
+    it("includes subfields", function(this: any, done: any) {
+      return this.col.find({ _id: "1" }, { fields: { "c.d": 1 } }).fetch(function (results: any) {
         assert.deepEqual(results[0], { _id: "1", c: { d: 1 } })
         return done()
-      })
+      });
     })
 
-    it("ignores non-existent subfields", function (done) {
-      return this.col.find({ _id: "1" }, { fields: { "x.y": 1 } }).fetch(function (results) {
+    it("ignores non-existent subfields", function(this: any, done: any) {
+      return this.col.find({ _id: "1" }, { fields: { "x.y": 1 } }).fetch(function (results: any) {
         assert.deepEqual(results[0], { _id: "1" })
         return done()
-      })
+      });
     })
 
-    it("excludes fields", function (done) {
-      return this.col.find({ _id: "1" }, { fields: { a: 0 } }).fetch(function (results) {
+    it("excludes fields", function(this: any, done: any) {
+      return this.col.find({ _id: "1" }, { fields: { a: 0 } }).fetch(function (results: any) {
         assert.isUndefined(results[0].a)
         assert.equal(results[0].b, 1)
         return done()
-      })
+      });
     })
 
-    it("excludes subfields", function (done) {
-      return this.col.find({ _id: "1" }, { fields: { "c.d": 0 } }).fetch(function (results) {
+    it("excludes subfields", function(this: any, done: any) {
+      return this.col.find({ _id: "1" }, { fields: { "c.d": 0 } }).fetch(function (results: any) {
         assert.deepEqual(results[0].c, { e: 2 })
         return done()
-      })
+      });
     })
 
-    it("finds one row", function (done) {
-      return this.col.findOne({ _id: "2" }, function (result) {
+    it("finds one row", function(this: any, done: any) {
+      return this.col.findOne({ _id: "2" }, function (result: any) {
         assert.equal("Charlie", result.a)
         return done()
-      })
+      });
     })
 
-    it("removes item", function (done) {
+    it("removes item", function(this: any, this: any, done: any) {
       return this.col.remove(
         "2",
         () => {
-          return this.col.find({}).fetch(function (results) {
+          return this.col.find({}).fetch(function (results: any) {
             let needle, needle1
             let result
             assert.equal(2, results.length)
@@ -198,111 +198,111 @@ export default function () {
               })().includes(needle1))
             )
             return done()
-          }, error)
+          }, error);
         },
         error
-      )
+      );
     })
 
-    it("removes non-existent item", function (done) {
+    it("removes non-existent item", function(this: any, this: any, done: any) {
       return this.col.remove("999", () => {
-        return this.col.find({}).fetch(function (results) {
+        return this.col.find({}).fetch(function (results: any) {
           assert.equal(3, results.length)
           return done()
-        })
-      })
+        });
+      });
     })
 
-    it("sorts ascending", function (done) {
-      return this.col.find({}, { sort: ["a"] }).fetch(function (results) {
+    it("sorts ascending", function(this: any, done: any) {
+      return this.col.find({}, { sort: ["a"] }).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["1", "3", "2"])
         return done()
-      })
+      });
     })
 
-    it("sorts descending", function (done) {
-      return this.col.find({}, { sort: [["a", "desc"]] }).fetch(function (results) {
+    it("sorts descending", function(this: any, done: any) {
+      return this.col.find({}, { sort: [["a", "desc"]] }).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["2", "3", "1"])
         return done()
-      })
+      });
     })
 
-    it("limits", function (done) {
-      return this.col.find({}, { sort: ["a"], limit: 2 }).fetch(function (results) {
+    it("limits", function(this: any, done: any) {
+      return this.col.find({}, { sort: ["a"], limit: 2 }).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
         return done()
-      })
+      });
     })
 
-    it("skips", function (done) {
-      return this.col.find({}, { sort: ["a"], skip: 2 }).fetch(function (results) {
+    it("skips", function(this: any, done: any) {
+      return this.col.find({}, { sort: ["a"], skip: 2 }).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["2"])
         return done()
-      })
+      });
     })
 
     // MemoryDb is much faster if we relax this constraint
-    it("fetches independent copies", function (done) {
-      return this.col.findOne({ _id: "2" }, (result1) => {
-        return this.col.findOne({ _id: "2" }, function (result2) {
+    it("fetches independent copies", function(this: any, this: any, done: any) {
+      return this.col.findOne({ _id: "2" }, (result1: any) => {
+        return this.col.findOne({ _id: "2" }, function (result2: any) {
           assert(result1 !== result2)
           return done()
-        })
-      })
+        });
+      });
     })
 
     // MemoryDb is much faster if we relax this constraint
-    it("upsert keeps independent copies", function (done) {
+    it("upsert keeps independent copies", function(this: any, this: any, done: any) {
       const doc = { _id: "2" }
-      return this.col.upsert(doc, (item) => {
+      return this.col.upsert(doc, (item: any) => {
         doc.a = "xyz"
         item.a = "xyz"
-        return this.col.findOne({ _id: "2" }, function (doc2) {
+        return this.col.findOne({ _id: "2" }, function (doc2: any) {
           assert(doc !== doc2)
           assert(doc2.a !== "xyz")
           return done()
-        })
-      })
+        });
+      });
     })
 
-    it("adds _id to rows", function (done) {
-      return this.col.upsert({ a: "1" }, function (item) {
+    it("adds _id to rows", function(this: any, done: any) {
+      return this.col.upsert({ a: "1" }, function (item: any) {
         assert.property(item, "_id")
         assert.lengthOf(item._id, 32)
         return done()
-      })
+      });
     })
 
-    it("returns array if called with array", function (done) {
-      return this.col.upsert([{ a: "1" }], function (items) {
+    it("returns array if called with array", function(this: any, done: any) {
+      return this.col.upsert([{ a: "1" }], function (items: any) {
         assert.equal(items[0].a, "1")
         return done()
-      })
+      });
     })
 
-    it("updates by id", function (done) {
-      return this.col.upsert({ _id: "1", a: "1" }, (item) => {
-        return this.col.upsert({ _id: "1", a: "2", b: 1 }, (item) => {
+    it("updates by id", function(this: any, this: any, this: any, done: any) {
+      return this.col.upsert({ _id: "1", a: "1" }, (item: any) => {
+        return this.col.upsert({ _id: "1", a: "2", b: 1 }, (item: any) => {
           assert.equal(item.a, "2")
 
-          return this.col.find({ _id: "1" }).fetch(function (results) {
+          return this.col.find({ _id: "1" }).fetch(function (results: any) {
             assert.equal(1, results.length, "Should be only one document")
             return done()
-          })
-        })
-      })
+          });
+        });
+      });
     })
 
-    return it("call upsert with upserted row", function (done) {
-      return this.col.upsert({ _id: "1", a: "1" }, function (item) {
+    return it("call upsert with upserted row", function(this: any, done: any) {
+      return this.col.upsert({ _id: "1", a: "1" }, function (item: any) {
         assert.equal(item._id, "1")
         assert.equal(item.a, "1")
         return done()
-      })
-    })
+      });
+    });
   })
 
-  it("upserts multiple rows", function (done) {
+  it("upserts multiple rows", function(this: any, this: any, this: any, this: any, done: any) {
     this.timeout(10000)
     return this.reset(() => {
       const docs = []
@@ -313,18 +313,18 @@ export default function () {
       return this.col.upsert(
         docs,
         () => {
-          return this.col.find({}).fetch(function (results) {
+          return this.col.find({}).fetch(function (results: any) {
             assert.equal(results.length, 100)
             return done()
-          }, error)
+          }, error);
         },
         error
-      )
-    })
+      );
+    });
   })
 
   context("With sample with capitalization", function () {
-    beforeEach(function (done) {
+    beforeEach(function(this: any, this: any, this: any, done: any) {
       return this.reset(() => {
         return this.col.upsert({ _id: "1", a: "Alice", b: 1, c: { d: 1, e: 2 } }, () => {
           return this.col.upsert({ _id: "2", a: "AZ", b: 2, c: { d: 2, e: 3 } }, () => done())
@@ -332,16 +332,16 @@ export default function () {
       })
     })
 
-    return it("finds sorts in Javascript order", function (done) {
-      return this.col.find({}, { sort: ["a"] }).fetch(function (results) {
+    return it("finds sorts in Javascript order", function(this: any, done: any) {
+      return this.col.find({}, { sort: ["a"] }).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["2", "1"])
         return done()
-      })
-    })
+      });
+    });
   })
 
   context("With integer array in json rows", function () {
-    beforeEach(function (done) {
+    beforeEach(function(this: any, this: any, this: any, this: any, done: any) {
       return this.reset(() => {
         return this.col.upsert({ _id: "1", c: { arrint: [1, 2] } }, () => {
           return this.col.upsert({ _id: "2", c: { arrint: [2, 3] } }, () => {
@@ -351,17 +351,17 @@ export default function () {
       })
     })
 
-    it("filters by $in", function (done) {
+    it("filters by $in", function(this: any, done: any) {
       return this.testFilter({ "c.arrint": { $in: [3] } }, ["2", "3"], done)
     })
 
-    return it("filters by list $in with multiple", function (done) {
+    return it("filters by list $in with multiple", function(this: any, done: any) {
       return this.testFilter({ "c.arrint": { $in: [1, 3] } }, ["1", "2", "3"], done)
-    })
+    });
   })
 
   context("With object array rows", function () {
-    beforeEach(function (done) {
+    beforeEach(function(this: any, this: any, this: any, this: any, done: any) {
       return this.reset(() => {
         return this.col.upsert(
           {
@@ -380,15 +380,15 @@ export default function () {
       })
     })
 
-    return it("filters by $elemMatch", function (done) {
+    return it("filters by $elemMatch", function(this: any, this: any, done: any) {
       return this.testFilter({ c: { $elemMatch: { y: 1 } } }, ["1", "2"], () => {
         return this.testFilter({ c: { $elemMatch: { x: 1 } } }, ["1"], done)
       })
-    })
+    });
   })
 
   context("With array rows with inner string arrays", function () {
-    beforeEach(function (done) {
+    beforeEach(function(this: any, this: any, this: any, this: any, done: any) {
       return this.reset(() => {
         return this.col.upsert({ _id: "1", c: [{ arrstr: ["a", "b"] }, { arrstr: ["b", "c"] }] }, () => {
           return this.col.upsert({ _id: "2", c: [{ arrstr: ["b"] }] }, () => {
@@ -398,15 +398,15 @@ export default function () {
       })
     })
 
-    return it("filters by $elemMatch", function (done) {
+    return it("filters by $elemMatch", function(this: any, this: any, done: any) {
       return this.testFilter({ c: { $elemMatch: { arrstr: { $in: ["b"] } } } }, ["1", "2"], () => {
         return this.testFilter({ c: { $elemMatch: { arrstr: { $in: ["d", "e"] } } } }, ["3"], done)
       })
-    })
+    });
   })
 
   context("With text array rows", function () {
-    beforeEach(function (done) {
+    beforeEach(function(this: any, this: any, this: any, this: any, done: any) {
       return this.reset(() => {
         return this.col.upsert(
           { _id: "1", textarr: ["a", "b"] },
@@ -424,17 +424,17 @@ export default function () {
       })
     })
 
-    it("filters by $in", function (done) {
+    it("filters by $in", function(this: any, done: any) {
       return this.testFilter({ textarr: { $in: ["b"] } }, ["1", "2"], done)
     })
 
-    it("filters by direct reference", function (done) {
+    it("filters by direct reference", function(this: any, done: any) {
       return this.testFilter({ textarr: "b" }, ["1", "2"], done)
     })
 
-    return it("filters by both item and complete array", function (done) {
+    return it("filters by both item and complete array", function(this: any, done: any) {
       return this.testFilter({ textarr: { $in: ["a", ["b", "c"]] } }, ["1", "2"], done)
-    })
+    });
   })
 
   const geopoint = (lng, lat) => ({
@@ -443,7 +443,7 @@ export default function () {
   })
 
   context("With geolocated rows", function () {
-    beforeEach(function (done) {
+    beforeEach(function(this: any, this: any, this: any, this: any, done: any) {
       return this.col.upsert({ _id: "1", geo: geopoint(90, 45) }, () => {
         return this.col.upsert({ _id: "2", geo: geopoint(90, 46) }, () => {
           return this.col.upsert({ _id: "3", geo: geopoint(91, 45) }, () => {
@@ -453,7 +453,7 @@ export default function () {
       })
     })
 
-    it("finds points near", function (done) {
+    it("finds points near", function(this: any, done: any) {
       const selector = {
         geo: {
           $near: {
@@ -462,13 +462,13 @@ export default function () {
         }
       }
 
-      return this.col.find(selector).fetch(function (results) {
+      return this.col.find(selector).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["1", "3", "2", "4"])
         return done()
-      })
+      });
     })
 
-    it("finds points near maxDistance", function (done) {
+    it("finds points near maxDistance", function(this: any, done: any) {
       const selector = {
         geo: {
           $near: {
@@ -478,13 +478,13 @@ export default function () {
         }
       }
 
-      return this.col.find(selector).fetch(function (results) {
+      return this.col.find(selector).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
         return done()
-      })
+      });
     })
 
-    it("finds points near maxDistance just above", function (done) {
+    it("finds points near maxDistance just above", function(this: any, done: any) {
       const selector = {
         geo: {
           $near: {
@@ -494,13 +494,13 @@ export default function () {
         }
       }
 
-      return this.col.find(selector).fetch(function (results) {
+      return this.col.find(selector).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["1", "3", "2"])
         return done()
-      })
+      });
     })
 
-    it("finds points within simple box", function (done) {
+    it("finds points within simple box", function(this: any, done: any) {
       const selector = {
         geo: {
           $geoIntersects: {
@@ -519,13 +519,13 @@ export default function () {
           }
         }
       }
-      return this.col.find(selector).fetch(function (results) {
+      return this.col.find(selector).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["2"])
         return done()
-      })
+      });
     })
 
-    it("finds points within big box", function (done) {
+    it("finds points within big box", function(this: any, done: any) {
       const selector = {
         geo: {
           $geoIntersects: {
@@ -544,13 +544,13 @@ export default function () {
           }
         }
       }
-      return this.col.find(selector, { sort: ["_id"] }).fetch(function (results) {
+      return this.col.find(selector, { sort: ["_id"] }).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["1", "2", "3", "4"])
         return done()
-      })
+      });
     })
 
-    return it("handles undefined", function (done) {
+    return it("handles undefined", function(this: any, this: any, done: any) {
       const selector = {
         geo: {
           $geoIntersects: {
@@ -570,21 +570,21 @@ export default function () {
         }
       }
       return this.col.upsert({ _id: 5 }, () => {
-        return this.col.find(selector).fetch(function (results) {
+        return this.col.find(selector).fetch(function (results: any) {
           assert.deepEqual(_.pluck(results, "_id"), ["2"])
           return done()
-        })
-      })
-    })
+        });
+      });
+    });
   })
 
   context("With polygon rows", function () {
-    const polygon = (coords) => ({
+    const polygon = (coords: any) => ({
       type: "Polygon",
       coordinates: coords
     })
 
-    beforeEach(function (done) {
+    beforeEach(function(this: any, this: any, done: any) {
       return this.col.upsert(
         {
           _id: "1",
@@ -620,7 +620,7 @@ export default function () {
       )
     })
 
-    it("finds polygons that intersect simple box", function (done) {
+    it("finds polygons that intersect simple box", function(this: any, done: any) {
       const selector = {
         geo: {
           $geoIntersects: {
@@ -636,13 +636,13 @@ export default function () {
           }
         }
       }
-      return this.col.find(selector).fetch(function (results) {
+      return this.col.find(selector).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["1"])
         return done()
-      })
+      });
     })
 
-    return it("finds polygons that intersect large box", function (done) {
+    return it("finds polygons that intersect large box", function(this: any, done: any) {
       const selector = {
         geo: {
           $geoIntersects: {
@@ -658,25 +658,25 @@ export default function () {
           }
         }
       }
-      return this.col.find(selector).fetch(function (results) {
+      return this.col.find(selector).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["1", "2"])
         return done()
-      })
-    })
+      });
+    });
   })
 
   context("With multipolygon rows", function () {
-    const polygon = (coords) => ({
+    const polygon = (coords: any) => ({
       type: "Polygon",
       coordinates: coords
     })
 
-    const multipolygon = (coords) => ({
+    const multipolygon = (coords: any) => ({
       type: "MultiPolygon",
       coordinates: coords
     })
 
-    beforeEach(function (done) {
+    beforeEach(function(this: any, this: any, done: any) {
       return this.col.upsert(
         {
           _id: "1",
@@ -716,7 +716,7 @@ export default function () {
       )
     })
 
-    it("finds polygons that intersect simple box", function (done) {
+    it("finds polygons that intersect simple box", function(this: any, done: any) {
       const selector = {
         geo: {
           $geoIntersects: {
@@ -732,13 +732,13 @@ export default function () {
           }
         }
       }
-      return this.col.find(selector).fetch(function (results) {
+      return this.col.find(selector).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["1"])
         return done()
-      })
+      });
     })
 
-    return it("finds polygons that intersect large box", function (done) {
+    return it("finds polygons that intersect large box", function(this: any, done: any) {
       const selector = {
         geo: {
           $geoIntersects: {
@@ -754,20 +754,20 @@ export default function () {
           }
         }
       }
-      return this.col.find(selector).fetch(function (results) {
+      return this.col.find(selector).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["1", "2"])
         return done()
-      })
-    })
+      });
+    });
   })
 
   return context("With multilinestring rows", function () {
-    const polygon = (coords) => ({
+    const polygon = (coords: any) => ({
       type: "Polygon",
       coordinates: coords
     })
 
-    beforeEach(function (done) {
+    beforeEach(function(this: any, done: any) {
       const linestring = {
         type: "MultiLineString",
         coordinates: [
@@ -786,7 +786,7 @@ export default function () {
       })
     })
 
-    it("finds that that intersect simple box", function (done) {
+    it("finds that that intersect simple box", function(this: any, done: any) {
       const selector = {
         geo: {
           $geoIntersects: {
@@ -802,13 +802,13 @@ export default function () {
           }
         }
       }
-      return this.col.find(selector).fetch(function (results) {
+      return this.col.find(selector).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), ["1"])
         return done()
-      })
+      });
     })
 
-    return it("finds that that doesn't intersect simple box", function (done) {
+    return it("finds that that doesn't intersect simple box", function(this: any, done: any) {
       const selector = {
         geo: {
           $geoIntersects: {
@@ -824,10 +824,10 @@ export default function () {
           }
         }
       }
-      return this.col.find(selector).fetch(function (results) {
+      return this.col.find(selector).fetch(function (results: any) {
         assert.deepEqual(_.pluck(results, "_id"), [])
         return done()
-      })
-    })
-  })
+      });
+    });
+  });
 }

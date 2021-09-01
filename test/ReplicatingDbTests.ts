@@ -9,15 +9,29 @@ import db_caching from "./db_caching"
 import _ from "lodash"
 import async from "async"
 
-function error(err) {
+function error(err: any) {
   console.log(err)
   return assert.fail(JSON.stringify(err))
 }
 
 describe("ReplicatingDb", function () {
-  describe("passes queries", function () {
-    before(function (done) {
-      this.reset = (done) => {
+  describe("passes queries", function(this: any) {
+    before(function(
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      done: any
+    ) {
+      this.reset = (done: any) => {
         this.masterDb = new MemoryDb()
         this.replicaDb = new MemoryDb()
 
@@ -35,9 +49,23 @@ describe("ReplicatingDb", function () {
     return db_queries.call(this)
   })
 
-  describe("passes caching", function () {
-    before(function (done) {
-      this.reset = (done) => {
+  describe("passes caching", function(this: any) {
+    before(function(
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      done: any
+    ) {
+      this.reset = (done: any) => {
         this.masterDb = new MemoryDb()
         this.replicaDb = new MemoryDb()
 
@@ -55,9 +83,29 @@ describe("ReplicatingDb", function () {
     return db_caching.call(this)
   })
 
-  return describe("passes caching with find on replica", function () {
-    before(function (done) {
-      this.reset = (done) => {
+  return describe("passes caching with find on replica", function(this: any) {
+    before(function(
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      this: any,
+      done: any
+    ) {
+      this.reset = (done: any) => {
         this.masterDb = new MemoryDb()
         this.replicaDb = new MemoryDb()
 
@@ -78,5 +126,5 @@ describe("ReplicatingDb", function () {
     })
 
     return db_caching.call(this)
-  })
+  });
 })

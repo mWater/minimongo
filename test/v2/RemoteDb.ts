@@ -7,19 +7,19 @@ import { createUid } from "./utils"
 
 export default RemoteDb = class RemoteDb {
   // Url must have trailing /
-  constructor(url, client) {
+  constructor(url: any, client: any) {
     this.url = url
     this.client = client
     this.collections = {}
   }
 
-  addCollection(name) {
+  addCollection(name: any) {
     const collection = new Collection(name, this.url + name, this.client)
     this[name] = collection
     return (this.collections[name] = collection)
   }
 
-  removeCollection(name) {
+  removeCollection(name: any) {
     delete this[name]
     return delete this.collections[name]
   }
@@ -27,16 +27,16 @@ export default RemoteDb = class RemoteDb {
 
 // Remote collection on server
 class Collection {
-  constructor(name, url, client) {
+  constructor(name: any, url: any, client: any) {
     this.name = name
     this.url = url
     this.client = client
   }
 
   // error is called with jqXHR
-  find(selector, options = {}) {
+  find(selector: any, options = {}) {
     return {
-      fetch: (success, error) => {
+      fetch: (success: any, error: any) => {
         // Create url
         const params = {}
         if (options.sort) {
@@ -59,18 +59,18 @@ class Collection {
         }
 
         const req = $.getJSON(this.url, params)
-        req.done((data, textStatus, jqXHR) => success(data))
-        return req.fail(function (jqXHR, textStatus, errorThrown) {
+        req.done((data: any, textStatus: any, jqXHR: any) => success(data))
+        return req.fail(function (jqXHR: any, textStatus: any, errorThrown: any) {
           if (error) {
             return error(jqXHR)
           }
-        })
+        });
       }
-    }
+    };
   }
 
   // error is called with jqXHR
-  findOne(selector, options = {}, success, error) {
+  findOne(selector: any, options = {}, success: any, error: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
@@ -92,16 +92,16 @@ class Collection {
     }
 
     const req = $.getJSON(this.url, params)
-    req.done((data, textStatus, jqXHR) => success(data[0] || null))
-    return req.fail(function (jqXHR, textStatus, errorThrown) {
+    req.done((data: any, textStatus: any, jqXHR: any) => success(data[0] || null))
+    return req.fail(function (jqXHR: any, textStatus: any, errorThrown: any) {
       if (error) {
         return error(jqXHR)
       }
-    })
+    });
   }
 
   // error is called with jqXHR
-  upsert(doc, success, error) {
+  upsert(doc: any, success: any, error: any) {
     let url
     if (!this.client) {
       throw new Error("Client required to upsert")
@@ -123,29 +123,29 @@ class Collection {
       contentType: "application/json",
       type: "POST"
     })
-    req.done((data, textStatus, jqXHR) => success(data || null))
-    return req.fail(function (jqXHR, textStatus, errorThrown) {
+    req.done((data: any, textStatus: any, jqXHR: any) => success(data || null))
+    return req.fail(function (jqXHR: any, textStatus: any, errorThrown: any) {
       if (error) {
         return error(jqXHR)
       }
-    })
+    });
   }
 
   // error is called with jqXHR
-  remove(id, success, error) {
+  remove(id: any, success: any, error: any) {
     if (!this.client) {
       throw new Error("Client required to remove")
     }
 
     const req = $.ajax(this.url + "/" + id + "?client=" + this.client, { type: "DELETE" })
-    req.done((data, textStatus, jqXHR) => success())
-    return req.fail(function (jqXHR, textStatus, errorThrown) {
+    req.done((data: any, textStatus: any, jqXHR: any) => success())
+    return req.fail(function (jqXHR: any, textStatus: any, errorThrown: any) {
       // 410 means already deleted
       if (jqXHR.status === 410) {
         return success()
       } else if (error) {
         return error(jqXHR)
       }
-    })
+    });
   }
 }

@@ -3,7 +3,7 @@
 import $ from "jquery"
 
 // Create default JSON http client
-export default function (method, url, params, data, success, error) {
+export default function (method: any, url: any, params: any, data: any, success: any, error: any) {
   // Append
   let req
   const fullUrl = url + "?" + $.param(params)
@@ -29,10 +29,10 @@ export default function (method, url, params, data, success, error) {
     throw new Error(`Unknown method ${method}`)
   }
 
-  req.done((response, textStatus, jqXHR) => success(response || null))
-  return req.fail(function (jqXHR, textStatus, errorThrown) {
+  req.done((response: any, textStatus: any, jqXHR: any) => success(response || null))
+  return req.fail(function (jqXHR: any, textStatus: any, errorThrown: any) {
     if (error) {
       return error(jqXHR)
     }
-  })
+  });
 }

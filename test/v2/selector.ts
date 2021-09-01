@@ -26,21 +26,21 @@ var _ = require("lodash")
 
 // Like _.isArray, but doesn't regard polyfilled Uint8Arrays on old browsers as
 // arrays.
-var isArray = function (x) {
+var isArray = function (x: any) {
   return _.isArray(x) && !EJSON.isBinary(x)
 }
 
-var _anyIfArray = function (x, f) {
+var _anyIfArray = function (x: any, f: any) {
   if (isArray(x)) return _.any(x, f)
   return f(x)
 }
 
-var _anyIfArrayPlus = function (x, f) {
+var _anyIfArrayPlus = function (x: any, f: any) {
   if (f(x)) return true
   return isArray(x) && _.any(x, f)
 }
 
-var hasOperators = function (valueSelector) {
+var hasOperators = function (valueSelector: any) {
   var theseAreOperators = undefined
   for (var selKey in valueSelector) {
     var thisIsOperator = selKey.substr(0, 1) === "$"
@@ -53,218 +53,218 @@ var hasOperators = function (valueSelector) {
   return !!theseAreOperators // {} has no operators
 }
 
-var compileValueSelector = function (valueSelector) {
+var compileValueSelector = function (valueSelector: any) {
   if (valueSelector == null) {
     // undefined or null
-    return function (value) {
-      return _anyIfArray(value, function (x) {
+    return function (value: any) {
+      return _anyIfArray(value, function (x: any) {
         return x == null // undefined or null
-      })
-    }
+      });
+    };
   }
 
   // Selector is a non-null primitive (and not an array or RegExp either).
   if (!_.isObject(valueSelector)) {
-    return function (value) {
-      return _anyIfArray(value, function (x) {
+    return function (value: any) {
+      return _anyIfArray(value, function (x: any) {
         return x === valueSelector
-      })
-    }
+      });
+    };
   }
 
   if (valueSelector instanceof RegExp) {
-    return function (value) {
+    return function (value: any) {
       if (value === undefined) return false
-      return _anyIfArray(value, function (x) {
+      return _anyIfArray(value, function (x: any) {
         return valueSelector.test(x)
-      })
-    }
+      });
+    };
   }
 
   // Arrays match either identical arrays or arrays that contain it as a value.
   if (isArray(valueSelector)) {
-    return function (value) {
+    return function (value: any) {
       if (!isArray(value)) return false
-      return _anyIfArrayPlus(value, function (x) {
+      return _anyIfArrayPlus(value, function (x: any) {
         return LocalCollection._f._equal(valueSelector, x)
-      })
-    }
+      });
+    };
   }
 
   // It's an object, but not an array or regexp.
   if (hasOperators(valueSelector)) {
-    var operatorFunctions = []
-    _.each(valueSelector, function (operand, operator) {
+    var operatorFunctions: any = []
+    _.each(valueSelector, function (operand: any, operator: any) {
       if (!_.has(VALUE_OPERATORS, operator)) throw new Error("Unrecognized operator: " + operator)
       operatorFunctions.push(VALUE_OPERATORS[operator](operand, valueSelector.$options))
     })
-    return function (value) {
-      return _.all(operatorFunctions, function (f) {
+    return function (value: any) {
+      return _.all(operatorFunctions, function (f: any) {
         return f(value)
-      })
-    }
+      });
+    };
   }
 
   // It's a literal; compare value (or element of value array) directly to the
   // selector.
-  return function (value) {
-    return _anyIfArray(value, function (x) {
+  return function (value: any) {
+    return _anyIfArray(value, function (x: any) {
       return LocalCollection._f._equal(valueSelector, x)
-    })
-  }
+    });
+  };
 }
 
 // XXX can factor out common logic below
 var LOGICAL_OPERATORS = {
-  $and: function (subSelector) {
+  $and: function (subSelector: any) {
     if (!isArray(subSelector) || _.isEmpty(subSelector)) throw Error("$and/$or/$nor must be nonempty array")
     var subSelectorFunctions = _.map(subSelector, compileDocumentSelector)
-    return function (doc) {
-      return _.all(subSelectorFunctions, function (f) {
+    return function (doc: any) {
+      return _.all(subSelectorFunctions, function (f: any) {
         return f(doc)
-      })
-    }
+      });
+    };
   },
 
-  $or: function (subSelector) {
+  $or: function (subSelector: any) {
     if (!isArray(subSelector) || _.isEmpty(subSelector)) throw Error("$and/$or/$nor must be nonempty array")
     var subSelectorFunctions = _.map(subSelector, compileDocumentSelector)
-    return function (doc) {
-      return _.any(subSelectorFunctions, function (f) {
+    return function (doc: any) {
+      return _.any(subSelectorFunctions, function (f: any) {
         return f(doc)
-      })
-    }
+      });
+    };
   },
 
-  $nor: function (subSelector) {
+  $nor: function (subSelector: any) {
     if (!isArray(subSelector) || _.isEmpty(subSelector)) throw Error("$and/$or/$nor must be nonempty array")
     var subSelectorFunctions = _.map(subSelector, compileDocumentSelector)
-    return function (doc) {
-      return _.all(subSelectorFunctions, function (f) {
+    return function (doc: any) {
+      return _.all(subSelectorFunctions, function (f: any) {
         return !f(doc)
-      })
-    }
+      });
+    };
   },
 
-  $where: function (selectorValue) {
+  $where: function (selectorValue: any) {
     if (!(selectorValue instanceof Function)) {
       selectorValue = Function("return " + selectorValue)
     }
-    return function (doc) {
+    return function (doc: any) {
       return selectorValue.call(doc)
-    }
+    };
   }
 }
 
 var VALUE_OPERATORS = {
-  $in: function (operand) {
+  $in: function (operand: any) {
     if (!isArray(operand)) throw new Error("Argument to $in must be array")
-    return function (value) {
-      return _anyIfArrayPlus(value, function (x) {
-        return _.any(operand, function (operandElt) {
+    return function (value: any) {
+      return _anyIfArrayPlus(value, function (x: any) {
+        return _.any(operand, function (operandElt: any) {
           return LocalCollection._f._equal(operandElt, x)
-        })
-      })
-    }
+        });
+      });
+    };
   },
 
-  $all: function (operand) {
+  $all: function (operand: any) {
     if (!isArray(operand)) throw new Error("Argument to $all must be array")
-    return function (value) {
+    return function (value: any) {
       if (!isArray(value)) return false
-      return _.all(operand, function (operandElt) {
-        return _.any(value, function (valueElt) {
+      return _.all(operand, function (operandElt: any) {
+        return _.any(value, function (valueElt: any) {
           return LocalCollection._f._equal(operandElt, valueElt)
-        })
-      })
-    }
+        });
+      });
+    };
   },
 
-  $lt: function (operand) {
-    return function (value) {
-      return _anyIfArray(value, function (x) {
+  $lt: function (operand: any) {
+    return function (value: any) {
+      return _anyIfArray(value, function (x: any) {
         return LocalCollection._f._cmp(x, operand) < 0
-      })
-    }
+      });
+    };
   },
 
-  $lte: function (operand) {
-    return function (value) {
-      return _anyIfArray(value, function (x) {
+  $lte: function (operand: any) {
+    return function (value: any) {
+      return _anyIfArray(value, function (x: any) {
         return LocalCollection._f._cmp(x, operand) <= 0
-      })
-    }
+      });
+    };
   },
 
-  $gt: function (operand) {
-    return function (value) {
-      return _anyIfArray(value, function (x) {
+  $gt: function (operand: any) {
+    return function (value: any) {
+      return _anyIfArray(value, function (x: any) {
         return LocalCollection._f._cmp(x, operand) > 0
-      })
-    }
+      });
+    };
   },
 
-  $gte: function (operand) {
-    return function (value) {
-      return _anyIfArray(value, function (x) {
+  $gte: function (operand: any) {
+    return function (value: any) {
+      return _anyIfArray(value, function (x: any) {
         return LocalCollection._f._cmp(x, operand) >= 0
-      })
-    }
+      });
+    };
   },
 
-  $ne: function (operand) {
-    return function (value) {
-      return !_anyIfArrayPlus(value, function (x) {
+  $ne: function (operand: any) {
+    return function (value: any) {
+      return !_anyIfArrayPlus(value, function (x: any) {
         return LocalCollection._f._equal(x, operand)
-      })
-    }
+      });
+    };
   },
 
-  $nin: function (operand) {
+  $nin: function (operand: any) {
     if (!isArray(operand)) throw new Error("Argument to $nin must be array")
     var inFunction = VALUE_OPERATORS.$in(operand)
-    return function (value) {
+    return function (value: any) {
       // Field doesn't exist, so it's not-in operand
       if (value === undefined) return true
       return !inFunction(value)
-    }
+    };
   },
 
-  $exists: function (operand) {
-    return function (value) {
+  $exists: function (operand: any) {
+    return function (value: any) {
       return operand === (value !== undefined)
-    }
+    };
   },
 
-  $mod: function (operand) {
+  $mod: function (operand: any) {
     var divisor = operand[0],
       remainder = operand[1]
-    return function (value) {
-      return _anyIfArray(value, function (x) {
+    return function (value: any) {
+      return _anyIfArray(value, function (x: any) {
         return x % divisor === remainder
-      })
-    }
+      });
+    };
   },
 
-  $size: function (operand) {
-    return function (value) {
+  $size: function (operand: any) {
+    return function (value: any) {
       return isArray(value) && operand === value.length
-    }
+    };
   },
 
-  $type: function (operand) {
-    return function (value) {
+  $type: function (operand: any) {
+    return function (value: any) {
       // A nonexistent field is of no type.
       if (value === undefined) return false
       // Definitely not _anyIfArrayPlus: $type: 4 only matches arrays that have
       // arrays as elements according to the Mongo docs.
-      return _anyIfArray(value, function (x) {
+      return _anyIfArray(value, function (x: any) {
         return LocalCollection._f._type(x) === operand
-      })
-    }
+      });
+    };
   },
 
-  $regex: function (operand, options) {
+  $regex: function (operand: any, options: any) {
     if (options !== undefined) {
       // Options passed in $options (even the empty string) always overrides
       // options in the RegExp object itself.
@@ -280,50 +280,50 @@ var VALUE_OPERATORS = {
       operand = new RegExp(operand)
     }
 
-    return function (value) {
+    return function (value: any) {
       if (value === undefined) return false
-      return _anyIfArray(value, function (x) {
+      return _anyIfArray(value, function (x: any) {
         return operand.test(x)
-      })
-    }
+      });
+    };
   },
 
-  $options: function (operand) {
+  $options: function (operand: any) {
     // evaluation happens at the $regex function above
-    return function (value) {
+    return function (value: any) {
       return true
-    }
+    };
   },
 
-  $elemMatch: function (operand) {
+  $elemMatch: function (operand: any) {
     var matcher = compileDocumentSelector(operand)
-    return function (value) {
+    return function (value: any) {
       if (!isArray(value)) return false
-      return _.any(value, function (x) {
+      return _.any(value, function (x: any) {
         return matcher(x)
-      })
-    }
+      });
+    };
   },
 
-  $not: function (operand) {
+  $not: function (operand: any) {
     var matcher = compileValueSelector(operand)
-    return function (value) {
+    return function (value: any) {
       return !matcher(value)
-    }
+    };
   },
 
-  $near: function (operand) {
+  $near: function (operand: any) {
     // Always returns true. Must be handled in post-filter/sort/limit
-    return function (value) {
+    return function (value: any) {
       return true
-    }
+    };
   },
 
-  $geoIntersects: function (operand) {
+  $geoIntersects: function (operand: any) {
     // Always returns true. Must be handled in post-filter/sort/limit
-    return function (value) {
+    return function (value: any) {
       return true
-    }
+    };
   }
 }
 
@@ -331,7 +331,7 @@ var VALUE_OPERATORS = {
 LocalCollection._f = {
   // XXX for _all and _in, consider building 'inquery' at compile time..
 
-  _type: function (v) {
+  _type: function (v: any) {
     if (typeof v === "number") return 1
     if (typeof v === "string") return 2
     if (typeof v === "boolean") return 8
@@ -356,13 +356,13 @@ LocalCollection._f = {
   },
 
   // deep equality test: use for literal document and array matches
-  _equal: function (a, b) {
+  _equal: function (a: any, b: any) {
     return EJSON.equals(a, b, { keyOrderSensitive: true })
   },
 
   // maps a type code to a value that can be used to sort values of
   // different types
-  _typeorder: function (t) {
+  _typeorder: function (t: any) {
     // http://www.mongodb.org/display/DOCS/What+is+the+Compare+Order+for+BSON+Types
     // XXX what is the correct sort position for Javascript code?
     // ('100' in the matrix below)
@@ -394,7 +394,7 @@ LocalCollection._f = {
   // semantics. (as an extension, consider 'undefined' to be less than
   // any other value.) return negative if a is less, positive if b is
   // less, or 0 if equal
-  _cmp: function (a, b) {
+  _cmp: function (a: any, b: any) {
     if (a === undefined) return b === undefined ? 0 : -1
     if (b === undefined) return 1
     var ta = LocalCollection._f._type(a)
@@ -430,7 +430,7 @@ LocalCollection._f = {
     if (ta === 3) {
       // Object
       // this could be much more efficient in the expected case ...
-      var to_array = function (obj) {
+      var to_array = function (obj: any) {
         var ret = []
         for (var key in obj) {
           ret.push(key)
@@ -488,7 +488,7 @@ LocalCollection._f = {
 
 // For unit tests. True if the given document matches the given
 // selector.
-LocalCollection._matches = function (selector, doc) {
+LocalCollection._matches = function (selector: any, doc: any) {
   return LocalCollection._compileSelector(selector)(doc)
 }
 
@@ -509,9 +509,9 @@ LocalCollection._matches = function (selector, doc) {
 //                                 {x: [2]},
 //                                 {y: 3}]})
 //   returns [1, [2], undefined]
-LocalCollection._makeLookupFunction = function (key) {
+LocalCollection._makeLookupFunction = function (key: any) {
   var dotLocation = key.indexOf(".")
-  var first, lookupRest, nextIsNumeric
+  var first: any, lookupRest: any, nextIsNumeric: any
   if (dotLocation === -1) {
     first = key
   } else {
@@ -522,7 +522,7 @@ LocalCollection._makeLookupFunction = function (key) {
     nextIsNumeric = /^\d+(\.|$)/.test(rest)
   }
 
-  return function (doc) {
+  return function (doc: any) {
     if (doc == null)
       // null or undefined
       return [undefined]
@@ -545,13 +545,13 @@ LocalCollection._makeLookupFunction = function (key) {
     // https://github.com/mongodb/mongo/blob/master/jstests/array_match2.js
     if (!isArray(firstLevel) || nextIsNumeric) firstLevel = [firstLevel]
     return Array.prototype.concat.apply([], _.map(firstLevel, lookupRest))
-  }
+  };
 }
 
 // The main compilation function for a given selector.
-var compileDocumentSelector = function (docSelector) {
-  var perKeySelectors = []
-  _.each(docSelector, function (subSelector, key) {
+var compileDocumentSelector = function (docSelector: any) {
+  var perKeySelectors: any = []
+  _.each(docSelector, function (subSelector: any, key: any) {
     if (key.substr(0, 1) === "$") {
       // Outer operators are either logical operators (they recurse back into
       // this function), or $where.
@@ -560,7 +560,7 @@ var compileDocumentSelector = function (docSelector) {
     } else {
       var lookUpByIndex = LocalCollection._makeLookupFunction(key)
       var valueSelectorFunc = compileValueSelector(subSelector)
-      perKeySelectors.push(function (doc) {
+      perKeySelectors.push(function (doc: any) {
         var branchValues = lookUpByIndex(doc)
         // We apply the selector to each "branched" value and return true if any
         // match. This isn't 100% consistent with MongoDB; eg, see:
@@ -570,37 +570,37 @@ var compileDocumentSelector = function (docSelector) {
     }
   })
 
-  return function (doc) {
-    return _.all(perKeySelectors, function (f) {
+  return function (doc: any) {
+    return _.all(perKeySelectors, function (f: any) {
       return f(doc)
-    })
-  }
+    });
+  };
 }
 
 // Given a selector, return a function that takes one argument, a
 // document, and returns true if the document matches the selector,
 // else false.
-LocalCollection._compileSelector = function (selector) {
+LocalCollection._compileSelector = function (selector: any) {
   // you can pass a literal function instead of a selector
   if (selector instanceof Function)
-    return function (doc) {
+    return function (doc: any) {
       return selector.call(doc)
-    }
+    };
 
   // shorthand -- scalars match _id
   if (LocalCollection._selectorIsId(selector)) {
-    return function (doc) {
+    return function (doc: any) {
       return EJSON.equals(doc._id, selector)
-    }
+    };
   }
 
   // protect against dangerous selectors.  falsey and {_id: falsey} are both
   // likely programmer error, and not what you want, particularly for
   // destructive operations.
   if (!selector || ("_id" in selector && !selector._id))
-    return function (doc) {
+    return function (doc: any) {
       return false
-    }
+    };
 
   // Top level can't be an array or true or binary.
   if (typeof selector === "boolean" || isArray(selector) || EJSON.isBinary(selector))
@@ -622,8 +622,8 @@ LocalCollection._compileSelector = function (selector) {
 // first object comes first in order, 1 if the second object comes
 // first, or 0 if neither object comes before the other.
 
-LocalCollection._compileSort = function (spec) {
-  var sortSpecParts = []
+LocalCollection._compileSort = function (spec: any) {
+  var sortSpecParts: any = []
 
   if (spec instanceof Array) {
     for (var i = 0; i < spec.length; i++) {
@@ -660,18 +660,18 @@ LocalCollection._compileSort = function (spec) {
   // findMin). Each value can itself be an array, and we look at its values
   // too. (ie, we do a single level of flattening on branchValues, then find the
   // min/max.)
-  var reduceValue = function (branchValues, findMin) {
-    var reduced
+  var reduceValue = function (branchValues: any, findMin: any) {
+    var reduced: any
     var first = true
     // Iterate over all the values found in all the branches, and if a value is
     // an array itself, iterate over the values in the array separately.
-    _.each(branchValues, function (branchValue) {
+    _.each(branchValues, function (branchValue: any) {
       // Value not an array? Pretend it is.
       if (!isArray(branchValue)) branchValue = [branchValue]
       // Value is an empty array? Pretend it was missing, since that's where it
       // should be sorted.
       if (isArray(branchValue) && branchValue.length === 0) branchValue = [undefined]
-      _.each(branchValue, function (value) {
+      _.each(branchValue, function (value: any) {
         // We should get here at least once: lookup functions return non-empty
         // arrays, so the outer loop runs at least once, and we prevented
         // branchValue from being an empty array.
@@ -690,7 +690,7 @@ LocalCollection._compileSort = function (spec) {
     return reduced
   }
 
-  return function (a, b) {
+  return function (a: any, b: any) {
     for (var i = 0; i < sortSpecParts.length; ++i) {
       var specPart = sortSpecParts[i]
       var aValue = reduceValue(specPart.lookup(a), specPart.ascending)
@@ -699,7 +699,7 @@ LocalCollection._compileSort = function (spec) {
       if (compare !== 0) return specPart.ascending ? compare : -compare
     }
     return 0
-  }
+  };
 }
 
 exports.compileDocumentSelector = compileDocumentSelector

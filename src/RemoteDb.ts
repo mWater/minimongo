@@ -12,7 +12,7 @@ export default RemoteDb = class RemoteDb {
   // Url must have trailing /, can be an arrau of URLs
   // useQuickFind enables the quickfind protocol for finds
   // usePostFind enables POST for find
-  constructor(url, client, httpClient, useQuickFind = false, usePostFind = false) {
+  constructor(url: any, client: any, httpClient: any, useQuickFind = false, usePostFind = false) {
     this.url = url
     this.client = client
     this.collections = {}
@@ -24,7 +24,7 @@ export default RemoteDb = class RemoteDb {
   // Can specify url of specific collection as option.
   // useQuickFind can be overridden in options
   // usePostFind can be overridden in options
-  addCollection(name, options = {}, success, error) {
+  addCollection(name: any, options = {}, success: any, error: any) {
     let url
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
@@ -34,7 +34,7 @@ export default RemoteDb = class RemoteDb {
       ;({ url } = options)
     } else {
       if (_.isArray(this.url)) {
-        url = _.map(this.url, (url) => url + name)
+        url = _.map(this.url, (url: any) => url + name)
       } else {
         url = this.url + name
       }
@@ -58,7 +58,7 @@ export default RemoteDb = class RemoteDb {
     }
   }
 
-  removeCollection(name, success, error) {
+  removeCollection(name: any, success: any, error: any) {
     delete this[name]
     delete this.collections[name]
     if (success != null) {
@@ -74,7 +74,7 @@ export default RemoteDb = class RemoteDb {
 // Remote collection on server
 class Collection {
   // usePostFind allows POST to <collection>/find for long selectors
-  constructor(name, url, client, httpClient, useQuickFind, usePostFind) {
+  constructor(name: any, url: any, client: any, httpClient: any, useQuickFind: any, usePostFind: any) {
     this.name = name
     this.url = url
     this.client = client
@@ -95,9 +95,9 @@ class Collection {
   }
 
   // error is called with jqXHR
-  find(selector, options = {}) {
+  find(selector: any, options = {}) {
     return {
-      fetch: (success, error) => {
+      fetch: (success: any, error: any) => {
         // Determine method: "get", "post" or "quickfind"
         // If in quickfind and localData present and (no fields option or _rev included) and not (limit with no sort), use quickfind
         let method, params
@@ -189,7 +189,7 @@ class Collection {
             this.getUrl() + "/quickfind",
             params,
             body,
-            (encodedResponse) => {
+            (encodedResponse: any) => {
               return success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort))
             },
             error
@@ -203,18 +203,18 @@ class Collection {
           this.getUrl() + "/find",
           params,
           body,
-          (response) => {
+          (response: any) => {
             return success(response)
           },
           error
-        )
+        );
       }
-    }
+    };
   }
 
   // error is called with jqXHR
   // Note that findOne is not used by HybridDb, but rather find with limit is used
-  findOne(selector, options = {}, success, error) {
+  findOne(selector: any, options = {}, success: any, error: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
@@ -235,7 +235,7 @@ class Collection {
       this.getUrl(),
       params,
       null,
-      function (results) {
+      function (results: any) {
         if (results && results.length > 0) {
           return success(results[0])
         } else {
@@ -243,11 +243,11 @@ class Collection {
         }
       },
       error
-    )
+    );
   }
 
   // error is called with jqXHR
-  upsert(docs, bases, success, error) {
+  upsert(docs: any, bases: any, success: any, error: any) {
     let items
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
@@ -270,38 +270,38 @@ class Collection {
           this.getUrl(),
           params,
           items[0],
-          function (result) {
+          function (result: any) {
             if (_.isArray(docs)) {
               return success([result])
             } else {
               return success(result)
             }
           },
-          function (err) {
+          function (err: any) {
             if (error) {
               return error(err)
             }
           }
-        )
+        );
       } else {
         return this.httpClient(
           "POST",
           this.getUrl(),
           params,
           items[0].doc,
-          function (result) {
+          function (result: any) {
             if (_.isArray(docs)) {
               return success([result])
             } else {
               return success(result)
             }
           },
-          function (err) {
+          function (err: any) {
             if (error) {
               return error(err)
             }
           }
-        )
+        );
       }
     } else {
       // POST if no base, PATCH otherwise
@@ -311,44 +311,44 @@ class Collection {
           this.getUrl(),
           params,
           { doc: _.pluck(items, "doc"), base: _.pluck(items, "base") },
-          (result) => success(result),
-          function (err) {
+          (result: any) => success(result),
+          function (err: any) {
             if (error) {
               return error(err)
             }
           }
-        )
+        );
       } else {
         return this.httpClient(
           "POST",
           this.getUrl(),
           params,
           _.pluck(items, "doc"),
-          (result) => success(result),
-          function (err) {
+          (result: any) => success(result),
+          function (err: any) {
             if (error) {
               return error(err)
             }
           }
-        )
+        );
       }
     }
   }
 
   // error is called with jqXHR
-  remove(id, success, error) {
+  remove(id: any, success: any, error: any) {
     if (!this.client) {
       throw new Error("Client required to remove")
     }
 
     const params = { client: this.client }
-    return this.httpClient("DELETE", this.getUrl() + "/" + id, params, null, success, function (err) {
+    return this.httpClient("DELETE", this.getUrl() + "/" + id, params, null, success, function (err: any) {
       // 410 is an acceptable delete status
       if (err.status === 410) {
         return success()
       } else {
         return error(err)
       }
-    })
+    });
   }
 }

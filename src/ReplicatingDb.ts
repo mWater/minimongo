@@ -9,14 +9,14 @@ import { compileSort } from "./selector"
 // and then only uses master for finds and does all changes to both
 // Warning: removing a collection removes it from the underlying master and replica!
 export default ReplicatingDb = class ReplicatingDb {
-  constructor(masterDb, replicaDb) {
+  constructor(masterDb: any, replicaDb: any) {
     this.collections = {}
 
     this.masterDb = masterDb
     this.replicaDb = replicaDb
   }
 
-  addCollection(name, success, error) {
+  addCollection(name: any, success: any, error: any) {
     const collection = new Collection(name, this.masterDb[name], this.replicaDb[name])
     this[name] = collection
     this.collections[name] = collection
@@ -25,7 +25,7 @@ export default ReplicatingDb = class ReplicatingDb {
     }
   }
 
-  removeCollection(name, success, error) {
+  removeCollection(name: any, success: any, error: any) {
     delete this[name]
     delete this.collections[name]
     if (success != null) {
@@ -40,22 +40,22 @@ export default ReplicatingDb = class ReplicatingDb {
 
 // Replicated collection.
 class Collection {
-  constructor(name, masterCol, replicaCol) {
+  constructor(name: any, masterCol: any, replicaCol: any) {
     this.name = name
     this.masterCol = masterCol
     this.replicaCol = replicaCol
   }
 
-  find(selector, options) {
+  find(selector: any, options: any) {
     return this.masterCol.find(selector, options)
   }
 
-  findOne(selector, options, success, error) {
+  findOne(selector: any, options: any, success: any, error: any) {
     return this.masterCol.findOne(selector, options, success, error)
   }
 
-  upsert(docs, bases, success, error) {
-    let items
+  upsert(docs: any, bases: any, success: any, error: any) {
+    let items: any
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
     // Upsert does to both
@@ -66,17 +66,17 @@ class Collection {
         return this.replicaCol.upsert(
           _.pluck(items, "doc"),
           _.pluck(items, "base"),
-          (results) => {
+          (results: any) => {
             return success(docs)
           },
           error
-        )
+        );
       },
       error
-    )
+    );
   }
 
-  remove(id, success, error) {
+  remove(id: any, success: any, error: any) {
     // Do to both
     return this.masterCol.remove(
       id,
@@ -87,12 +87,12 @@ class Collection {
     )
   }
 
-  cache(docs, selector, options, success, error) {
+  cache(docs: any, selector: any, options: any, success: any, error: any) {
     // Calculate what has to be done for cache using the master database which is faster (usually MemoryDb)
     // then do minimum to both databases
 
     // Index docs
-    let sort
+    let sort: any
     const docsMap = _.indexBy(docs, "_id")
 
     // Compile sort
@@ -101,12 +101,12 @@ class Collection {
     }
 
     // Perform query
-    return this.masterCol.find(selector, options).fetch((results) => {
+    return this.masterCol.find(selector, options).fetch((results: any) => {
       let result
       const resultsMap = _.indexBy(results, "_id")
 
       // Determine if each result needs to be cached
-      const toCache = []
+      const toCache: any = []
       for (let doc of docs) {
         result = resultsMap[doc._id]
 
@@ -132,7 +132,7 @@ class Collection {
         }
       }
 
-      const toUncache = []
+      const toUncache: any = []
       for (result of results) {
         // If at limit
         if (options.limit && docs.length === options.limit) {
@@ -158,7 +158,7 @@ class Collection {
       }
 
       // Cache ones needing caching
-      const performCaches = (next) => {
+      const performCaches = (next: any) => {
         if (toCache.length > 0) {
           return this.masterCol.cacheList(
             toCache,
@@ -179,7 +179,7 @@ class Collection {
       }
 
       // Uncache list
-      const performUncaches = (next) => {
+      const performUncaches = (next: any) => {
         if (toUncache.length > 0) {
           return this.masterCol.uncacheList(
             toUncache,
@@ -206,18 +206,18 @@ class Collection {
           }
         })
       })
-    }, error)
+    }, error);
   }
 
-  pendingUpserts(success, error) {
+  pendingUpserts(success: any, error: any) {
     return this.masterCol.pendingUpserts(success, error)
   }
 
-  pendingRemoves(success, error) {
+  pendingRemoves(success: any, error: any) {
     return this.masterCol.pendingRemoves(success, error)
   }
 
-  resolveUpserts(upserts, success, error) {
+  resolveUpserts(upserts: any, success: any, error: any) {
     return this.masterCol.resolveUpserts(
       upserts,
       () => {
@@ -227,7 +227,7 @@ class Collection {
     )
   }
 
-  resolveRemove(id, success, error) {
+  resolveRemove(id: any, success: any, error: any) {
     return this.masterCol.resolveRemove(
       id,
       () => {
@@ -238,7 +238,7 @@ class Collection {
   }
 
   // Add but do not overwrite or record as upsert
-  seed(docs, success, error) {
+  seed(docs: any, success: any, error: any) {
     return this.masterCol.seed(
       docs,
       () => {
@@ -249,7 +249,7 @@ class Collection {
   }
 
   // Add but do not overwrite upserts or removes
-  cacheOne(doc, success, error) {
+  cacheOne(doc: any, success: any, error: any) {
     return this.masterCol.cacheOne(
       doc,
       () => {
@@ -260,7 +260,7 @@ class Collection {
   }
 
   // Add but do not overwrite upserts or removes
-  cacheList(docs, success, error) {
+  cacheList(docs: any, success: any, error: any) {
     return this.masterCol.cacheList(
       docs,
       () => {
@@ -270,7 +270,7 @@ class Collection {
     )
   }
 
-  uncache(selector, success, error) {
+  uncache(selector: any, success: any, error: any) {
     return this.masterCol.uncache(
       selector,
       () => {
@@ -280,7 +280,7 @@ class Collection {
     )
   }
 
-  uncacheList(ids, success, error) {
+  uncacheList(ids: any, success: any, error: any) {
     return this.masterCol.uncacheList(
       ids,
       () => {

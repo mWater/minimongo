@@ -7,7 +7,7 @@ import { processFind } from "./utils"
 import { compileSort } from "./selector"
 
 export default MemoryDb = class MemoryDb {
-  constructor(options, success) {
+  constructor(options: any, success: any) {
     this.collections = {}
 
     if (success) {
@@ -15,7 +15,7 @@ export default MemoryDb = class MemoryDb {
     }
   }
 
-  addCollection(name, success, error) {
+  addCollection(name: any, success: any, error: any) {
     const collection = new Collection(name)
     this[name] = collection
     this.collections[name] = collection
@@ -24,7 +24,7 @@ export default MemoryDb = class MemoryDb {
     }
   }
 
-  removeCollection(name, success, error) {
+  removeCollection(name: any, success: any, error: any) {
     delete this[name]
     delete this.collections[name]
     if (success != null) {
@@ -35,7 +35,7 @@ export default MemoryDb = class MemoryDb {
 
 // Stores data in memory
 class Collection {
-  constructor(name) {
+  constructor(name: any) {
     this.name = name
 
     this.items = {}
@@ -43,33 +43,33 @@ class Collection {
     this.removes = {} // Pending removes by _id. No longer in items
   }
 
-  find(selector, options) {
+  find(selector: any, options: any) {
     return {
-      fetch: (success, error) => {
+      fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    }
+    };
   }
 
-  findOne(selector, options, success, error) {
+  findOne(selector: any, options: any, success: any, error: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
 
-    return this.find(selector, options).fetch(function (results) {
+    return this.find(selector, options).fetch(function (results: any) {
       if (success != null) {
         return success(results.length > 0 ? results[0] : null)
       }
-    }, error)
+    }, error);
   }
 
-  _findFetch(selector, options, success, error) {
+  _findFetch(selector: any, options: any, success: any, error: any) {
     if (success != null) {
       return success(processFind(this.items, selector, options))
     }
   }
 
-  upsert(doc, success, error) {
+  upsert(doc: any, success: any, error: any) {
     // Handle both single and multiple upsert
     let items = doc
     if (!_.isArray(items)) {
@@ -91,7 +91,7 @@ class Collection {
     }
   }
 
-  remove(id, success, error) {
+  remove(id: any, success: any, error: any) {
     if (_.has(this.items, id)) {
       this.removes[id] = this.items[id]
       delete this.items[id]
@@ -105,9 +105,9 @@ class Collection {
     }
   }
 
-  cache(docs, selector, options, success, error) {
+  cache(docs: any, selector: any, options: any, success: any, error: any) {
     // Add all non-local that are not upserted or removed
-    let sort
+    let sort: any
     for (let doc of docs) {
       this.cacheOne(doc)
     }
@@ -119,7 +119,7 @@ class Collection {
     }
 
     // Perform query, removing rows missing in docs from local db
-    return this.find(selector, options).fetch((results) => {
+    return this.find(selector, options).fetch((results: any) => {
       for (let result of results) {
         if (!docsMap[result._id] && !_.has(this.upserts, result._id)) {
           // If past end on sorted limited, ignore
@@ -135,18 +135,18 @@ class Collection {
       if (success != null) {
         return success()
       }
-    }, error)
+    }, error);
   }
 
-  pendingUpserts(success) {
+  pendingUpserts(success: any) {
     return success(_.values(this.upserts))
   }
 
-  pendingRemoves(success) {
+  pendingRemoves(success: any) {
     return success(_.pluck(this.removes, "_id"))
   }
 
-  resolveUpsert(doc, success) {
+  resolveUpsert(doc: any, success: any) {
     // Handle both single and multiple upsert
     let items = doc
     if (!_.isArray(items)) {
@@ -166,7 +166,7 @@ class Collection {
     }
   }
 
-  resolveRemove(id, success) {
+  resolveRemove(id: any, success: any) {
     delete this.removes[id]
     if (success != null) {
       return success()
@@ -174,7 +174,7 @@ class Collection {
   }
 
   // Add but do not overwrite or record as upsert
-  seed(doc, success) {
+  seed(doc: any, success: any) {
     if (!_.has(this.items, doc._id) && !_.has(this.removes, doc._id)) {
       this.items[doc._id] = doc
     }
@@ -184,7 +184,7 @@ class Collection {
   }
 
   // Add but do not overwrite upserts or removes
-  cacheOne(doc, success) {
+  cacheOne(doc: any, success: any) {
     if (!_.has(this.upserts, doc._id) && !_.has(this.removes, doc._id)) {
       const existing = this.items[doc._id]
 

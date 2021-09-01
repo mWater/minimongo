@@ -13,7 +13,7 @@ function doNothing() {}
 // WebSQLDb adapter for minimongo DB
 // Supports sqlite plugin, if available and specified in option as {storage: 'sqlite'}
 export default WebSQLDb = class WebSQLDb {
-  constructor(options, success, error) {
+  constructor(options: any, success: any, error: any) {
     this.collections = {}
 
     if (options.storage === "sqlite" && window.sqlitePlugin) {
@@ -22,17 +22,17 @@ export default WebSQLDb = class WebSQLDb {
       // we add the schema version migration to the success callback
       window.sqlitePlugin.openDatabase(
         { name: "minimongo_" + options.namespace, location: "default" },
-        (sqliteDb) => {
+        (sqliteDb: any) => {
           console.log("Database open successful")
           this.db = sqliteDb
           console.log("Checking version")
           this.db.executeSql(
             "PRAGMA user_version",
             [],
-            (rs) => {
+            (rs: any) => {
               const version = rs.rows.item(0).user_version
               if (version === 0) {
-                this.db.transaction((tx) => {
+                this.db.transaction((tx: any) => {
                   tx.executeSql(
                     `\
 CREATE TABLE docs (
@@ -44,22 +44,22 @@ base TEXT,
 PRIMARY KEY (col, id));`,
                     [],
                     doNothing,
-                    (tx, err) => error(err)
+                    (tx: any, err: any) => error(err)
                   )
-                  tx.executeSql("PRAGMA user_version = 2", [], doNothing, (tx, err) => error(err))
+                  tx.executeSql("PRAGMA user_version = 2", [], doNothing, (tx: any, err: any) => error(err))
                   return success(this)
                 })
               } else {
                 success(this)
               }
             },
-            function (err) {
+            function (err: any) {
               console.log("version check error :: ", JSON.stringify(err))
               error(err)
             }
           )
         },
-        function (err) {
+        function (err: any) {
           console.log("Error opening databse :: ", JSON.stringify(err))
           error(err)
         }
@@ -85,28 +85,26 @@ PRIMARY KEY (col, id));`,
       }
     }
 
-    const migrateToV1 = (tx) =>
-      tx.executeSql(
-        `\
+    const migrateToV1 = (tx: any) => tx.executeSql(
+      `\
 CREATE TABLE docs (
 col TEXT NOT NULL,
 id TEXT NOT NULL,
 state TEXT NOT NULL,
 doc TEXT,
 PRIMARY KEY (col, id));`,
-        [],
-        doNothing,
-        (tx, err) => error(err)
-      )
+      [],
+      doNothing,
+      (tx: any, err: any) => error(err)
+    )
 
-    const migrateToV2 = (tx) =>
-      tx.executeSql(
-        `\
+    const migrateToV2 = (tx: any) => tx.executeSql(
+      `\
 ALTER TABLE docs ADD COLUMN base TEXT;`,
-        [],
-        doNothing,
-        (tx, err) => error(err)
-      )
+      [],
+      doNothing,
+      (tx: any, err: any) => error(err)
+    )
 
     // Check if at v2 version
     const checkV2 = () => {
@@ -136,7 +134,7 @@ ALTER TABLE docs ADD COLUMN base TEXT;`,
     return this.db
   }
 
-  addCollection(name, success, error) {
+  addCollection(name: any, success: any, error: any) {
     const collection = new Collection(name, this.db)
     this[name] = collection
     this.collections[name] = collection
@@ -145,15 +143,15 @@ ALTER TABLE docs ADD COLUMN base TEXT;`,
     }
   }
 
-  removeCollection(name, success, error) {
+  removeCollection(name: any, success: any, error: any) {
     delete this[name]
     delete this.collections[name]
 
     // Remove all documents of collection
     return this.db.transaction(
-      (tx) => tx.executeSql("DELETE FROM docs WHERE col = ?", [name], success, (tx, err) => error(err)),
+      (tx: any) => tx.executeSql("DELETE FROM docs WHERE col = ?", [name], success, (tx: any, err: any) => error(err)),
       error
-    )
+    );
   }
 
   getCollectionNames() {
@@ -163,41 +161,41 @@ ALTER TABLE docs ADD COLUMN base TEXT;`,
 
 // Stores data in indexeddb store
 class Collection {
-  constructor(name, db) {
+  constructor(name: any, db: any) {
     this.name = name
     this.db = db
   }
 
-  find(selector, options) {
+  find(selector: any, options: any) {
     return {
-      fetch: (success, error) => {
+      fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    }
+    };
   }
 
-  findOne(selector, options, success, error) {
+  findOne(selector: any, options: any, success: any, error: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
 
-    return this.find(selector, options).fetch(function (results) {
+    return this.find(selector, options).fetch(function (results: any) {
       if (success != null) {
         return success(results.length > 0 ? results[0] : null)
       }
-    }, error)
+    }, error);
   }
 
-  _findFetch(selector, options, success, error) {
+  _findFetch(selector: any, options: any, success: any, error: any) {
     // Android 2.x requires error callback
     error = error || function () {}
 
     // Get all docs from collection
-    return this.db.readTransaction((tx) => {
+    return this.db.readTransaction((tx: any) => {
       return tx.executeSql(
         "SELECT * FROM docs WHERE col = ?",
         [this.name],
-        function (tx, results) {
+        function (tx: any, results: any) {
           const docs = []
           for (let i = 0, end = results.rows.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
             const row = results.rows.item(i)
@@ -209,31 +207,31 @@ class Collection {
             return success(processFind(docs, selector, options))
           }
         },
-        (tx, err) => error(err)
-      )
-    }, error)
+        (tx: any, err: any) => error(err)
+      );
+    }, error);
   }
 
-  upsert(docs, bases, success, error) {
-    let items
+  upsert(docs: any, bases: any, success: any, error: any) {
+    let items: any
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
     // Android 2.x requires error callback
     error = error || function () {}
 
     return this.db.transaction(
-      (tx) => {
-        const ids = _.map(items, (item) => item.doc._id)
+      (tx: any) => {
+        const ids = _.map(items, (item: any) => item.doc._id)
 
         // Get bases
         bases = {}
         return async.eachSeries(
           ids,
-          (id, callback) => {
+          (id: any, callback: any) => {
             return tx.executeSql(
               "SELECT * FROM docs WHERE col = ? AND id = ?",
               [this.name, id],
-              function (tx2, results) {
+              function (tx2: any, results: any) {
                 tx = tx2
                 if (results.rows.length > 0) {
                   const row = results.rows.item(0)
@@ -245,8 +243,8 @@ class Collection {
                 }
                 return callback()
               },
-              (tx, err) => error(err)
-            )
+              (tx: any, err: any) => error(err)
+            );
           },
           () => {
             return (() => {
@@ -268,14 +266,14 @@ class Collection {
                     "INSERT OR REPLACE INTO docs (col, id, state, doc, base) VALUES (?, ?, ?, ?, ?)",
                     [this.name, item.doc._id, "upserted", JSON.stringify(item.doc), JSON.stringify(base)],
                     doNothing,
-                    (tx, err) => error(err)
+                    (tx: any, err: any) => error(err)
                   )
                 )
               }
               return result
-            })()
+            })();
           }
-        )
+        );
       },
       error,
       function () {
@@ -283,20 +281,20 @@ class Collection {
           return success(docs)
         }
       }
-    )
+    );
   }
 
-  remove(id, success, error) {
+  remove(id: any, success: any, error: any) {
     // Special case for filter-type remove
     if (_.isObject(id)) {
-      this.find(id).fetch((rows) => {
+      this.find(id).fetch((rows: any) => {
         return async.each(
           rows,
-          (row, cb) => {
+          (row: any, cb: any) => {
             return this.remove(row._id, () => cb(), cb)
           },
           () => success()
-        )
+        );
       }, error)
       return
     }
@@ -305,11 +303,11 @@ class Collection {
     error = error || function () {}
 
     // Find record
-    return this.db.transaction((tx) => {
+    return this.db.transaction((tx: any) => {
       return tx.executeSql(
         "SELECT * FROM docs WHERE col = ? AND id = ?",
         [this.name, id],
-        (tx, results) => {
+        (tx: any, results: any) => {
           if (results.rows.length > 0) {
             // Change to removed
             return tx.executeSql(
@@ -320,8 +318,8 @@ class Collection {
                   return success(id)
                 }
               },
-              (tx, err) => error(err)
-            )
+              (tx: any, err: any) => error(err)
+            );
           } else {
             return tx.executeSql(
               "INSERT INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)",
@@ -331,28 +329,28 @@ class Collection {
                   return success(id)
                 }
               },
-              (tx, err) => error(err)
-            )
+              (tx: any, err: any) => error(err)
+            );
           }
         },
-        (tx, err) => error(err)
-      )
-    }, error)
+        (tx: any, err: any) => error(err)
+      );
+    }, error);
   }
 
-  cache(docs, selector, options, success, error) {
+  cache(docs: any, selector: any, options: any, success: any, error: any) {
     // Android 2.x requires error callback
     error = error || function () {}
 
-    return this.db.transaction((tx) => {
+    return this.db.transaction((tx: any) => {
       // Add all non-local that are not upserted or removed
       return async.eachSeries(
         docs,
-        (doc, callback) => {
+        (doc: any, callback: any) => {
           return tx.executeSql(
             "SELECT * FROM docs WHERE col = ? AND id = ?",
             [this.name, doc._id],
-            (tx, results) => {
+            (tx: any, results: any) => {
               // Check if present and not upserted/deleted
               if (results.rows.length === 0 || results.rows.item(0).state === "cached") {
                 const existing = results.rows.length > 0 ? JSON.parse(results.rows.item(0).doc) : null
@@ -370,8 +368,8 @@ class Collection {
                     "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)",
                     [this.name, doc._id, "cached", JSON.stringify(doc)],
                     () => callback(),
-                    (tx, err) => error(err)
-                  )
+                    (tx: any, err: any) => error(err)
+                  );
                 } else {
                   return callback()
                 }
@@ -379,11 +377,11 @@ class Collection {
                 return callback()
               }
             },
-            (tx, err) => error(err)
-          )
+            (tx: any, err: any) => error(err)
+          );
         },
-        (err) => {
-          let sort
+        (err: any) => {
+          let sort: any
           if (err) {
             if (error) {
               error(err)
@@ -399,16 +397,16 @@ class Collection {
           }
 
           // Perform query, removing rows missing in docs from local db
-          return this.find(selector, options).fetch((results) => {
-            return this.db.transaction((tx) => {
+          return this.find(selector, options).fetch((results: any) => {
+            return this.db.transaction((tx: any) => {
               return async.eachSeries(
                 results,
-                (result, callback) => {
+                (result: any, callback: any) => {
                   // If not present in docs and is present locally and not upserted/deleted
                   return tx.executeSql(
                     "SELECT * FROM docs WHERE col = ? AND id = ?",
                     [this.name, result._id],
-                    (tx, rows) => {
+                    (tx: any, rows: any) => {
                       if (!docsMap[result._id] && rows.rows.length > 0 && rows.rows.item(0).state === "cached") {
                         // Exclude any excluded _ids from being cached/uncached
                         if (options && options.exclude && options.exclude.includes(result._id)) {
@@ -433,16 +431,16 @@ class Collection {
                           "DELETE FROM docs WHERE col = ? AND id = ?",
                           [this.name, result._id],
                           () => callback(),
-                          (tx, err) => error(err)
-                        )
+                          (tx: any, err: any) => error(err)
+                        );
                       } else {
                         return callback()
                       }
                     },
-                    (tx, err) => error(err)
-                  )
+                    (tx: any, err: any) => error(err)
+                  );
                 },
-                function (err) {
+                function (err: any) {
                   if (err != null) {
                     if (error != null) {
                       error(err)
@@ -453,23 +451,23 @@ class Collection {
                     return success()
                   }
                 }
-              )
-            }, error)
-          }, error)
+              );
+            }, error);
+          }, error);
         }
-      )
-    }, error)
+      );
+    }, error);
   }
 
-  pendingUpserts(success, error) {
+  pendingUpserts(success: any, error: any) {
     // Android 2.x requires error callback
     error = error || function () {}
 
-    return this.db.readTransaction((tx) => {
+    return this.db.readTransaction((tx: any) => {
       return tx.executeSql(
         "SELECT * FROM docs WHERE col = ? AND state = ?",
         [this.name, "upserted"],
-        function (tx, results) {
+        function (tx: any, results: any) {
           const docs = []
           for (let i = 0, end = results.rows.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
             const row = results.rows.item(i)
@@ -479,20 +477,20 @@ class Collection {
             return success(docs)
           }
         },
-        (tx, err) => error(err)
-      )
-    }, error)
+        (tx: any, err: any) => error(err)
+      );
+    }, error);
   }
 
-  pendingRemoves(success, error) {
+  pendingRemoves(success: any, error: any) {
     // Android 2.x requires error callback
     error = error || function () {}
 
-    return this.db.readTransaction((tx) => {
+    return this.db.readTransaction((tx: any) => {
       return tx.executeSql(
         "SELECT * FROM docs WHERE col = ? AND state = ?",
         [this.name, "removed"],
-        function (tx, results) {
+        function (tx: any, results: any) {
           const docs = []
           for (let i = 0, end = results.rows.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
             const row = results.rows.item(i)
@@ -502,24 +500,24 @@ class Collection {
             return success(docs)
           }
         },
-        (tx, err) => error(err)
-      )
-    }, error)
+        (tx: any, err: any) => error(err)
+      );
+    }, error);
   }
 
-  resolveUpserts(upserts, success, error) {
+  resolveUpserts(upserts: any, success: any, error: any) {
     // Android 2.x requires error callback
     error = error || function () {}
 
     // Find records
-    return this.db.transaction((tx) => {
+    return this.db.transaction((tx: any) => {
       return async.eachSeries(
         upserts,
-        (upsert, cb) => {
+        (upsert: any, cb: any) => {
           return tx.executeSql(
             "SELECT * FROM docs WHERE col = ? AND id = ?",
             [this.name, upsert.doc._id],
-            (tx, results) => {
+            (tx: any, results: any) => {
               if (results.rows.length > 0 && results.rows.item(0).state === "upserted") {
                 // Only safely remove upsert if doc is the same
                 if (_.isEqual(JSON.parse(results.rows.item(0).doc), upsert.doc)) {
@@ -527,7 +525,7 @@ class Collection {
                     'UPDATE docs SET state="cached" WHERE col = ? AND id = ?',
                     [this.name, upsert.doc._id],
                     doNothing,
-                    (tx, err) => error(err)
+                    (tx: any, err: any) => error(err)
                   )
                   return cb()
                 } else {
@@ -535,7 +533,7 @@ class Collection {
                     "UPDATE docs SET base=? WHERE col = ? AND id = ?",
                     [JSON.stringify(upsert.doc), this.name, upsert.doc._id],
                     doNothing,
-                    (tx, err) => error(err)
+                    (tx: any, err: any) => error(err)
                   )
                   return cb()
                 }
@@ -544,10 +542,10 @@ class Collection {
                 return cb()
               }
             },
-            (tx, err) => error(err)
-          )
+            (tx: any, err: any) => error(err)
+          );
         },
-        function (err) {
+        function (err: any) {
           if (err) {
             return error(err)
           }
@@ -557,16 +555,16 @@ class Collection {
             return success()
           }
         }
-      )
-    }, error)
+      );
+    }, error);
   }
 
-  resolveRemove(id, success, error) {
+  resolveRemove(id: any, success: any, error: any) {
     // Android 2.x requires error callback
     error = error || function () {}
 
     // Find record
-    return this.db.transaction((tx) => {
+    return this.db.transaction((tx: any) => {
       // Only safely remove if removed state
       return tx.executeSql(
         'DELETE FROM docs WHERE state="removed" AND col = ? AND id = ?',
@@ -576,13 +574,13 @@ class Collection {
             return success(id)
           }
         },
-        (tx, err) => error(err)
-      )
-    }, error)
+        (tx: any, err: any) => error(err)
+      );
+    }, error);
   }
 
   // Add but do not overwrite or record as upsert
-  seed(docs, success, error) {
+  seed(docs: any, success: any, error: any) {
     if (!_.isArray(docs)) {
       docs = [docs]
     }
@@ -590,15 +588,15 @@ class Collection {
     // Android 2.x requires error callback
     error = error || function () {}
 
-    return this.db.transaction((tx) => {
+    return this.db.transaction((tx: any) => {
       // Add all non-local that are not upserted or removed
       return async.eachSeries(
         docs,
-        (doc, callback) => {
+        (doc: any, callback: any) => {
           return tx.executeSql(
             "SELECT * FROM docs WHERE col = ? AND id = ?",
             [this.name, doc._id],
-            (tx, results) => {
+            (tx: any, results: any) => {
               // Check if present
               if (results.rows.length === 0) {
                 // Upsert
@@ -606,16 +604,16 @@ class Collection {
                   "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)",
                   [this.name, doc._id, "cached", JSON.stringify(doc)],
                   () => callback(),
-                  (tx, err) => error(err)
-                )
+                  (tx: any, err: any) => error(err)
+                );
               } else {
                 return callback()
               }
             },
-            (tx, err) => error(err)
-          )
+            (tx: any, err: any) => error(err)
+          );
         },
-        (err) => {
+        (err: any) => {
           if (err) {
             if (error) {
               return error(err)
@@ -626,28 +624,28 @@ class Collection {
             }
           }
         }
-      )
-    }, error)
+      );
+    }, error);
   }
 
   // Add but do not overwrite upsert/removed and do not record as upsert
-  cacheOne(doc, success, error) {
+  cacheOne(doc: any, success: any, error: any) {
     return this.cacheList([doc], success, error)
   }
 
-  cacheList(docs, success, error) {
+  cacheList(docs: any, success: any, error: any) {
     // Android 2.x requires error callback
     error = error || function () {}
 
-    return this.db.transaction((tx) => {
+    return this.db.transaction((tx: any) => {
       // Add all non-local that are not upserted or removed
       return async.eachSeries(
         docs,
-        (doc, callback) => {
+        (doc: any, callback: any) => {
           return tx.executeSql(
             "SELECT * FROM docs WHERE col = ? AND id = ?",
             [this.name, doc._id],
-            (tx, results) => {
+            (tx: any, results: any) => {
               // Only insert if not present or cached
               if (results.rows.length === 0 || results.rows.item(0).state === "cached") {
                 const existing = results.rows.length > 0 ? JSON.parse(results.rows.item(0).doc) : null
@@ -658,8 +656,8 @@ class Collection {
                     "INSERT OR REPLACE INTO docs (col, id, state, doc) VALUES (?, ?, ?, ?)",
                     [this.name, doc._id, "cached", JSON.stringify(doc)],
                     () => callback(),
-                    (tx, err) => callback(err)
-                  )
+                    (tx: any, err: any) => callback(err)
+                  );
                 } else {
                   return callback()
                 }
@@ -667,10 +665,10 @@ class Collection {
                 return callback()
               }
             },
-            (tx, err) => callback(err)
-          )
+            (tx: any, err: any) => callback(err)
+          );
         },
-        (err) => {
+        (err: any) => {
           if (err) {
             if (error) {
               return error(err)
@@ -681,21 +679,21 @@ class Collection {
             }
           }
         }
-      )
-    }, error)
+      );
+    }, error);
   }
 
-  uncache(selector, success, error) {
+  uncache(selector: any, success: any, error: any) {
     const compiledSelector = utils.compileDocumentSelector(selector)
 
     // Android 2.x requires error callback
     error = error || function () {}
 
-    return this.db.transaction((tx) => {
+    return this.db.transaction((tx: any) => {
       return tx.executeSql(
         "SELECT * FROM docs WHERE col = ? AND state = ?",
         [this.name, "cached"],
-        (tx, results) => {
+        (tx: any, results: any) => {
           // Determine which to remove
           const toRemove = []
           for (let i = 0, end = results.rows.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
@@ -709,16 +707,16 @@ class Collection {
           // Add all non-local that are not upserted or removed
           return async.eachSeries(
             toRemove,
-            (id, callback) => {
+            (id: any, callback: any) => {
               // Only safely remove if removed state
               return tx.executeSql(
                 'DELETE FROM docs WHERE state="cached" AND col = ? AND id = ?',
                 [this.name, id],
                 () => callback(),
-                (tx, err) => error(err)
-              )
+                (tx: any, err: any) => error(err)
+              );
             },
-            (err) => {
+            (err: any) => {
               if (err) {
                 if (error) {
                   return error(err)
@@ -729,31 +727,31 @@ class Collection {
                 }
               }
             }
-          )
+          );
         },
-        (tx, err) => error(err)
-      )
-    }, error)
+        (tx: any, err: any) => error(err)
+      );
+    }, error);
   }
 
-  uncacheList(ids, success, error) {
+  uncacheList(ids: any, success: any, error: any) {
     // Android 2.x requires error callback
     error = error || function () {}
 
-    return this.db.transaction((tx) => {
+    return this.db.transaction((tx: any) => {
       // Add all non-local that are not upserted or removed
       return async.eachSeries(
         ids,
-        (id, callback) => {
+        (id: any, callback: any) => {
           // Only safely remove if removed state
           return tx.executeSql(
             'DELETE FROM docs WHERE state="cached" AND col = ? AND id = ?',
             [this.name, id],
             () => callback(),
-            (tx, err) => error(err)
-          )
+            (tx: any, err: any) => error(err)
+          );
         },
-        (err) => {
+        (err: any) => {
           if (err) {
             if (error) {
               return error(err)
@@ -764,7 +762,7 @@ class Collection {
             }
           }
         }
-      )
-    }, error)
+      );
+    }, error);
   }
 }

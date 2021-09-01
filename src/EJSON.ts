@@ -11,7 +11,7 @@ var customTypes = {}
 // - A toJSONValue() method, so that Meteor can serialize it
 // - a typeName() method, to show how to look it up in our type table.
 // It is okay if these methods are monkey-patched on.
-EJSON.addType = function (name, factory) {
+EJSON.addType = function (name: any, factory: any) {
   if (_.has(customTypes, name)) throw new Error("Type " + name + " already present")
   customTypes[name] = factory
 }
@@ -19,59 +19,59 @@ EJSON.addType = function (name, factory) {
 var builtinConverters = [
   {
     // Date
-    matchJSONValue: function (obj) {
+    matchJSONValue: function (obj: any) {
       return _.has(obj, "$date") && _.size(obj) === 1
     },
-    matchObject: function (obj) {
+    matchObject: function (obj: any) {
       return obj instanceof Date
     },
-    toJSONValue: function (obj) {
+    toJSONValue: function (obj: any) {
       return { $date: obj.getTime() }
     },
-    fromJSONValue: function (obj) {
+    fromJSONValue: function (obj: any) {
       return new Date(obj.$date)
     }
   },
   {
     // Binary
-    matchJSONValue: function (obj) {
+    matchJSONValue: function (obj: any) {
       return _.has(obj, "$binary") && _.size(obj) === 1
     },
-    matchObject: function (obj) {
+    matchObject: function (obj: any) {
       return (
         (typeof Uint8Array !== "undefined" && obj instanceof Uint8Array) || (obj && _.has(obj, "$Uint8ArrayPolyfill"))
       )
     },
-    toJSONValue: function (obj) {
+    toJSONValue: function (obj: any) {
       return { $binary: EJSON._base64Encode(obj) }
     },
-    fromJSONValue: function (obj) {
+    fromJSONValue: function (obj: any) {
       return EJSON._base64Decode(obj.$binary)
     }
   },
   {
     // Escaping one level
-    matchJSONValue: function (obj) {
+    matchJSONValue: function (obj: any) {
       return _.has(obj, "$escape") && _.size(obj) === 1
     },
-    matchObject: function (obj) {
+    matchObject: function (obj: any) {
       if (_.isEmpty(obj) || _.size(obj) > 2) {
         return false
       }
-      return _.any(builtinConverters, function (converter) {
+      return _.any(builtinConverters, function (converter: any) {
         return converter.matchJSONValue(obj)
-      })
+      });
     },
-    toJSONValue: function (obj) {
+    toJSONValue: function (obj: any) {
       var newObj = {}
-      _.each(obj, function (value, key) {
+      _.each(obj, function (value: any, key: any) {
         newObj[key] = EJSON.toJSONValue(value)
       })
       return { $escape: newObj }
     },
-    fromJSONValue: function (obj) {
+    fromJSONValue: function (obj: any) {
       var newObj = {}
-      _.each(obj.$escape, function (value, key) {
+      _.each(obj.$escape, function (value: any, key: any) {
         newObj[key] = EJSON.fromJSONValue(value)
       })
       return newObj
@@ -79,16 +79,16 @@ var builtinConverters = [
   },
   {
     // Custom
-    matchJSONValue: function (obj) {
+    matchJSONValue: function (obj: any) {
       return _.has(obj, "$type") && _.has(obj, "$value") && _.size(obj) === 2
     },
-    matchObject: function (obj) {
+    matchObject: function (obj: any) {
       return EJSON._isCustomType(obj)
     },
-    toJSONValue: function (obj) {
+    toJSONValue: function (obj: any) {
       return { $type: obj.typeName(), $value: obj.toJSONValue() }
     },
-    fromJSONValue: function (obj) {
+    fromJSONValue: function (obj: any) {
       var typeName = obj.$type
       var converter = customTypes[typeName]
       return converter(obj.$value)
@@ -96,7 +96,7 @@ var builtinConverters = [
   }
 ]
 
-EJSON._isCustomType = function (obj) {
+EJSON._isCustomType = function (obj: any) {
   return (
     obj &&
     typeof obj.toJSONValue === "function" &&
@@ -106,11 +106,11 @@ EJSON._isCustomType = function (obj) {
 }
 
 //for both arrays and objects, in-place modification.
-var adjustTypesToJSONValue = (EJSON._adjustTypesToJSONValue = function (obj) {
+var adjustTypesToJSONValue = (EJSON._adjustTypesToJSONValue = function (obj: any) {
   if (obj === null) return null
   var maybeChanged = toJSONValueHelper(obj)
   if (maybeChanged !== undefined) return maybeChanged
-  _.each(obj, function (value, key) {
+  _.each(obj, function (value: any, key: any) {
     if (typeof value !== "object" && value !== undefined) return // continue
     var changed = toJSONValueHelper(value)
     if (changed) {
@@ -126,7 +126,7 @@ var adjustTypesToJSONValue = (EJSON._adjustTypesToJSONValue = function (obj) {
 
 // Either return the JSON-compatible version of the argument, or undefined (if
 // the item isn't itself replaceable, but maybe some fields in it are)
-var toJSONValueHelper = function (item) {
+var toJSONValueHelper = function (item: any) {
   for (var i = 0; i < builtinConverters.length; i++) {
     var converter = builtinConverters[i]
     if (converter.matchObject(item)) {
@@ -136,7 +136,7 @@ var toJSONValueHelper = function (item) {
   return undefined
 }
 
-EJSON.toJSONValue = function (item) {
+EJSON.toJSONValue = function (item: any) {
   var changed = toJSONValueHelper(item)
   if (changed !== undefined) return changed
   if (typeof item === "object") {
@@ -149,11 +149,11 @@ EJSON.toJSONValue = function (item) {
 //for both arrays and objects. Tries its best to just
 // use the object you hand it, but may return something
 // different if the object you hand it itself needs changing.
-var adjustTypesFromJSONValue = (EJSON._adjustTypesFromJSONValue = function (obj) {
+var adjustTypesFromJSONValue = (EJSON._adjustTypesFromJSONValue = function (obj: any) {
   if (obj === null) return null
   var maybeChanged = fromJSONValueHelper(obj)
   if (maybeChanged !== obj) return maybeChanged
-  _.each(obj, function (value, key) {
+  _.each(obj, function (value: any, key: any) {
     if (typeof value === "object") {
       var changed = fromJSONValueHelper(value)
       if (value !== changed) {
@@ -173,11 +173,11 @@ var adjustTypesFromJSONValue = (EJSON._adjustTypesFromJSONValue = function (obj)
 
 // DOES NOT RECURSE.  For actually getting the fully-changed value, use
 // EJSON.fromJSONValue
-var fromJSONValueHelper = function (value) {
+var fromJSONValueHelper = function (value: any) {
   if (typeof value === "object" && value !== null) {
     if (
       _.size(value) <= 2 &&
-      _.all(value, function (v, k) {
+      _.all(value, function (v: any, k: any) {
         return typeof k === "string" && k.substr(0, 1) === "$"
       })
     ) {
@@ -192,7 +192,7 @@ var fromJSONValueHelper = function (value) {
   return value
 }
 
-EJSON.fromJSONValue = function (item) {
+EJSON.fromJSONValue = function (item: any) {
   var changed = fromJSONValueHelper(item)
   if (changed === item && typeof item === "object") {
     item = EJSON.clone(item)
@@ -203,20 +203,20 @@ EJSON.fromJSONValue = function (item) {
   }
 }
 
-EJSON.stringify = function (item) {
+EJSON.stringify = function (item: any) {
   return JSON.stringify(EJSON.toJSONValue(item))
 }
 
-EJSON.parse = function (item) {
+EJSON.parse = function (item: any) {
   return EJSON.fromJSONValue(JSON.parse(item))
 }
 
-EJSON.isBinary = function (obj) {
+EJSON.isBinary = function (obj: any) {
   return (typeof Uint8Array !== "undefined" && obj instanceof Uint8Array) || (obj && obj.$Uint8ArrayPolyfill)
 }
 
-EJSON.equals = function (a, b, options) {
-  var i
+EJSON.equals = function (a: any, b: any, options: any) {
+  var i: any
   var keyOrderSensitive = !!(options && options.keyOrderSensitive)
   if (a === b) return true
   if (!a || !b)
@@ -243,12 +243,12 @@ EJSON.equals = function (a, b, options) {
   // fall back to structural equality of objects
   var ret
   if (keyOrderSensitive) {
-    var bKeys = []
-    _.each(b, function (val, x) {
+    var bKeys: any = []
+    _.each(b, function (val: any, x: any) {
       bKeys.push(x)
     })
     i = 0
-    ret = _.all(a, function (val, x) {
+    ret = _.all(a, function (val: any, x: any) {
       if (i >= bKeys.length) {
         return false
       }
@@ -264,7 +264,7 @@ EJSON.equals = function (a, b, options) {
     return ret && i === bKeys.length
   } else {
     i = 0
-    ret = _.all(a, function (val, key) {
+    ret = _.all(a, function (val: any, key: any) {
       if (!_.has(b, key)) {
         return false
       }
@@ -278,7 +278,7 @@ EJSON.equals = function (a, b, options) {
   }
 }
 
-EJSON.clone = function (v) {
+EJSON.clone = function (v: any) {
   var ret
   if (typeof v !== "object") return v
   if (v === null) return null // null has typeof "object"
@@ -303,7 +303,7 @@ EJSON.clone = function (v) {
   }
   // handle other objects
   ret = {}
-  _.each(v, function (value, key) {
+  _.each(v, function (value: any, key: any) {
     ret[key] = EJSON.clone(value)
   })
   return ret

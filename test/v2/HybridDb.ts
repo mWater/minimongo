@@ -12,13 +12,13 @@ import _ from "lodash"
 import { processFind } from "./utils"
 
 export default HybridDb = class HybridDb {
-  constructor(localDb, remoteDb) {
+  constructor(localDb: any, remoteDb: any) {
     this.localDb = localDb
     this.remoteDb = remoteDb
     this.collections = {}
   }
 
-  addCollection(name, options, success, error) {
+  addCollection(name: any, options: any, success: any, error: any) {
     // Shift options over if not present
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
@@ -32,7 +32,7 @@ export default HybridDb = class HybridDb {
     }
   }
 
-  removeCollection(name, success, error) {
+  removeCollection(name: any, success: any, error: any) {
     delete this[name]
     delete this.collections[name]
     if (success != null) {
@@ -40,16 +40,16 @@ export default HybridDb = class HybridDb {
     }
   }
 
-  upload(success, error) {
+  upload(success: any, error: any) {
     const cols = _.values(this.collections)
 
-    function uploadCols(cols, success, error) {
+    function uploadCols(cols: any, success: any, error: any) {
       const col = _.first(cols)
       if (col) {
         return col.upload(
           () => uploadCols(_.rest(cols), success, error),
-          (err) => error(err)
-        )
+          (err: any) => error(err)
+        );
       } else {
         return success()
       }
@@ -61,7 +61,7 @@ export default HybridDb = class HybridDb {
 
 class HybridCollection {
   // Options includes
-  constructor(name, localCol, remoteCol, options) {
+  constructor(name: any, localCol: any, remoteCol: any, options: any) {
     this.name = name
     this.localCol = localCol
     this.remoteCol = remoteCol
@@ -80,12 +80,12 @@ class HybridCollection {
   // In "remote", it will call remote and not cache, but integrates local upserts/deletes
   // If remote gives error, then it will return local results
   // In "local", just returns local results
-  find(selector, options = {}) {
+  find(selector: any, options = {}) {
     return {
-      fetch: (success, error) => {
+      fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    }
+    };
   }
 
   // options.mode defaults to "hybrid".
@@ -96,7 +96,7 @@ class HybridCollection {
   // If remote gives error, then it will return null
   // In "remote", it gets remote and integrates local changes. Much more efficient if _id specified
   // If remote gives error, falls back to local if caching
-  findOne(selector, options = {}, success, error) {
+  findOne(selector: any, options = {}, success: any, error: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
@@ -108,7 +108,7 @@ class HybridCollection {
       return this.localCol.findOne(
         selector,
         options,
-        (localDoc) => {
+        (localDoc: any) => {
           // If found, return
           if (localDoc) {
             success(localDoc)
@@ -118,17 +118,17 @@ class HybridCollection {
             }
           }
 
-          const remoteSuccess = (remoteDoc) => {
+          const remoteSuccess = (remoteDoc: any) => {
             // Cache
             const cacheSuccess = () => {
               // Try query again
-              return this.localCol.findOne(selector, options, function (localDoc2) {
+              return this.localCol.findOne(selector, options, function (localDoc2: any) {
                 if (!_.isEqual(localDoc, localDoc2)) {
                   return success(localDoc2)
                 } else if (!localDoc) {
                   return success(null)
                 }
-              })
+              });
             }
 
             const docs = remoteDoc ? [remoteDoc] : []
@@ -146,28 +146,28 @@ class HybridCollection {
           return this.remoteCol.findOne(selector, _.omit(options, "fields"), remoteSuccess, remoteError)
         },
         error
-      )
+      );
     } else if (mode === "remote") {
       // If _id specified, use remote findOne
       if (selector._id) {
-        const remoteSuccess2 = (remoteData) => {
+        const remoteSuccess2 = (remoteData: any) => {
           // Check for local upsert
-          return this.localCol.pendingUpserts((pendingUpserts) => {
+          return this.localCol.pendingUpserts((pendingUpserts: any) => {
             const localData = _.findWhere(pendingUpserts, { _id: selector._id })
             if (localData) {
               return success(localData)
             }
 
             // Check for local remove
-            return this.localCol.pendingRemoves(function (pendingRemoves) {
+            return this.localCol.pendingRemoves(function (pendingRemoves: any) {
               if (pendingRemoves.includes(selector._id)) {
                 // Removed, success null
                 return success(null)
               }
 
               return success(remoteData)
-            })
-          }, error)
+            });
+          }, error);
         }
 
         // Get remote response
@@ -177,14 +177,14 @@ class HybridCollection {
         // For example, if the one result returned by remote is locally deleted, we have no fallback
         // So instead we do a normal find and then take the first result, which is very inefficient
         return this.find(selector, options).fetch(
-          function (findData) {
+          function (findData: any) {
             if (findData.length > 0) {
               return success(findData[0])
             } else {
               return success(null)
             }
           },
-          (err) => {
+          (err: any) => {
             // Call local if caching
             if (this.caching) {
               return this.localCol.findOne(selector, options, success, error)
@@ -195,28 +195,28 @@ class HybridCollection {
               }
             }
           }
-        )
+        );
       }
     } else {
       throw new Error("Unknown mode")
     }
   }
 
-  _findFetch(selector, options, success, error) {
+  _findFetch(selector: any, options: any, success: any, error: any) {
     const mode = options.mode || (this.caching ? "hybrid" : "remote")
 
     if (mode === "hybrid") {
       // Get local results
-      const localSuccess = (localData) => {
+      const localSuccess = (localData: any) => {
         // Return data immediately
         success(localData)
 
         // Get remote data
-        const remoteSuccess = (remoteData) => {
+        const remoteSuccess = (remoteData: any) => {
           // Cache locally
           const cacheSuccess = () => {
             // Get local data again
-            function localSuccess2(localData2) {
+            function localSuccess2(localData2: any) {
               // Check if different
               if (!_.isEqual(localData, localData2)) {
                 // Send again
@@ -236,22 +236,22 @@ class HybridCollection {
       return this.localCol.find(selector, options).fetch(success, error)
     } else if (mode === "remote") {
       // Get remote results
-      const remoteSuccess = (remoteData) => {
+      const remoteSuccess = (remoteData: any) => {
         // Remove local remotes
         let data = remoteData
 
-        return this.localCol.pendingRemoves((removes) => {
+        return this.localCol.pendingRemoves((removes: any) => {
           if (removes.length > 0) {
-            const removesMap = _.object(_.map(removes, (id) => [id, id]))
-            data = _.filter(remoteData, (doc) => !_.has(removesMap, doc._id))
+            const removesMap = _.object(_.map(removes, (id: any) => [id, id]))
+            data = _.filter(remoteData, (doc: any) => !_.has(removesMap, doc._id))
           }
 
           // Add upserts
-          return this.localCol.pendingUpserts(function (upserts) {
+          return this.localCol.pendingUpserts(function (upserts: any) {
             if (upserts.length > 0) {
               // Remove upserts from data
               const upsertsMap = _.object(_.pluck(upserts, "_id"), _.pluck(upserts, "_id"))
-              data = _.filter(data, (doc) => !_.has(upsertsMap, doc._id))
+              data = _.filter(data, (doc: any) => !_.has(upsertsMap, doc._id))
 
               // Add upserts
               data = data.concat(upserts)
@@ -261,11 +261,11 @@ class HybridCollection {
             }
 
             return success(data)
-          })
-        })
+          });
+        });
       }
 
-      const remoteError = (err) => {
+      const remoteError = (err: any) => {
         // Call local if caching
         if (this.caching) {
           return this.localCol.find(selector, options).fetch(success, error)
@@ -283,19 +283,19 @@ class HybridCollection {
     }
   }
 
-  upsert(doc, success, error) {
+  upsert(doc: any, success: any, error: any) {
     return this.localCol.upsert(
       doc,
-      function (result) {
+      function (result: any) {
         if (success != null) {
           return success(result)
         }
       },
       error
-    )
+    );
   }
 
-  remove(id, success, error) {
+  remove(id: any, success: any, error: any) {
     return this.localCol.remove(
       id,
       function () {
@@ -307,13 +307,13 @@ class HybridCollection {
     )
   }
 
-  upload(success, error) {
-    var uploadUpserts = (upserts, success, error) => {
+  upload(success: any, error: any) {
+    var uploadUpserts = (upserts: any, success: any, error: any) => {
       const upsert = _.first(upserts)
       if (upsert) {
         return this.remoteCol.upsert(
           upsert,
-          (remoteDoc) => {
+          (remoteDoc: any) => {
             return this.localCol.resolveUpsert(
               upsert,
               () => {
@@ -339,7 +339,7 @@ class HybridCollection {
               error
             )
           },
-          (err) => {
+          (err: any) => {
             // If 410 error or 403, remove document
             if (err.status === 410 || err.status === 403) {
               return this.localCol.remove(
@@ -365,13 +365,13 @@ class HybridCollection {
               return error(err)
             }
           }
-        )
+        );
       } else {
         return success()
       }
     }
 
-    var uploadRemoves = (removes, success, error) => {
+    var uploadRemoves = (removes: any, success: any, error: any) => {
       const remove = _.first(removes)
       if (remove) {
         return this.remoteCol.remove(
@@ -379,7 +379,7 @@ class HybridCollection {
           () => {
             return this.localCol.resolveRemove(remove, () => uploadRemoves(_.rest(removes), success, error), error)
           },
-          (err) => {
+          (err: any) => {
             // If 403 or 410, remove document
             if (err.status === 410 || err.status === 403) {
               return this.localCol.resolveRemove(
@@ -399,21 +399,21 @@ class HybridCollection {
             }
           },
           error
-        )
+        );
       } else {
         return success()
       }
     }
 
     // Get pending upserts
-    return this.localCol.pendingUpserts((upserts) => {
+    return this.localCol.pendingUpserts((upserts: any) => {
       return uploadUpserts(
         upserts,
         () => {
-          return this.localCol.pendingRemoves((removes) => uploadRemoves(removes, success, error), error)
+          return this.localCol.pendingRemoves((removes: any) => uploadRemoves(removes, success, error), error);
         },
         error
-      )
-    }, error)
+      );
+    }, error);
   }
 }

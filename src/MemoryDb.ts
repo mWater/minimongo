@@ -10,7 +10,7 @@ import { compileSort } from "./selector"
 export default MemoryDb = class MemoryDb {
   // Options are:
   //  safety: How to protect the in-memory copies: "clone" (default) returns a fresh copy but is slow. "freeze" returns a frozen version
-  constructor(options, success) {
+  constructor(options: any, success: any) {
     this.collections = {}
     this.options = _.defaults(options, { safety: "clone" })
 
@@ -19,7 +19,7 @@ export default MemoryDb = class MemoryDb {
     }
   }
 
-  addCollection(name, success, error) {
+  addCollection(name: any, success: any, error: any) {
     const collection = new Collection(name, this.options)
     this[name] = collection
     this.collections[name] = collection
@@ -28,7 +28,7 @@ export default MemoryDb = class MemoryDb {
     }
   }
 
-  removeCollection(name, success, error) {
+  removeCollection(name: any, success: any, error: any) {
     delete this[name]
     delete this.collections[name]
     if (success != null) {
@@ -43,7 +43,7 @@ export default MemoryDb = class MemoryDb {
 
 // Stores data in memory
 class Collection {
-  constructor(name, options) {
+  constructor(name: any, options: any) {
     this.name = name
 
     this.items = {}
@@ -52,27 +52,27 @@ class Collection {
     this.options = options || {}
   }
 
-  find(selector, options) {
+  find(selector: any, options: any) {
     return {
-      fetch: (success, error) => {
+      fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
       }
-    }
+    };
   }
 
-  findOne(selector, options, success, error) {
+  findOne(selector: any, options: any, success: any, error: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
 
-    return this.find(selector, options).fetch((results) => {
+    return this.find(selector, options).fetch((results: any) => {
       if (success != null) {
         return success(this._applySafety(results.length > 0 ? results[0] : null))
       }
-    }, error)
+    }, error);
   }
 
-  _findFetch(selector, options, success, error) {
+  _findFetch(selector: any, options: any, success: any, error: any) {
     // Defer to allow other processes to run
     return setTimeout(() => {
       // Shortcut if _id is specified
@@ -90,7 +90,7 @@ class Collection {
   }
 
   // Applies safety (either freezing or cloning to object or array)
-  _applySafety = (items) => {
+  _applySafety = (items: any) => {
     if (!items) {
       return items
     }
@@ -108,7 +108,7 @@ class Collection {
     throw new Error(`Unsupported safety ${this.options.safety}`)
   }
 
-  upsert(docs, bases, success, error) {
+  upsert(docs: any, bases: any, success: any, error: any) {
     let items
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
@@ -142,17 +142,17 @@ class Collection {
     }
   }
 
-  remove(id, success, error) {
+  remove(id: any, success: any, error: any) {
     // Special case for filter-type remove
     if (_.isObject(id)) {
-      this.find(id).fetch((rows) => {
+      this.find(id).fetch((rows: any) => {
         return async.each(
           rows,
-          (row, cb) => {
+          (row: any, cb: any) => {
             return this.remove(row._id, () => cb(), cb)
           },
           () => success()
-        )
+        );
       }, error)
       return
     }
@@ -171,9 +171,9 @@ class Collection {
   }
 
   // Options are find options with optional "exclude" which is list of _ids to exclude
-  cache(docs, selector, options, success, error) {
+  cache(docs: any, selector: any, options: any, success: any, error: any) {
     // Add all non-local that are not upserted or removed
-    let sort
+    let sort: any
     for (let doc of docs) {
       // Exclude any excluded _ids from being cached/uncached
       if (options && options.exclude && options.exclude.includes(doc._id)) {
@@ -190,7 +190,7 @@ class Collection {
     }
 
     // Perform query, removing rows missing in docs from local db
-    return this.find(selector, options).fetch((results) => {
+    return this.find(selector, options).fetch((results: any) => {
       for (let result of results) {
         if (!docsMap[result._id] && !_.has(this.upserts, result._id)) {
           // If at limit
@@ -217,18 +217,18 @@ class Collection {
       if (success != null) {
         return success()
       }
-    }, error)
+    }, error);
   }
 
-  pendingUpserts(success) {
+  pendingUpserts(success: any) {
     return success(_.values(this.upserts))
   }
 
-  pendingRemoves(success) {
+  pendingRemoves(success: any) {
     return success(_.pluck(this.removes, "_id"))
   }
 
-  resolveUpserts(upserts, success) {
+  resolveUpserts(upserts: any, success: any) {
     for (let upsert of upserts) {
       const id = upsert.doc._id
       if (this.upserts[id]) {
@@ -247,7 +247,7 @@ class Collection {
     }
   }
 
-  resolveRemove(id, success) {
+  resolveRemove(id: any, success: any) {
     delete this.removes[id]
     if (success != null) {
       return success()
@@ -255,7 +255,7 @@ class Collection {
   }
 
   // Add but do not overwrite or record as upsert
-  seed(docs, success) {
+  seed(docs: any, success: any) {
     if (!_.isArray(docs)) {
       docs = [docs]
     }
@@ -271,12 +271,12 @@ class Collection {
   }
 
   // Add but do not overwrite upserts or removes
-  cacheOne(doc, success, error) {
+  cacheOne(doc: any, success: any, error: any) {
     return this.cacheList([doc], success, error)
   }
 
   // Add but do not overwrite upserts or removes
-  cacheList(docs, success) {
+  cacheList(docs: any, success: any) {
     for (let doc of docs) {
       if (!_.has(this.upserts, doc._id) && !_.has(this.removes, doc._id)) {
         const existing = this.items[doc._id]
@@ -293,10 +293,10 @@ class Collection {
     }
   }
 
-  uncache(selector, success, error) {
+  uncache(selector: any, success: any, error: any) {
     const compiledSelector = utils.compileDocumentSelector(selector)
 
-    const items = _.filter(_.values(this.items), (item) => {
+    const items = _.filter(_.values(this.items), (item: any) => {
       return this.upserts[item._id] != null || !compiledSelector(item)
     })
 
@@ -306,10 +306,10 @@ class Collection {
     }
   }
 
-  uncacheList(ids, success, error) {
+  uncacheList(ids: any, success: any, error: any) {
     const idIndex = _.indexBy(ids)
 
-    const items = _.filter(_.values(this.items), (item) => {
+    const items = _.filter(_.values(this.items), (item: any) => {
       return this.upserts[item._id] != null || !idIndex[item._id]
     })
 
