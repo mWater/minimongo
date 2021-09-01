@@ -1,117 +1,147 @@
-_ = require 'lodash'
-$ = require 'jquery'
+let RemoteDb;
+import _ from 'lodash';
+import $ from 'jquery';
+import { createUid } from './utils';
 
-createUid = require('./utils').createUid
+export default RemoteDb = class RemoteDb {
+  // Url must have trailing /
+  constructor(url, client) {
+    this.url = url;
+    this.client = client;
+    this.collections = {};
+  }
 
-module.exports = class RemoteDb
-  # Url must have trailing /
-  constructor: (url, client) ->
-    @url = url
-    @client = client
-    @collections = {}
+  addCollection(name) {
+    const collection = new Collection(name, this.url + name, this.client);
+    this[name] = collection;
+    return this.collections[name] = collection;
+  }
 
-  addCollection: (name) ->
-    collection = new Collection(name, @url + name, @client)
-    @[name] = collection
-    @collections[name] = collection
+  removeCollection(name) {
+    delete this[name];
+    return delete this.collections[name];
+  }
+};
 
-  removeCollection: (name) ->
-    delete @[name]
-    delete @collections[name]
+// Remote collection on server
+class Collection {
+  constructor(name, url, client) {
+    this.name = name;
+    this.url = url;
+    this.client = client;
+  }
 
-# Remote collection on server
-class Collection
-  constructor: (name, url, client) ->
-    @name = name
-    @url = url
-    @client = client
+  // error is called with jqXHR
+  find(selector, options = {}) {
+    return { fetch: (success, error) => {
+      // Create url
+      const params = {};
+      if (options.sort) {
+        params.sort = JSON.stringify(options.sort);
+      }
+      if (options.limit) {
+        params.limit = options.limit;
+      }
+      if (options.fields) {
+        params.fields = JSON.stringify(options.fields);
+      }
+      if (this.client) {
+        params.client = this.client;
+      }
+      params.selector = JSON.stringify(selector || {});
 
-  # error is called with jqXHR
-  find: (selector, options = {}) ->
-    return fetch: (success, error) =>
-      # Create url
-      params = {}
-      if options.sort
-        params.sort = JSON.stringify(options.sort)
-      if options.limit
-        params.limit = options.limit
-      if options.fields
-        params.fields = JSON.stringify(options.fields)
-      if @client
-        params.client = @client
-      params.selector = JSON.stringify(selector || {})
+      // Add timestamp for Android 2.3.6 bug with caching
+      if (navigator.userAgent.toLowerCase().indexOf('android 2.3') !== -1) {
+        params._ = new Date().getTime();
+      }
 
-      # Add timestamp for Android 2.3.6 bug with caching
-      if navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
-        params._ = new Date().getTime()
+      const req = $.getJSON(this.url, params);
+      req.done((data, textStatus, jqXHR) => success(data));
+      return req.fail(function(jqXHR, textStatus, errorThrown) {
+        if (error) {
+          return error(jqXHR);
+        }
+      });
+    }
+  };
+  }
 
-      req = $.getJSON(@url, params)
-      req.done (data, textStatus, jqXHR) ->
-        success(data)
-      req.fail (jqXHR, textStatus, errorThrown) ->
-        if error
-          error(jqXHR)
+  // error is called with jqXHR
+  findOne(selector, options = {}, success, error) {
+    if (_.isFunction(options)) {
+      [options, success, error] = [{}, options, success];
+    }
 
-  # error is called with jqXHR
-  findOne: (selector, options = {}, success, error) ->
-    if _.isFunction(options)
-      [options, success, error] = [{}, options, success]
+    // Create url
+    const params = {};
+    if (options.sort) {
+      params.sort = JSON.stringify(options.sort);
+    }
+    params.limit = 1;
+    if (this.client) {
+      params.client = this.client;
+    }
+    params.selector = JSON.stringify(selector || {});
 
-    # Create url
-    params = {}
-    if options.sort
-      params.sort = JSON.stringify(options.sort)
-    params.limit = 1
-    if @client
-      params.client = @client
-    params.selector = JSON.stringify(selector || {})
+    // Add timestamp for Android 2.3.6 bug with caching
+    if (navigator.userAgent.toLowerCase().indexOf('android 2.3') !== -1) {
+      params._ = new Date().getTime();
+    }
 
-    # Add timestamp for Android 2.3.6 bug with caching
-    if navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
-      params._ = new Date().getTime()
+    const req = $.getJSON(this.url, params);
+    req.done((data, textStatus, jqXHR) => success(data[0] || null));
+    return req.fail(function(jqXHR, textStatus, errorThrown) {
+      if (error) {
+        return error(jqXHR);
+      }
+    });
+  }
 
-    req = $.getJSON(@url, params)
-    req.done (data, textStatus, jqXHR) ->
-      success(data[0] || null)
-    req.fail (jqXHR, textStatus, errorThrown) ->
-      if error
-        error(jqXHR)
+  // error is called with jqXHR
+  upsert(doc, success, error) {
+    let url;
+    if (!this.client) {
+      throw new Error("Client required to upsert");
+    }
 
-  # error is called with jqXHR
-  upsert: (doc, success, error) ->
-    if not @client
-      throw new Error("Client required to upsert")
+    if (!doc._id) {
+      doc._id = createUid();
+    }
 
-    if not doc._id
-      doc._id = createUid()
+    // Add timestamp for Android 2.3.6 bug with caching
+    if (navigator.userAgent.toLowerCase().indexOf('android 2.3') !== -1) {
+      url = this.url + "?client=" + this.client + "&_=" + new Date().getTime();
+    } else {
+      url = this.url + "?client=" + this.client;
+    }
 
-    # Add timestamp for Android 2.3.6 bug with caching
-    if navigator.userAgent.toLowerCase().indexOf('android 2.3') != -1
-      url = @url + "?client=" + @client + "&_=" + new Date().getTime()
-    else
-      url = @url + "?client=" + @client
-
-    req = $.ajax(url, {
+    const req = $.ajax(url, {
       data : JSON.stringify(doc),
       contentType : 'application/json',
-      type : 'POST'})
-    req.done (data, textStatus, jqXHR) ->
-      success(data || null)
-    req.fail (jqXHR, textStatus, errorThrown) ->
-      if error
-        error(jqXHR)
+      type : 'POST'});
+    req.done((data, textStatus, jqXHR) => success(data || null));
+    return req.fail(function(jqXHR, textStatus, errorThrown) {
+      if (error) {
+        return error(jqXHR);
+      }
+    });
+  }
 
-  # error is called with jqXHR
-  remove: (id, success, error) ->
-    if not @client
-      throw new Error("Client required to remove")
+  // error is called with jqXHR
+  remove(id, success, error) {
+    if (!this.client) {
+      throw new Error("Client required to remove");
+    }
 
-    req = $.ajax(@url + "/" + id + "?client=" + @client, { type : 'DELETE'})
-    req.done (data, textStatus, jqXHR) ->
-      success()
-    req.fail (jqXHR, textStatus, errorThrown) ->
-      # 410 means already deleted
-      if jqXHR.status == 410
-        success()
-      else if error
-        error(jqXHR)
+    const req = $.ajax(this.url + "/" + id + "?client=" + this.client, { type : 'DELETE'});
+    req.done((data, textStatus, jqXHR) => success());
+    return req.fail(function(jqXHR, textStatus, errorThrown) {
+      // 410 means already deleted
+      if (jqXHR.status === 410) {
+        return success();
+      } else if (error) {
+        return error(jqXHR);
+      }
+    });
+  }
+}

@@ -1,185 +1,239 @@
-_ = require 'lodash'
-utils = require('./utils')
-compileSort = require('./selector').compileSort
+let ReplicatingDb;
+import _ from 'lodash';
+import utils from './utils';
+import { compileSort } from './selector';
 
-# Replicates data into a both a master and a replica db. Assumes both are identical at start
-# and then only uses master for finds and does all changes to both
-# Warning: removing a collection removes it from the underlying master and replica!
-module.exports = class ReplicatingDb
-  constructor: (masterDb, replicaDb) ->
-    @collections = {}
+// Replicates data into a both a master and a replica db. Assumes both are identical at start
+// and then only uses master for finds and does all changes to both
+// Warning: removing a collection removes it from the underlying master and replica!
+export default ReplicatingDb = class ReplicatingDb {
+  constructor(masterDb, replicaDb) {
+    this.collections = {};
 
-    @masterDb = masterDb
-    @replicaDb = replicaDb
+    this.masterDb = masterDb;
+    this.replicaDb = replicaDb;
+  }
 
-  addCollection: (name, success, error) ->
-    collection = new Collection(name, @masterDb[name], @replicaDb[name])
-    @[name] = collection
-    @collections[name] = collection
-    if success? then success()
+  addCollection(name, success, error) {
+    const collection = new Collection(name, this.masterDb[name], this.replicaDb[name]);
+    this[name] = collection;
+    this.collections[name] = collection;
+    if (success != null) { return success(); }
+  }
 
-  removeCollection: (name, success, error) ->
-    delete @[name]
-    delete @collections[name]
-    if success? then success()
+  removeCollection(name, success, error) {
+    delete this[name];
+    delete this.collections[name];
+    if (success != null) { return success(); }
+  }
 
-  getCollectionNames: -> _.keys(@collections)
+  getCollectionNames() { return _.keys(this.collections); }
+};
 
-# Replicated collection.
-class Collection
-  constructor: (name, masterCol, replicaCol) ->
-    @name = name
-    @masterCol = masterCol
-    @replicaCol = replicaCol
+// Replicated collection.
+class Collection {
+  constructor(name, masterCol, replicaCol) {
+    this.name = name;
+    this.masterCol = masterCol;
+    this.replicaCol = replicaCol;
+  }
 
-  find: (selector, options) ->
-    return @masterCol.find(selector, options)
+  find(selector, options) {
+    return this.masterCol.find(selector, options);
+  }
 
-  findOne: (selector, options, success, error) ->
-    return @masterCol.findOne(selector, options, success, error)
+  findOne(selector, options, success, error) {
+    return this.masterCol.findOne(selector, options, success, error);
+  }
 
-  upsert: (docs, bases, success, error) ->
-    [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
+  upsert(docs, bases, success, error) {
+    let items;
+    [items, success, error] = utils.regularizeUpsert(docs, bases, success, error);
 
-    # Upsert does to both
-    @masterCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), () =>
-      @replicaCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), (results) =>
-        success(docs)
-      , error)
-    , error)
+    // Upsert does to both
+    return this.masterCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), () => {
+      return this.replicaCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), results => {
+        return success(docs);
+      }
+      , error);
+    }
+    , error);
+  }
 
-  remove: (id, success, error) ->
-    # Do to both
-    @masterCol.remove(id, () =>
-      @replicaCol.remove(id, success, error)
-    , error)
+  remove(id, success, error) {
+    // Do to both
+    return this.masterCol.remove(id, () => {
+      return this.replicaCol.remove(id, success, error);
+    }
+    , error);
+  }
 
-  cache: (docs, selector, options, success, error) ->
-    # Calculate what has to be done for cache using the master database which is faster (usually MemoryDb)
-    # then do minimum to both databases
+  cache(docs, selector, options, success, error) {
+    // Calculate what has to be done for cache using the master database which is faster (usually MemoryDb)
+    // then do minimum to both databases
 
-    # Index docs
-    docsMap = _.indexBy(docs, "_id")
+    // Index docs
+    let sort;
+    const docsMap = _.indexBy(docs, "_id");
 
-    # Compile sort
-    if options.sort
-      sort = compileSort(options.sort)
+    // Compile sort
+    if (options.sort) {
+      sort = compileSort(options.sort);
+    }
 
-    # Perform query
-    @masterCol.find(selector, options).fetch (results) =>
-      resultsMap = _.indexBy(results, "_id")
+    // Perform query
+    return this.masterCol.find(selector, options).fetch(results => {
+      let result;
+      const resultsMap = _.indexBy(results, "_id");
 
-      # Determine if each result needs to be cached
-      toCache = []
-      for doc in docs
-        result = resultsMap[doc._id]
+      // Determine if each result needs to be cached
+      const toCache = [];
+      for (let doc of docs) {
+        result = resultsMap[doc._id];
 
-        # Exclude any excluded _ids from being cached/uncached
-        if options and options.exclude and doc._id in options.exclude
-          continue
+        // Exclude any excluded _ids from being cached/uncached
+        if (options && options.exclude && options.exclude.includes(doc._id)) {
+          continue;
+        }
 
-        # If not present locally, cache it
-        if not result
-          toCache.push(doc)
-          continue
+        // If not present locally, cache it
+        if (!result) {
+          toCache.push(doc);
+          continue;
+        }
 
-        # If both have revisions (_rev) and new one is same or lower, do not cache
-        if doc._rev and result._rev and doc._rev <= result._rev
-          continue
+        // If both have revisions (_rev) and new one is same or lower, do not cache
+        if (doc._rev && result._rev && (doc._rev <= result._rev)) {
+          continue;
+        }
 
-        # Only cache if different
-        if not _.isEqual(doc, result)
-          toCache.push(doc)
+        // Only cache if different
+        if (!_.isEqual(doc, result)) {
+          toCache.push(doc);
+        }
+      }
 
-      toUncache = []
-      for result in results
-        # If at limit
-        if options.limit and docs.length == options.limit
-          # If past end on sorted limited, ignore
-          if options.sort and sort(result, _.last(docs)) >= 0
-            continue
-          # If no sort, ignore
-          if not options.sort
-            continue
+      const toUncache = [];
+      for (result of results) {
+        // If at limit
+        if (options.limit && (docs.length === options.limit)) {
+          // If past end on sorted limited, ignore
+          if (options.sort && (sort(result, _.last(docs)) >= 0)) {
+            continue;
+          }
+          // If no sort, ignore
+          if (!options.sort) {
+            continue;
+          }
+        }
 
-        # Exclude any excluded _ids from being cached/uncached
-        if options and options.exclude and result._id in options.exclude
-          continue
+        // Exclude any excluded _ids from being cached/uncached
+        if (options && options.exclude && options.exclude.includes(result._id)) {
+          continue;
+        }
 
-        # Determine which ones to uncache
-        if not docsMap[result._id] 
-          toUncache.push(result._id)
+        // Determine which ones to uncache
+        if (!docsMap[result._id]) { 
+          toUncache.push(result._id);
+        }
+      }
 
-      # Cache ones needing caching
-      performCaches = (next) =>
-        if toCache.length > 0
-          @masterCol.cacheList(toCache, () =>
-            @replicaCol.cacheList(toCache, () =>
-              next()
-            , error)
-          , error)
-        else
-          next()
+      // Cache ones needing caching
+      const performCaches = next => {
+        if (toCache.length > 0) {
+          return this.masterCol.cacheList(toCache, () => {
+            return this.replicaCol.cacheList(toCache, () => {
+              return next();
+            }
+            , error);
+          }
+          , error);
+        } else {
+          return next();
+        }
+      };
 
-      # Uncache list
-      performUncaches = (next) =>
-        if toUncache.length > 0
-          @masterCol.uncacheList(toUncache, () =>
-            @replicaCol.uncacheList(toUncache, () =>
-              next()
-            , error)
-          , error)
-        else
-          next()
+      // Uncache list
+      const performUncaches = next => {
+        if (toUncache.length > 0) {
+          return this.masterCol.uncacheList(toUncache, () => {
+            return this.replicaCol.uncacheList(toUncache, () => {
+              return next();
+            }
+            , error);
+          }
+          , error);
+        } else {
+          return next();
+        }
+      };
 
-      performCaches(=>
-        performUncaches(=>
-          if success? then success()
-          return
-        )
-      )
-    , error
+      return performCaches(() => {
+        return performUncaches(() => {
+          if (success != null) { success(); }
+        });
+      });
+    }
+    , error);
+  }
 
-  pendingUpserts: (success, error) ->
-    @masterCol.pendingUpserts(success, error)
+  pendingUpserts(success, error) {
+    return this.masterCol.pendingUpserts(success, error);
+  }
 
-  pendingRemoves: (success, error) ->
-    @masterCol.pendingRemoves(success, error)
+  pendingRemoves(success, error) {
+    return this.masterCol.pendingRemoves(success, error);
+  }
 
-  resolveUpserts: (upserts, success, error) ->
-    @masterCol.resolveUpserts(upserts, () =>
-      @replicaCol.resolveUpserts(upserts, success, error)
-    , error)
+  resolveUpserts(upserts, success, error) {
+    return this.masterCol.resolveUpserts(upserts, () => {
+      return this.replicaCol.resolveUpserts(upserts, success, error);
+    }
+    , error);
+  }
 
-  resolveRemove: (id, success, error) ->
-    @masterCol.resolveRemove(id, () =>
-      @replicaCol.resolveRemove(id, success, error)
-    , error)
+  resolveRemove(id, success, error) {
+    return this.masterCol.resolveRemove(id, () => {
+      return this.replicaCol.resolveRemove(id, success, error);
+    }
+    , error);
+  }
 
-  # Add but do not overwrite or record as upsert
-  seed: (docs, success, error) ->
-    @masterCol.seed(docs, () =>
-      @replicaCol.seed(docs, success, error)
-    , error)
+  // Add but do not overwrite or record as upsert
+  seed(docs, success, error) {
+    return this.masterCol.seed(docs, () => {
+      return this.replicaCol.seed(docs, success, error);
+    }
+    , error);
+  }
 
-  # Add but do not overwrite upserts or removes
-  cacheOne: (doc, success, error) ->
-    @masterCol.cacheOne(doc, () =>
-      @replicaCol.cacheOne(doc, success, error)
-    , error)
+  // Add but do not overwrite upserts or removes
+  cacheOne(doc, success, error) {
+    return this.masterCol.cacheOne(doc, () => {
+      return this.replicaCol.cacheOne(doc, success, error);
+    }
+    , error);
+  }
 
-  # Add but do not overwrite upserts or removes
-  cacheList: (docs, success, error) ->
-    @masterCol.cacheList(docs, () =>
-      @replicaCol.cacheList(docs, success, error)
-    , error)
+  // Add but do not overwrite upserts or removes
+  cacheList(docs, success, error) {
+    return this.masterCol.cacheList(docs, () => {
+      return this.replicaCol.cacheList(docs, success, error);
+    }
+    , error);
+  }
 
-  uncache: (selector, success, error) ->
-    @masterCol.uncache(selector, () =>
-      @replicaCol.uncache(selector, success, error)
-    , error)
+  uncache(selector, success, error) {
+    return this.masterCol.uncache(selector, () => {
+      return this.replicaCol.uncache(selector, success, error);
+    }
+    , error);
+  }
 
-  uncacheList: (ids, success, error) ->
-    @masterCol.uncacheList(ids, () =>
-      @replicaCol.uncacheList(ids, success, error)
-    , error)
+  uncacheList(ids, success, error) {
+    return this.masterCol.uncacheList(ids, () => {
+      return this.replicaCol.uncacheList(ids, success, error);
+    }
+    , error);
+  }
+}

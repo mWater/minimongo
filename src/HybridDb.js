@@ -1,328 +1,397 @@
-###
+/*
 
 Database which caches locally in a localDb but pulls results
 ultimately from a RemoteDb
 
-###
+*/
 
-_ = require 'lodash'
-processFind = require('./utils').processFind
-utils = require('./utils')
+let HybridDb;
+import _ from 'lodash';
+import { processFind } from './utils';
+import utils from './utils';
 
-# Bridges a local and remote database, querying from the local first and then 
-# getting the remote. Also uploads changes from local to remote.
-module.exports = class HybridDb
-  constructor: (localDb, remoteDb) ->
-    @localDb = localDb
-    @remoteDb = remoteDb
-    @collections = {}
+// Bridges a local and remote database, querying from the local first and then 
+// getting the remote. Also uploads changes from local to remote.
+export default HybridDb = class HybridDb {
+  constructor(localDb, remoteDb) {
+    this.localDb = localDb;
+    this.remoteDb = remoteDb;
+    this.collections = {};
+  }
 
-  addCollection: (name, options, success, error) ->
-    # Shift options over if not present
-    if _.isFunction(options)
-      [options, success, error] = [{}, options, success]
-
-    collection = new HybridCollection(name, @localDb[name], @remoteDb[name], options)
-    @[name] = collection
-    @collections[name] = collection
-    if success? then success()
-
-  removeCollection: (name, success, error) ->
-    delete @[name]
-    delete @collections[name]
-    if success? then success()
-
-  upload: (success, error) ->
-    cols = _.values(@collections)
-
-    uploadCols = (cols, success, error) ->
-      col = _.first(cols)
-      if col
-        col.upload(->
-          uploadCols(_.rest(cols), success, error)
-        , (err) ->
-          error(err))
-      else
-        success()
-    uploadCols(cols, success, error)
-
-  getCollectionNames: -> _.keys(@collections)
-
-class HybridCollection
-  # Options includes
-  constructor: (name, localCol, remoteCol, options) ->
-    @name = name
-    @localCol = localCol
-    @remoteCol = remoteCol
-
-    # Default options
-    @options = options or {}
-    _.defaults @options, {
-      cacheFind: true       # Cache find results in local db
-      cacheFindOne: true    # Cache findOne results in local db
-      interim: true         # Return interim results from local db while waiting for remote db. Return again if different
-      useLocalOnRemoteError: true  # Use local results if the remote find fails. Only applies if interim is false.
-      shortcut: false       # true to return `findOne` results if any matching result is found in the local database. Useful for documents that change rarely.
-      timeout: 0            # Set to ms to timeout in for remote calls
-      sortUpserts: null     # Compare function to sort upserts sent to server
+  addCollection(name, options, success, error) {
+    // Shift options over if not present
+    if (_.isFunction(options)) {
+      [options, success, error] = [{}, options, success];
     }
 
-  find: (selector, options = {}) ->
-    return fetch: (success, error) =>
-      @_findFetch(selector, options, success, error)
+    const collection = new HybridCollection(name, this.localDb[name], this.remoteDb[name], options);
+    this[name] = collection;
+    this.collections[name] = collection;
+    if (success != null) { return success(); }
+  }
 
-  # Finds one row.
-  findOne: (selector, options = {}, success, error) ->
-    if _.isFunction(options)
-      [options, success, error] = [{}, options, success]
+  removeCollection(name, success, error) {
+    delete this[name];
+    delete this.collections[name];
+    if (success != null) { return success(); }
+  }
 
-    # Merge options
-    _.defaults(options, @options)
+  upload(success, error) {
+    const cols = _.values(this.collections);
 
-    # Happens after initial find
-    step2 = (localDoc) =>
-      findOptions = _.cloneDeep(options)
-      findOptions.interim = false
-      findOptions.cacheFind = options.cacheFindOne
-      if selector._id
-        findOptions.limit = 1
-      else
-        # Without _id specified, interaction between local and remote changes is complex
-        # For example, if the one result returned by remote is locally deleted, we have no fallback
-        # So instead we do a find with no limit and then take the first result, which is very inefficient
-        delete findOptions.limit
+    var uploadCols = function(cols, success, error) {
+      const col = _.first(cols);
+      if (col) {
+        return col.upload(() => uploadCols(_.rest(cols), success, error)
+        , err => error(err));
+      } else {
+        return success();
+      }
+    };
+    return uploadCols(cols, success, error);
+  }
 
-      @find(selector, findOptions).fetch (data) ->
-        # Return first entry or null
-        if data.length > 0
-          # Check that different from existing
-          if not _.isEqual(localDoc, data[0])
-            success(data[0])
-        else
-          # If nothing found, always report it, as interim find doesn't return null
-          success(null)
-      , error
+  getCollectionNames() { return _.keys(this.collections); }
+};
 
-    # If interim or shortcut, get local first
-    if options.interim or options.shortcut
-      @localCol.findOne selector, options, (localDoc) ->
-        # If found, return
-        if localDoc
-          success(_.cloneDeep(localDoc))
+class HybridCollection {
+  // Options includes
+  constructor(name, localCol, remoteCol, options) {
+    this.name = name;
+    this.localCol = localCol;
+    this.remoteCol = remoteCol;
 
-          # If shortcut, we're done
-          if options.shortcut
-            return
-        step2(localDoc)
-      , error
-    else
-      step2()
+    // Default options
+    this.options = options || {};
+    _.defaults(this.options, {
+      cacheFind: true,       // Cache find results in local db
+      cacheFindOne: true,    // Cache findOne results in local db
+      interim: true,         // Return interim results from local db while waiting for remote db. Return again if different
+      useLocalOnRemoteError: true,  // Use local results if the remote find fails. Only applies if interim is false.
+      shortcut: false,       // true to return `findOne` results if any matching result is found in the local database. Useful for documents that change rarely.
+      timeout: 0,            // Set to ms to timeout in for remote calls
+      sortUpserts: null     // Compare function to sort upserts sent to server
+    });
+  }
 
-  _findFetch: (selector, options, success, error) ->
-    # Merge options
-    _.defaults(options, @options)
+  find(selector, options = {}) {
+    return{ fetch: (success, error) => {
+      return this._findFetch(selector, options, success, error);
+    }
+  };
+  }
 
-    # Get pending removes and upserts immediately to avoid odd race conditions
-    @localCol.pendingUpserts (upserts) =>
-      @localCol.pendingRemoves (removes) =>
+  // Finds one row.
+  findOne(selector, options = {}, success, error) {
+    if (_.isFunction(options)) {
+      [options, success, error] = [{}, options, success];
+    }
 
-        step2 = (localData) =>
-          # Setup remote options
-          remoteOptions = _.cloneDeep(options)
+    // Merge options
+    _.defaults(options, this.options);
 
-          # If caching, get all fields
-          if options.cacheFind
-            delete remoteOptions.fields
+    // Happens after initial find
+    const step2 = localDoc => {
+      const findOptions = _.cloneDeep(options);
+      findOptions.interim = false;
+      findOptions.cacheFind = options.cacheFindOne;
+      if (selector._id) {
+        findOptions.limit = 1;
+      } else {
+        // Without _id specified, interaction between local and remote changes is complex
+        // For example, if the one result returned by remote is locally deleted, we have no fallback
+        // So instead we do a find with no limit and then take the first result, which is very inefficient
+        delete findOptions.limit;
+      }
 
-          # Add localData to options for remote find for quickfind protocol
-          remoteOptions.localData = localData
+      return this.find(selector, findOptions).fetch(function(data) {
+        // Return first entry or null
+        if (data.length > 0) {
+          // Check that different from existing
+          if (!_.isEqual(localDoc, data[0])) {
+            return success(data[0]);
+          }
+        } else {
+          // If nothing found, always report it, as interim find doesn't return null
+          return success(null);
+        }
+      }
+      , error);
+    };
 
-          # Setup timer variables
-          timer = null
-          timedOut = false
+    // If interim or shortcut, get local first
+    if (options.interim || options.shortcut) {
+      return this.localCol.findOne(selector, options, function(localDoc) {
+        // If found, return
+        if (localDoc) {
+          success(_.cloneDeep(localDoc));
 
-          remoteSuccess = (remoteData) =>
-            # Cancel timer
-            if timer
-              clearTimeout(timer)
+          // If shortcut, we're done
+          if (options.shortcut) {
+            return;
+          }
+        }
+        return step2(localDoc);
+      }
+      , error);
+    } else {
+      return step2();
+    }
+  }
 
-            # Ignore if timed out, caching asynchronously
-            if timedOut
-              if options.cacheFind
-                @localCol.cache(remoteData, selector, options, (->), error)
-              return
+  _findFetch(selector, options, success, error) {
+    // Merge options
+    _.defaults(options, this.options);
 
-            if options.cacheFind
-              # Cache locally
-              cacheSuccess = =>
-                # Get local data again
-                localSuccess2 = (localData2) ->
-                  # Check if different or not interim
-                  if not options.interim or not _.isEqual(localData, localData2)
-                    # Send again
-                    success(localData2)
-                @localCol.find(selector, options).fetch(localSuccess2, error)
+    // Get pending removes and upserts immediately to avoid odd race conditions
+    return this.localCol.pendingUpserts(upserts => {
+      return this.localCol.pendingRemoves(removes => {
 
-              # Exclude any recent upserts/removes to prevent race condition
-              cacheOptions = _.extend({}, options, exclude: removes.concat(_.map(upserts, (u) => u.doc._id)))
-              @localCol.cache(remoteData, selector, cacheOptions, cacheSuccess, error)
-            else
-              # Remove local remotes
-              data = remoteData
+        const step2 = localData => {
+          // Setup remote options
+          const remoteOptions = _.cloneDeep(options);
 
-              if removes.length > 0
-                removesMap = _.object(_.map(removes, (id) -> [id, id]))
-                data = _.filter remoteData, (doc) ->
-                  return not _.has(removesMap, doc._id)
+          // If caching, get all fields
+          if (options.cacheFind) {
+            delete remoteOptions.fields;
+          }
 
-              # Add upserts
-              if upserts.length > 0
-                # Remove upserts from data
-                upsertsMap = _.object(_.map(upserts, (u) -> u.doc._id), _.map(upserts, (u) -> u.doc._id))
-                data = _.filter data, (doc) ->
-                  return not _.has(upsertsMap, doc._id)
+          // Add localData to options for remote find for quickfind protocol
+          remoteOptions.localData = localData;
 
-                # Add upserts
-                data = data.concat(_.pluck(upserts, "doc"))
+          // Setup timer variables
+          let timer = null;
+          let timedOut = false;
 
-                # Refilter/sort/limit
-                data = processFind(data, selector, options)
+          const remoteSuccess = remoteData => {
+            // Cancel timer
+            if (timer) {
+              clearTimeout(timer);
+            }
 
-              # Check if different or not interim
-              if not options.interim or not _.isEqual(localData, data)
-                # Send again
-                success(data)
+            // Ignore if timed out, caching asynchronously
+            if (timedOut) {
+              if (options.cacheFind) {
+                this.localCol.cache(remoteData, selector, options, (function() {}), error);
+              }
+              return;
+            }
 
-          remoteError = (err) =>
-            # Cancel timer
-            if timer
-              clearTimeout(timer)
+            if (options.cacheFind) {
+              // Cache locally
+              const cacheSuccess = () => {
+                // Get local data again
+                const localSuccess2 = function(localData2) {
+                  // Check if different or not interim
+                  if (!options.interim || !_.isEqual(localData, localData2)) {
+                    // Send again
+                    return success(localData2);
+                  }
+                };
+                return this.localCol.find(selector, options).fetch(localSuccess2, error);
+              };
 
-            if timedOut
-              return
+              // Exclude any recent upserts/removes to prevent race condition
+              const cacheOptions = _.extend({}, options, {exclude: removes.concat(_.map(upserts, u => u.doc._id))});
+              return this.localCol.cache(remoteData, selector, cacheOptions, cacheSuccess, error);
+            } else {
+              // Remove local remotes
+              let data = remoteData;
 
-            # If no interim, do local find
-            if not options.interim
-              if options.useLocalOnRemoteError
-                success(localData)
-              else
-                if error then error(err)
-            else
-              # Otherwise do nothing
-              return
+              if (removes.length > 0) {
+                const removesMap = _.object(_.map(removes, id => [id, id]));
+                data = _.filter(remoteData, doc => !_.has(removesMap, doc._id));
+              }
 
-          # Start timer if remote
-          if options.timeout
-            timer = setTimeout () =>
-              timer = null
-              timedOut = true
+              // Add upserts
+              if (upserts.length > 0) {
+                // Remove upserts from data
+                const upsertsMap = _.object(_.map(upserts, u => u.doc._id), _.map(upserts, u => u.doc._id));
+                data = _.filter(data, doc => !_.has(upsertsMap, doc._id));
 
-              # If no interim, do local find
-              if not options.interim
-                if options.useLocalOnRemoteError
-                  @localCol.find(selector, options).fetch(success, error)
-                else
-                  if error then error(new Error("Remote timed out"))
-              else
-                # Otherwise do nothing
-                return
-            , options.timeout
+                // Add upserts
+                data = data.concat(_.pluck(upserts, "doc"));
 
-          @remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError)
+                // Refilter/sort/limit
+                data = processFind(data, selector, options);
+              }
 
-        localSuccess = (localData) ->
-          # If interim, return data immediately
-          if options.interim
-            success(localData)
-          step2(localData)
+              // Check if different or not interim
+              if (!options.interim || !_.isEqual(localData, data)) {
+                // Send again
+                return success(data);
+              }
+            }
+          };
 
-        # Always get local data first
-        @localCol.find(selector, options).fetch(localSuccess, error)
-      , error
-    , error
+          const remoteError = err => {
+            // Cancel timer
+            if (timer) {
+              clearTimeout(timer);
+            }
 
-  upsert: (docs, bases, success, error) ->
-    [items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
+            if (timedOut) {
+              return;
+            }
 
-    @localCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), (result) ->
-      success?(docs)
-    , error)
+            // If no interim, do local find
+            if (!options.interim) {
+              if (options.useLocalOnRemoteError) {
+                return success(localData);
+              } else {
+                if (error) { return error(err); }
+              }
+            } else {
+              // Otherwise do nothing
+              return;
+            }
+          };
 
-  remove: (id, success, error) ->
-    @localCol.remove(id, ->
-      success() if success?
-    , error)
+          // Start timer if remote
+          if (options.timeout) {
+            timer = setTimeout(() => {
+              timer = null;
+              timedOut = true;
 
-  upload: (success, error) ->
-    uploadUpserts = (upserts, success, error) =>
-      upsert = _.first(upserts)
-      if upsert
-        @remoteCol.upsert upsert.doc, upsert.base, (remoteDoc) =>
-          @localCol.resolveUpserts [upsert], =>
-            # Cache new value if present
-            if remoteDoc
-              @localCol.cacheOne remoteDoc, ->
-                uploadUpserts(_.rest(upserts), success, error)
-              , error
-            else
-              # Remove local
-              @localCol.remove upsert.doc._id, =>
-                # Resolve remove
-                @localCol.resolveRemove upsert.doc._id, ->
-                  uploadUpserts(_.rest(upserts), success, error)
-                , error
-              , error
-          , error
-        , (err) =>
-          # If 410 error or 403, remove document
-          if err.status == 410 or err.status == 403
-            @localCol.remove upsert.doc._id, =>
-              # Resolve remove
-              @localCol.resolveRemove upsert.doc._id, ->
-                # Continue if was 410
-                if err.status == 410
-                  uploadUpserts(_.rest(upserts), success, error)
-                else
-                  error(err)
-              , error
-            , error
-          else
-            error(err)
-      else
-        success()
+              // If no interim, do local find
+              if (!options.interim) {
+                if (options.useLocalOnRemoteError) {
+                  return this.localCol.find(selector, options).fetch(success, error);
+                } else {
+                  if (error) { return error(new Error("Remote timed out")); }
+                }
+              } else {
+                // Otherwise do nothing
+                return;
+              }
+            }
+            , options.timeout);
+          }
 
-    uploadRemoves = (removes, success, error) =>
-      remove = _.first(removes)
-      if remove
-        @remoteCol.remove remove, =>
-          @localCol.resolveRemove remove, ->
-            uploadRemoves(_.rest(removes), success, error)
-          , error
-        , (err) =>
-          # If 403 or 410, remove document
-          if err.status == 410 or err.status == 403
-            @localCol.resolveRemove remove, ->
-              # Continue if was 410
-              if err.status == 410
-                uploadRemoves(_.rest(removes), success, error)
-              else
-                error(err)
-            , error
-          else
-            error(err)
-        , error
-      else
-        success()
+          return this.remoteCol.find(selector, remoteOptions).fetch(remoteSuccess, remoteError);
+        };
 
-    # Get pending upserts
-    @localCol.pendingUpserts (upserts) =>
-      # Sort upserts if sort defined
-      if @options.sortUpserts
-        upserts.sort((u1, u2) => @options.sortUpserts(u1.doc, u2.doc))
+        const localSuccess = function(localData) {
+          // If interim, return data immediately
+          if (options.interim) {
+            success(localData);
+          }
+          return step2(localData);
+        };
+
+        // Always get local data first
+        return this.localCol.find(selector, options).fetch(localSuccess, error);
+      }
+      , error);
+    }
+    , error);
+  }
+
+  upsert(docs, bases, success, error) {
+    let items;
+    [items, success, error] = utils.regularizeUpsert(docs, bases, success, error);
+
+    return this.localCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), result => success?.(docs)
+    , error);
+  }
+
+  remove(id, success, error) {
+    return this.localCol.remove(id, function() {
+      if (success != null) { return success(); }
+    }
+    , error);
+  }
+
+  upload(success, error) {
+    var uploadUpserts = (upserts, success, error) => {
+      const upsert = _.first(upserts);
+      if (upsert) {
+        return this.remoteCol.upsert(upsert.doc, upsert.base, remoteDoc => {
+          return this.localCol.resolveUpserts([upsert], () => {
+            // Cache new value if present
+            if (remoteDoc) {
+              return this.localCol.cacheOne(remoteDoc, () => uploadUpserts(_.rest(upserts), success, error)
+              , error);
+            } else {
+              // Remove local
+              return this.localCol.remove(upsert.doc._id, () => {
+                // Resolve remove
+                return this.localCol.resolveRemove(upsert.doc._id, () => uploadUpserts(_.rest(upserts), success, error)
+                , error);
+              }
+              , error);
+            }
+          }
+          , error);
+        }
+        , err => {
+          // If 410 error or 403, remove document
+          if ((err.status === 410) || (err.status === 403)) {
+            return this.localCol.remove(upsert.doc._id, () => {
+              // Resolve remove
+              return this.localCol.resolveRemove(upsert.doc._id, function() {
+                // Continue if was 410
+                if (err.status === 410) {
+                  return uploadUpserts(_.rest(upserts), success, error);
+                } else {
+                  return error(err);
+                }
+              }
+              , error);
+            }
+            , error);
+          } else {
+            return error(err);
+          }
+        });
+      } else {
+        return success();
+      }
+    };
+
+    var uploadRemoves = (removes, success, error) => {
+      const remove = _.first(removes);
+      if (remove) {
+        return this.remoteCol.remove(remove, () => {
+          return this.localCol.resolveRemove(remove, () => uploadRemoves(_.rest(removes), success, error)
+          , error);
+        }
+        , err => {
+          // If 403 or 410, remove document
+          if ((err.status === 410) || (err.status === 403)) {
+            return this.localCol.resolveRemove(remove, function() {
+              // Continue if was 410
+              if (err.status === 410) {
+                return uploadRemoves(_.rest(removes), success, error);
+              } else {
+                return error(err);
+              }
+            }
+            , error);
+          } else {
+            return error(err);
+          }
+        }
+        , error);
+      } else {
+        return success();
+      }
+    };
+
+    // Get pending upserts
+    return this.localCol.pendingUpserts(upserts => {
+      // Sort upserts if sort defined
+      if (this.options.sortUpserts) {
+        upserts.sort((u1, u2) => this.options.sortUpserts(u1.doc, u2.doc));
+      }
         
-      uploadUpserts upserts, =>
-        @localCol.pendingRemoves (removes) ->
-          uploadRemoves(removes, success, error)
-        , error
-      , error
-    , error
+      return uploadUpserts(upserts, () => {
+        return this.localCol.pendingRemoves(removes => uploadRemoves(removes, success, error)
+        , error);
+      }
+      , error);
+    }
+    , error);
+  }
+}

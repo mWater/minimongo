@@ -1,204 +1,270 @@
-_ = require 'lodash'
-createUid = require('./utils').createUid
-processFind = require('./utils').processFind
-compileSort = require('./selector').compileSort
+let LocalStorageDb;
+import _ from 'lodash';
+import { createUid } from './utils';
+import { processFind } from './utils';
+import { compileSort } from './selector';
 
-module.exports = class LocalStorageDb
-  constructor: (options, success) ->
-    @collections = {}
+export default LocalStorageDb = class LocalStorageDb {
+  constructor(options, success) {
+    this.collections = {};
 
-    if options and options.namespace and window.localStorage
-      @namespace = options.namespace
+    if (options && options.namespace && window.localStorage) {
+      this.namespace = options.namespace;
+    }
 
-    if success then success(this)
+    if (success) { success(this); }
+  }
 
-  addCollection: (name, success, error) ->
-    # Set namespace for collection
-    namespace = @namespace+"."+name if @namespace
+  addCollection(name, success, error) {
+    // Set namespace for collection
+    let namespace;
+    if (this.namespace) { namespace = this.namespace+"."+name; }
 
-    collection = new Collection(name, namespace)
-    @[name] = collection
-    @collections[name] = collection
-    if success? then success()
+    const collection = new Collection(name, namespace);
+    this[name] = collection;
+    this.collections[name] = collection;
+    if (success != null) { return success(); }
+  }
 
-  removeCollection: (name, success, error) ->
-    if @namespace and window.localStorage
-      keys = []
-      for i in [0...window.localStorage.length]
-        keys.push(window.localStorage.key(i))
+  removeCollection(name, success, error) {
+    if (this.namespace && window.localStorage) {
+      const keys = [];
+      for (let i = 0, end = window.localStorage.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
+        keys.push(window.localStorage.key(i));
+      }
 
-      for key in keys
-        if key.substring(0, @namespace.length + 1) == @namespace + "."
-          window.localStorage.removeItem(key)
+      for (let key of keys) {
+        if (key.substring(0, this.namespace.length + 1) === (this.namespace + ".")) {
+          window.localStorage.removeItem(key);
+        }
+      }
+    }
 
-    delete @[name]
-    delete @collections[name]
-    if success? then success()
+    delete this[name];
+    delete this.collections[name];
+    if (success != null) { return success(); }
+  }
+};
 
 
-# Stores data in memory, optionally backed by local storage
-class Collection
-  constructor: (name, namespace) ->
-    @name = name
-    @namespace = namespace
+// Stores data in memory, optionally backed by local storage
+class Collection {
+  constructor(name, namespace) {
+    this.name = name;
+    this.namespace = namespace;
 
-    @items = {}
-    @upserts = {}  # Pending upserts by _id. Still in items
-    @removes = {}  # Pending removes by _id. No longer in items
+    this.items = {};
+    this.upserts = {};  // Pending upserts by _id. Still in items
+    this.removes = {};  // Pending removes by _id. No longer in items
 
-    # Read from local storage
-    if window.localStorage and namespace?
-      @loadStorage()
+    // Read from local storage
+    if (window.localStorage && (namespace != null)) {
+      this.loadStorage();
+    }
+  }
 
-  loadStorage: ->
-    # Read items from localStorage
-    @itemNamespace = @namespace + "_"
+  loadStorage() {
+    // Read items from localStorage
+    let key;
+    this.itemNamespace = this.namespace + "_";
 
-    for i in [0...window.localStorage.length]
-      key = window.localStorage.key(i)
-      if key.substring(0, @itemNamespace.length) == @itemNamespace
-        item = JSON.parse(window.localStorage[key])
-        @items[item._id] = item
+    for (let i = 0, end = window.localStorage.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
+      key = window.localStorage.key(i);
+      if (key.substring(0, this.itemNamespace.length) === this.itemNamespace) {
+        const item = JSON.parse(window.localStorage[key]);
+        this.items[item._id] = item;
+      }
+    }
 
-    # Read upserts
-    upsertKeys = if window.localStorage[@namespace+"upserts"] then JSON.parse(window.localStorage[@namespace+"upserts"]) else []
-    for key in upsertKeys
-      @upserts[key] = @items[key]
+    // Read upserts
+    const upsertKeys = window.localStorage[this.namespace+"upserts"] ? JSON.parse(window.localStorage[this.namespace+"upserts"]) : [];
+    for (key of upsertKeys) {
+      this.upserts[key] = this.items[key];
+    }
 
-    # Read removes
-    removeItems = if window.localStorage[@namespace+"removes"] then JSON.parse(window.localStorage[@namespace+"removes"]) else []
-    @removes = _.object(_.pluck(removeItems, "_id"), removeItems)
+    // Read removes
+    const removeItems = window.localStorage[this.namespace+"removes"] ? JSON.parse(window.localStorage[this.namespace+"removes"]) : [];
+    return this.removes = _.object(_.pluck(removeItems, "_id"), removeItems);
+  }
 
-  find: (selector, options) ->
-    return fetch: (success, error) =>
-      @_findFetch(selector, options, success, error)
+  find(selector, options) {
+    return{ fetch: (success, error) => {
+      return this._findFetch(selector, options, success, error);
+    }
+  };
+  }
 
-  findOne: (selector, options, success, error) ->
-    if _.isFunction(options)
-      [options, success, error] = [{}, options, success]
+  findOne(selector, options, success, error) {
+    if (_.isFunction(options)) {
+      [options, success, error] = [{}, options, success];
+    }
 
-    @find(selector, options).fetch (results) ->
-      if success? then success(if results.length>0 then results[0] else null)
-    , error
+    return this.find(selector, options).fetch(function(results) {
+      if (success != null) { return success(results.length>0 ? results[0] : null); }
+    }
+    , error);
+  }
 
-  _findFetch: (selector, options, success, error) ->
-    if success? then success(processFind(@items, selector, options))
+  _findFetch(selector, options, success, error) {
+    if (success != null) { return success(processFind(this.items, selector, options)); }
+  }
 
-  upsert: (doc, success, error) ->
-    # Handle both single and multiple upsert
-    items = doc
-    if not _.isArray(items)
-      items = [items]
+  upsert(doc, success, error) {
+    // Handle both single and multiple upsert
+    let items = doc;
+    if (!_.isArray(items)) {
+      items = [items];
+    }
 
-    # Handle case of array
-    for item in items
-      if not item._id
-        item._id = createUid()
+    // Handle case of array
+    for (let item of items) {
+      if (!item._id) {
+        item._id = createUid();
+      }
 
-      # Replace/add
-      @_putItem(item)
-      @_putUpsert(item)
+      // Replace/add
+      this._putItem(item);
+      this._putUpsert(item);
+    }
 
-    if success then success(doc)
+    if (success) { return success(doc); }
+  }
 
-  remove: (id, success, error) ->
-    if _.has(@items, id)
-      @_putRemove(@items[id])
-      @_deleteItem(id)
-      @_deleteUpsert(id)
-    else
-      @_putRemove({ _id: id })
+  remove(id, success, error) {
+    if (_.has(this.items, id)) {
+      this._putRemove(this.items[id]);
+      this._deleteItem(id);
+      this._deleteUpsert(id);
+    } else {
+      this._putRemove({ _id: id });
+    }
 
-    if success? then success()
+    if (success != null) { return success(); }
+  }
 
-  _putItem: (doc) ->
-    @items[doc._id] = doc
-    if @namespace
-      window.localStorage[@itemNamespace + doc._id] = JSON.stringify(doc)
+  _putItem(doc) {
+    this.items[doc._id] = doc;
+    if (this.namespace) {
+      return window.localStorage[this.itemNamespace + doc._id] = JSON.stringify(doc);
+    }
+  }
 
-  _deleteItem: (id) ->
-    delete @items[id]
-    if @namespace
-      window.localStorage.removeItem(@itemNamespace + id)
+  _deleteItem(id) {
+    delete this.items[id];
+    if (this.namespace) {
+      return window.localStorage.removeItem(this.itemNamespace + id);
+    }
+  }
 
-  _putUpsert: (doc) ->
-    @upserts[doc._id] = doc
-    if @namespace
-      window.localStorage[@namespace+"upserts"] = JSON.stringify(_.keys(@upserts))
+  _putUpsert(doc) {
+    this.upserts[doc._id] = doc;
+    if (this.namespace) {
+      return window.localStorage[this.namespace+"upserts"] = JSON.stringify(_.keys(this.upserts));
+    }
+  }
 
-  _deleteUpsert: (id) ->
-    delete @upserts[id]
-    if @namespace
-      window.localStorage[@namespace+"upserts"] = JSON.stringify(_.keys(@upserts))
+  _deleteUpsert(id) {
+    delete this.upserts[id];
+    if (this.namespace) {
+      return window.localStorage[this.namespace+"upserts"] = JSON.stringify(_.keys(this.upserts));
+    }
+  }
 
-  _putRemove: (doc) ->
-    @removes[doc._id] = doc
-    if @namespace
-      window.localStorage[@namespace+"removes"] = JSON.stringify(_.values(@removes))
+  _putRemove(doc) {
+    this.removes[doc._id] = doc;
+    if (this.namespace) {
+      return window.localStorage[this.namespace+"removes"] = JSON.stringify(_.values(this.removes));
+    }
+  }
 
-  _deleteRemove: (id) ->
-    delete @removes[id]
-    if @namespace
-      window.localStorage[@namespace+"removes"] = JSON.stringify(_.values(@removes))
+  _deleteRemove(id) {
+    delete this.removes[id];
+    if (this.namespace) {
+      return window.localStorage[this.namespace+"removes"] = JSON.stringify(_.values(this.removes));
+    }
+  }
 
-  cache: (docs, selector, options, success, error) ->
-    # Add all non-local that are not upserted or removed
-    for doc in docs
-      @cacheOne(doc)
+  cache(docs, selector, options, success, error) {
+    // Add all non-local that are not upserted or removed
+    let sort;
+    for (let doc of docs) {
+      this.cacheOne(doc);
+    }
 
-    docsMap = _.object(_.pluck(docs, "_id"), docs)
+    const docsMap = _.object(_.pluck(docs, "_id"), docs);
 
-    if options.sort
-      sort = compileSort(options.sort)
+    if (options.sort) {
+      sort = compileSort(options.sort);
+    }
 
-    # Perform query, removing rows missing in docs from local db
-    @find(selector, options).fetch (results) =>
-      for result in results
-        if not docsMap[result._id] and not _.has(@upserts, result._id)
-          # If past end on sorted limited, ignore
-          if options.sort and options.limit and docs.length == options.limit
-            if sort(result, _.last(docs)) >= 0
-              continue
-          @_deleteItem(result._id)
+    // Perform query, removing rows missing in docs from local db
+    return this.find(selector, options).fetch(results => {
+      for (let result of results) {
+        if (!docsMap[result._id] && !_.has(this.upserts, result._id)) {
+          // If past end on sorted limited, ignore
+          if (options.sort && options.limit && (docs.length === options.limit)) {
+            if (sort(result, _.last(docs)) >= 0) {
+              continue;
+            }
+          }
+          this._deleteItem(result._id);
+        }
+      }
 
-      if success? then success()
-    , error
+      if (success != null) { return success(); }
+    }
+    , error);
+  }
 
-  pendingUpserts: (success) ->
-    success _.values(@upserts)
+  pendingUpserts(success) {
+    return success(_.values(this.upserts));
+  }
 
-  pendingRemoves: (success) ->
-    success _.pluck(@removes, "_id")
+  pendingRemoves(success) {
+    return success(_.pluck(this.removes, "_id"));
+  }
 
-  resolveUpsert: (doc, success) ->
-    # Handle both single and multiple upsert
-    items = doc
-    if not _.isArray(items)
-      items = [items]
+  resolveUpsert(doc, success) {
+    // Handle both single and multiple upsert
+    let items = doc;
+    if (!_.isArray(items)) {
+      items = [items];
+    }
 
-    for item in items
-      if @upserts[item._id]
-        # Only safely remove upsert if item is unchanged
-        if _.isEqual(item, @upserts[item._id])
-          @_deleteUpsert(item._id)
-    if success? then success()
+    for (let item of items) {
+      if (this.upserts[item._id]) {
+        // Only safely remove upsert if item is unchanged
+        if (_.isEqual(item, this.upserts[item._id])) {
+          this._deleteUpsert(item._id);
+        }
+      }
+    }
+    if (success != null) { return success(); }
+  }
 
-  resolveRemove: (id, success) ->
-    @_deleteRemove(id)
-    if success? then success()
+  resolveRemove(id, success) {
+    this._deleteRemove(id);
+    if (success != null) { return success(); }
+  }
 
-  # Add but do not overwrite or record as upsert
-  seed: (doc, success) ->
-    if not _.has(@items, doc._id) and not _.has(@removes, doc._id)
-      @_putItem(doc)
-    if success? then success()
+  // Add but do not overwrite or record as upsert
+  seed(doc, success) {
+    if (!_.has(this.items, doc._id) && !_.has(this.removes, doc._id)) {
+      this._putItem(doc);
+    }
+    if (success != null) { return success(); }
+  }
 
-  # Add but do not overwrite upserts or removes
-  cacheOne: (doc, success) ->
-    if not _.has(@upserts, doc._id) and not _.has(@removes, doc._id)
-      existing = @items[doc._id]
+  // Add but do not overwrite upserts or removes
+  cacheOne(doc, success) {
+    if (!_.has(this.upserts, doc._id) && !_.has(this.removes, doc._id)) {
+      const existing = this.items[doc._id];
 
-      # If _rev present, make sure that not overwritten by lower _rev
-      if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
-        @_putItem(doc)
-    if success? then success()
+      // If _rev present, make sure that not overwritten by lower _rev
+      if (!existing || !doc._rev || !existing._rev || (doc._rev >= existing._rev)) {
+        this._putItem(doc);
+      }
+    }
+    if (success != null) { return success(); }
+  }
+}

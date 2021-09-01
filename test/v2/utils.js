@@ -1,217 +1,264 @@
-# Utilities for db handling
-_ = require 'lodash'
-async = require 'async'
-bowser = require 'bowser'
+// Utilities for db handling
+import _ from 'lodash';
 
-compileDocumentSelector = require('./selector').compileDocumentSelector
-compileSort = require('./selector').compileSort
+import async from 'async';
+import bowser from 'bowser';
+import { compileDocumentSelector } from './selector';
+import { compileSort } from './selector';
 
-# Select appropriate local database, prefering IndexedDb, then WebSQLDb, then LocalStorageDb, then MemoryDb
-exports.autoselectLocalDb = (options, success, error) ->
-  # Here due to browserify circularity quirks
-  IndexedDb = require './IndexedDb'
-  WebSQLDb = require './WebSQLDb'
-  LocalStorageDb = require './LocalStorageDb'
-  MemoryDb = require './MemoryDb'
+// Select appropriate local database, prefering IndexedDb, then WebSQLDb, then LocalStorageDb, then MemoryDb
+export function autoselectLocalDb(options, success, error) {
+  // Here due to browserify circularity quirks
+  const IndexedDb = require('./IndexedDb');
+  const WebSQLDb = require('./WebSQLDb');
+  const LocalStorageDb = require('./LocalStorageDb');
+  const MemoryDb = require('./MemoryDb');
 
-  # Get browser capabilities
-  browser = bowser.browser
+  // Get browser capabilities
+  const {
+    browser
+  } = bowser;
 
-  # Always use WebSQL in cordova
-  if window.cordova
-    console.log "Selecting WebSQLDb for Cordova"
-    return new WebSQLDb options, success, error
+  // Always use WebSQL in cordova
+  if (window.cordova) {
+    console.log("Selecting WebSQLDb for Cordova");
+    return new WebSQLDb(options, success, error);
+  }
 
-  # Use WebSQL in Android, iOS, Chrome, Safari, Opera, Blackberry
-  if browser.android or browser.ios or browser.chrome or browser.safari or browser.opera or browser.blackberry
-    console.log "Selecting WebSQLDb for browser"
-    return new WebSQLDb options, success, error
+  // Use WebSQL in Android, iOS, Chrome, Safari, Opera, Blackberry
+  if (browser.android || browser.ios || browser.chrome || browser.safari || browser.opera || browser.blackberry) {
+    console.log("Selecting WebSQLDb for browser");
+    return new WebSQLDb(options, success, error);
+  }
 
-  # Use IndexedDb on Firefox >= 16
-  if browser.firefox and browser.version >= 16
-    console.log "Selecting IndexedDb for browser"
-    return new IndexedDb options, success, error
+  // Use IndexedDb on Firefox >= 16
+  if (browser.firefox && (browser.version >= 16)) {
+    console.log("Selecting IndexedDb for browser");
+    return new IndexedDb(options, success, error);
+  }
 
-  # Use Local Storage otherwise
-  console.log "Selecting LocalStorageDb for fallback"
-  return new LocalStorageDb(options, success, error)
+  // Use Local Storage otherwise
+  console.log("Selecting LocalStorageDb for fallback");
+  return new LocalStorageDb(options, success, error);
+}
 
-# Migrates a local database's pending upserts and removes from one database to another
-# Useful for upgrading from one type of database to another
-exports.migrateLocalDb = (fromDb, toDb, success, error) ->
-  # Migrate collection using a HybridDb
-  # Here due to browserify circularity quirks
-  HybridDb = require './HybridDb'
-  hybridDb = new HybridDb(fromDb, toDb)
-  for name, col of fromDb.collections
-    if toDb[name]
-      hybridDb.addCollection(name)
+// Migrates a local database's pending upserts and removes from one database to another
+// Useful for upgrading from one type of database to another
+export function migrateLocalDb(fromDb, toDb, success, error) {
+  // Migrate collection using a HybridDb
+  // Here due to browserify circularity quirks
+  const HybridDb = require('./HybridDb');
+  const hybridDb = new HybridDb(fromDb, toDb);
+  for (let name in fromDb.collections) {
+    const col = fromDb.collections[name];
+    if (toDb[name]) {
+      hybridDb.addCollection(name);
+    }
+  }
 
-  hybridDb.upload(success, error)
+  return hybridDb.upload(success, error);
+}
 
-# Processes a find with sorting and filtering and limiting
-exports.processFind = (items, selector, options) ->
-  filtered = _.filter(_.values(items), compileDocumentSelector(selector))
+// Processes a find with sorting and filtering and limiting
+export function processFind(items, selector, options) {
+  let filtered = _.filter(_.values(items), compileDocumentSelector(selector));
 
-  # Handle geospatial operators
-  filtered = processNearOperator(selector, filtered)
-  filtered = processGeoIntersectsOperator(selector, filtered)
+  // Handle geospatial operators
+  filtered = processNearOperator(selector, filtered);
+  filtered = processGeoIntersectsOperator(selector, filtered);
 
-  if options and options.sort
-    filtered.sort(compileSort(options.sort))
+  if (options && options.sort) {
+    filtered.sort(compileSort(options.sort));
+  }
 
-  if options and options.limit
-    filtered = _.first filtered, options.limit
+  if (options && options.limit) {
+    filtered = _.first(filtered, options.limit);
+  }
 
-  # Clone to prevent accidental updates, or apply fields if present
-  if options and options.fields
-    # For each item
-    filtered = _.map filtered, (item) ->
-      item = _.cloneDeep(item)
+  // Clone to prevent accidental updates, or apply fields if present
+  if (options && options.fields) {
+    // For each item
+    filtered = _.map(filtered, function(item) {
+      let field, obj, path, pathElem;
+      item = _.cloneDeep(item);
 
-      newItem = {}
+      const newItem = {};
 
-      if _.first(_.values(options.fields)) == 1
-        # Include fields
-        for field in _.keys(options.fields).concat(["_id"])
-          path = field.split(".")
+      if (_.first(_.values(options.fields)) === 1) {
+        // Include fields
+        for (field of _.keys(options.fields).concat(["_id"])) {
+          path = field.split(".");
 
-          # Determine if path exists
-          obj = item
-          for pathElem in path
-            if obj
-              obj = obj[pathElem]
+          // Determine if path exists
+          obj = item;
+          for (pathElem of path) {
+            if (obj) {
+              obj = obj[pathElem];
+            }
+          }
 
-          if not obj?
-            continue
+          if ((obj == null)) {
+            continue;
+          }
 
-          # Go into path, creating as necessary
-          from = item
-          to = newItem
-          for pathElem in _.initial(path)
-            to[pathElem] = to[pathElem] or {}
+          // Go into path, creating as necessary
+          let from = item;
+          let to = newItem;
+          for (pathElem of _.initial(path)) {
+            to[pathElem] = to[pathElem] || {};
 
-            # Move inside
-            to = to[pathElem]
-            from = from[pathElem]
+            // Move inside
+            to = to[pathElem];
+            from = from[pathElem];
+          }
 
-          # Copy value
-          to[_.last(path)] = from[_.last(path)]
-
-        return newItem
-      else
-        # Exclude fields
-        for field in _.keys(options.fields).concat(["_id"])
-          path = field.split(".")
-
-          # Go inside path
-          obj = item
-          for pathElem in _.initial(path)
-            if obj
-              obj = obj[pathElem]
-
-          # If not there, don't exclude
-          if not obj?
-            continue
-
-          delete obj[_.last(path)]
-
-        return item
-  else
-    filtered = _.map filtered, (doc) -> _.cloneDeep(doc)
-
-  return filtered
-
-# Creates a unique identifier string
-exports.createUid = ->
-  'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, (c) ->
-    r = Math.random()*16|0
-    v = if c == 'x' then r else (r&0x3|0x8)
-    return v.toString(16)
-   )
-
-processNearOperator = (selector, list) ->
-  for key, value of selector
-    if value? and value['$near']
-      geo = value['$near']['$geometry']
-      if geo.type != 'Point'
-        break
-
-      list = _.filter list, (doc) ->
-        return doc[key] and doc[key].type == 'Point'
-
-      # Get distances
-      distances = _.map list, (doc) ->
-        return { doc: doc, distance: getDistanceFromLatLngInM(
-            geo.coordinates[1], geo.coordinates[0],
-            doc[key].coordinates[1], doc[key].coordinates[0])
+          // Copy value
+          to[_.last(path)] = from[_.last(path)];
         }
 
-      # Filter non-points
-      distances = _.filter distances, (item) -> item.distance >= 0
+        return newItem;
+      } else {
+        // Exclude fields
+        for (field of _.keys(options.fields).concat(["_id"])) {
+          path = field.split(".");
 
-      # Sort by distance
-      distances = _.sortBy distances, 'distance'
+          // Go inside path
+          obj = item;
+          for (pathElem of _.initial(path)) {
+            if (obj) {
+              obj = obj[pathElem];
+            }
+          }
 
-      # Filter by maxDistance
-      if value['$near']['$maxDistance']
-        distances = _.filter distances, (item) -> item.distance <= value['$near']['$maxDistance']
+          // If not there, don't exclude
+          if ((obj == null)) {
+            continue;
+          }
 
-      # Limit to 100
-      distances = _.first distances, 100
+          delete obj[_.last(path)];
+        }
 
-      # Extract docs
-      list = _.pluck distances, 'doc'
-  return list
+        return item;
+      }
+    });
+  } else {
+    filtered = _.map(filtered, doc => _.cloneDeep(doc));
+  }
 
-# Very simple polygon check. Assumes that is a square
-pointInPolygon = (point, polygon) ->
-  # Check that first == last
-  if not _.isEqual(_.first(polygon.coordinates[0]), _.last(polygon.coordinates[0]))
-    throw new Error("First must equal last")
+  return filtered;
+}
 
-  # Check bounds
-  if point.coordinates[0] < Math.min.apply(this,
-      _.map(polygon.coordinates[0], (coord) -> coord[0]))
-    return false
-  if point.coordinates[1] < Math.min.apply(this,
-      _.map(polygon.coordinates[0], (coord) -> coord[1]))
-    return false
-  if point.coordinates[0] > Math.max.apply(this,
-      _.map(polygon.coordinates[0], (coord) -> coord[0]))
-    return false
-  if point.coordinates[1] > Math.max.apply(this,
-      _.map(polygon.coordinates[0], (coord) -> coord[1]))
-    return false
-  return true
+// Creates a unique identifier string
+export function createUid() {
+  return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = (Math.random()*16)|0;
+    const v = c === 'x' ? r : ((r&0x3)|0x8);
+    return v.toString(16);
+   });
+}
 
-# From http://www.movable-type.co.uk/scripts/latlong.html
-getDistanceFromLatLngInM = (lat1, lng1, lat2, lng2) ->
-  R = 6371000 # Radius of the earth in m
-  dLat = deg2rad(lat2 - lat1) # deg2rad below
-  dLng = deg2rad(lng2 - lng1)
-  a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
-  c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  d = R * c # Distance in m
-  return d
+var processNearOperator = function(selector, list) {
+  for (var key in selector) {
+    var value = selector[key];
+    if ((value != null) && value['$near']) {
+      var geo = value['$near']['$geometry'];
+      if (geo.type !== 'Point') {
+        break;
+      }
 
-deg2rad = (deg) ->
-  deg * (Math.PI / 180)
+      list = _.filter(list, doc => doc[key] && (doc[key].type === 'Point'));
 
-processGeoIntersectsOperator = (selector, list) ->
-  for key, value of selector
-    if value? and value['$geoIntersects']
-      geo = value['$geoIntersects']['$geometry']
-      if geo.type != 'Polygon'
-        break
+      // Get distances
+      let distances = _.map(list, doc => ({
+        doc,
 
-      # Check within for each
-      list = _.filter list, (doc) ->
-        # Reject non-points
-        if not doc[key] or doc[key].type != 'Point'
-          return false
+        distance: getDistanceFromLatLngInM(
+            geo.coordinates[1], geo.coordinates[0],
+            doc[key].coordinates[1], doc[key].coordinates[0])
+      }));
 
-        # Check polygon
-        return pointInPolygon(doc[key], geo)
+      // Filter non-points
+      distances = _.filter(distances, item => item.distance >= 0);
 
-  return list
+      // Sort by distance
+      distances = _.sortBy(distances, 'distance');
+
+      // Filter by maxDistance
+      if (value['$near']['$maxDistance']) {
+        distances = _.filter(distances, item => item.distance <= value['$near']['$maxDistance']);
+      }
+
+      // Limit to 100
+      distances = _.first(distances, 100);
+
+      // Extract docs
+      list = _.pluck(distances, 'doc');
+    }
+  }
+  return list;
+};
+
+// Very simple polygon check. Assumes that is a square
+const pointInPolygon = function(point, polygon) {
+  // Check that first == last
+  if (!_.isEqual(_.first(polygon.coordinates[0]), _.last(polygon.coordinates[0]))) {
+    throw new Error("First must equal last");
+  }
+
+  // Check bounds
+  if (point.coordinates[0] < Math.min.apply(this,
+      _.map(polygon.coordinates[0], coord => coord[0]))) {
+    return false;
+  }
+  if (point.coordinates[1] < Math.min.apply(this,
+      _.map(polygon.coordinates[0], coord => coord[1]))) {
+    return false;
+  }
+  if (point.coordinates[0] > Math.max.apply(this,
+      _.map(polygon.coordinates[0], coord => coord[0]))) {
+    return false;
+  }
+  if (point.coordinates[1] > Math.max.apply(this,
+      _.map(polygon.coordinates[0], coord => coord[1]))) {
+    return false;
+  }
+  return true;
+};
+
+// From http://www.movable-type.co.uk/scripts/latlong.html
+var getDistanceFromLatLngInM = function(lat1, lng1, lat2, lng2) {
+  const R = 6371000; // Radius of the earth in m
+  const dLat = deg2rad(lat2 - lat1); // deg2rad below
+  const dLng = deg2rad(lng2 - lng1);
+  const a = (Math.sin(dLat / 2) * Math.sin(dLat / 2)) + (Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2));
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in m
+  return d;
+};
+
+var deg2rad = deg => deg * (Math.PI / 180);
+
+var processGeoIntersectsOperator = function(selector, list) {
+  for (var key in selector) {
+    const value = selector[key];
+    if ((value != null) && value['$geoIntersects']) {
+      var geo = value['$geoIntersects']['$geometry'];
+      if (geo.type !== 'Polygon') {
+        break;
+      }
+
+      // Check within for each
+      list = _.filter(list, function(doc) {
+        // Reject non-points
+        if (!doc[key] || (doc[key].type !== 'Point')) {
+          return false;
+        }
+
+        // Check polygon
+        return pointInPolygon(doc[key], geo);
+      });
+    }
+  }
+
+  return list;
+};

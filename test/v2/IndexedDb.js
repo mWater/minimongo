@@ -1,262 +1,334 @@
-_ = require 'lodash'
-async = require 'async'
-IDBStore = require 'idb-wrapper'
+let IndexedDb;
+import _ from 'lodash';
+import async from 'async';
+import IDBStore from 'idb-wrapper';
+import { createUid } from './utils';
+import { processFind } from './utils';
+import { compileSort } from './selector';
 
-createUid = require('./utils').createUid
-processFind = require('./utils').processFind
-compileSort = require('./selector').compileSort
+// Create a database backed by IndexedDb. options must contain namespace: <string to uniquely identify database>
+export default IndexedDb = class IndexedDb {
+  constructor(options, success, error) {
+    this.collections = {};
 
-# Create a database backed by IndexedDb. options must contain namespace: <string to uniquely identify database>
-module.exports = class IndexedDb
-  constructor: (options, success, error) ->
-    @collections = {}
-
-    # Create database
-    @store = new IDBStore {
-      dbVersion: 1
-      storeName: 'minimongo_' + options.namespace
-      keyPath: ['col', 'doc._id']
-      autoIncrement: false
-      onStoreReady: => if success then success(this)
-      onError: error
+    // Create database
+    this.store = new IDBStore({
+      dbVersion: 1,
+      storeName: 'minimongo_' + options.namespace,
+      keyPath: ['col', 'doc._id'],
+      autoIncrement: false,
+      onStoreReady: () => { if (success) { return success(this); } },
+      onError: error,
       indexes: [
-        { name: 'col', keyPath: 'col', unique: false, multiEntry: false }
+        { name: 'col', keyPath: 'col', unique: false, multiEntry: false },
         { name: 'col-state', keyPath: ['col', 'state'], unique: false, multiEntry: false}
       ]
+    });
+  }
+
+  addCollection(name, success, error) {
+    const collection = new Collection(name, this.store);
+    this[name] = collection;
+    this.collections[name] = collection;
+    if (success) {
+      return success();
+    }
+  }
+
+  removeCollection(name, success, error) {
+    delete this[name];
+    delete this.collections[name];
+
+    // Remove all documents
+    return this.store.query(matches => {
+      const keys = _.map(matches, m => [ m.col, m.doc._id ]);
+      if (keys.length > 0) {
+        return this.store.removeBatch(keys, function() {
+          if (success != null) { return success(); }
+        }
+        , error);
+      } else {
+        if (success != null) { return success(); }
+      }
+    }
+    , { index: "col", keyRange: this.store.makeKeyRange({only: name}), onError: error });
+  }
+};
+
+// Stores data in indexeddb store
+class Collection {
+  constructor(name, store) {
+    this.name = name;
+    this.store = store;
+  }
+
+  find(selector, options) {
+    return{ fetch: (success, error) => {
+      return this._findFetch(selector, options, success, error);
+    }
+  };
+  }
+
+  findOne(selector, options, success, error) {
+    if (_.isFunction(options)) {
+      [options, success, error] = [{}, options, success];
     }
 
-  addCollection: (name, success, error) ->
-    collection = new Collection(name, @store)
-    @[name] = collection
-    @collections[name] = collection
-    if success
-      success()
+    return this.find(selector, options).fetch(function(results) {
+      if (success != null) { return success(results.length>0 ? results[0] : null); }
+    }
+    , error);
+  }
 
-  removeCollection: (name, success, error) ->
-    delete @[name]
-    delete @collections[name]
+  _findFetch(selector, options, success, error) {
+    // Get all docs from collection
+    return this.store.query(function(matches) {
+      // Filter removed docs
+      matches = _.filter(matches, m => m.state !== "removed");
+      if (success != null) { return success(processFind(_.pluck(matches, "doc"), selector, options)); }
+    }
+    , { index: "col", keyRange: this.store.makeKeyRange({only: this.name}), onError: error });
+  }
 
-    # Remove all documents
-    @store.query (matches) =>
-      keys = _.map matches, (m) -> [ m.col, m.doc._id ]
-      if keys.length > 0
-        @store.removeBatch keys, ->
-          if success? then success()
-        , error
-      else
-        if success? then success()
-    , { index: "col", keyRange: @store.makeKeyRange(only: name), onError: error }
+  upsert(doc, success, error) {
+    // Handle both single and multiple upsert
+    let items = doc;
+    if (!_.isArray(items)) {
+      items = [items];
+    }
 
-# Stores data in indexeddb store
-class Collection
-  constructor: (name, store) ->
-    @name = name
-    @store = store
+    for (let item of items) {
+      if (!item._id) {
+        item._id = createUid();
+      }
+    }
 
-  find: (selector, options) ->
-    return fetch: (success, error) =>
-      @_findFetch(selector, options, success, error)
-
-  findOne: (selector, options, success, error) ->
-    if _.isFunction(options)
-      [options, success, error] = [{}, options, success]
-
-    @find(selector, options).fetch (results) ->
-      if success? then success(if results.length>0 then results[0] else null)
-    , error
-
-  _findFetch: (selector, options, success, error) ->
-    # Get all docs from collection
-    @store.query (matches) ->
-      # Filter removed docs
-      matches = _.filter matches, (m) -> m.state != "removed"
-      if success? then success(processFind(_.pluck(matches, "doc"), selector, options))
-    , { index: "col", keyRange: @store.makeKeyRange(only: @name), onError: error }
-
-  upsert: (doc, success, error) ->
-    # Handle both single and multiple upsert
-    items = doc
-    if not _.isArray(items)
-      items = [items]
-
-    for item in items
-      if not item._id
-        item._id = createUid()
-
-    records = _.map items, (item) =>
+    const records = _.map(items, item => {
       return {
-        col: @name
-        state: "upserted"
+        col: this.name,
+        state: "upserted",
         doc: item
+      };
+  });
+
+    return this.store.putBatch(records, function() {
+      if (success) { return success(doc); }
+    }
+    , error);
+  }
+
+  remove(id, success, error) {
+    // Find record
+    return this.store.get([this.name, id], record => {
+      // If not found, create placeholder record
+      if ((record == null)) {
+        record = {
+          col: this.name,
+          doc: { _id: id }
+        };
       }
 
-    @store.putBatch records, ->
-      if success then success(doc)
-    , error
+      // Set removed
+      record.state = "removed";
 
-  remove: (id, success, error) ->
-    # Find record
-    @store.get [@name, id], (record) =>
-      # If not found, create placeholder record
-      if not record?
-        record = {
-          col: @name
-          doc: { _id: id }
+      // Update
+      return this.store.put(record, function() {
+        if (success) { return success(id); }
+      }
+      , error);
+    });
+  }
+
+  cache(docs, selector, options, success, error) {
+    const step2 = () => {
+      // Rows have been cached, now look for stale ones to remove
+      let sort;
+      const docsMap = _.object(_.pluck(docs, "_id"), docs);
+
+      if (options.sort) {
+        sort = compileSort(options.sort);
+      }
+
+      // Perform query, removing rows missing in docs from local db
+      return this.find(selector, options).fetch(results => {
+        const removes = [];
+        const keys = _.map(results, result => [this.name, result._id]);
+        if (keys.length === 0) {
+          if (success != null) { success(); }
+          return;
         }
+        return this.store.getBatch(keys, records => {
+          for (let i = 0, end = records.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
+            const record = records[i];
+            const result = results[i];
 
-      # Set removed
-      record.state = "removed"
+            // If not present in docs and is present locally and not upserted/deleted
+            if (!docsMap[result._id] && record && (record.state === "cached")) {
+              // If past end on sorted limited, ignore
+              if (options.sort && options.limit && (docs.length === options.limit)) {
+                if (sort(result, _.last(docs)) >= 0) {
+                  continue;
+                }
+              }
 
-      # Update
-      @store.put record, ->
-        if success then success(id)
-      , error
+              // Item is gone from server, remove locally
+              removes.push([this.name, result._id]);
+            }
+          }
 
-  cache: (docs, selector, options, success, error) ->
-    step2 = =>
-      # Rows have been cached, now look for stale ones to remove
-      docsMap = _.object(_.pluck(docs, "_id"), docs)
-
-      if options.sort
-        sort = compileSort(options.sort)
-
-      # Perform query, removing rows missing in docs from local db
-      @find(selector, options).fetch (results) =>
-        removes = []
-        keys = _.map results, (result) => [@name, result._id]
-        if keys.length == 0
-          if success? then success()
-          return
-        @store.getBatch keys, (records) =>
-          for i in [0...records.length]
-            record = records[i]
-            result = results[i]
-
-            # If not present in docs and is present locally and not upserted/deleted
-            if not docsMap[result._id] and record and record.state == "cached"
-              # If past end on sorted limited, ignore
-              if options.sort and options.limit and docs.length == options.limit
-                if sort(result, _.last(docs)) >= 0
-                  continue
-
-              # Item is gone from server, remove locally
-              removes.push [@name, result._id]
-
-          # If removes, handle them
-          if removes.length > 0
-            @store.removeBatch removes, ->
-              if success? then success()
-            , error
-          else
-            if success? then success()
-        , error
-      , error
-
-    if docs.length == 0
-      return step2()
-
-    # Create keys to get items
-    keys = _.map docs, (doc) => [@name, doc._id]
-
-    # Create batch of puts
-    puts = []
-    @store.getBatch keys, (records) =>
-      # Add all non-local that are not upserted or removed
-      for i in [0...records.length]
-        record = records[i]
-        doc = docs[i]
-
-        # Check if not present or not upserted/deleted
-        if not record? or record.state == "cached"
-          # If _rev present, make sure that not overwritten by lower _rev
-          if not record or not doc._rev or not record.doc._rev or doc._rev >= record.doc._rev
-            puts.push { col: @name, state: "cached", doc: doc }
-
-      # Put batch
-      if puts.length > 0
-        @store.putBatch puts, step2, error
-      else
-        step2()
-    , error
-
-  pendingUpserts: (success, error) ->
-    @store.query (matches) ->
-      if success? then success(_.pluck(matches, "doc"))
-    , { index: "col-state", keyRange: @store.makeKeyRange(only: [@name, "upserted"]), onError: error }
-
-  pendingRemoves: (success, error) ->
-    @store.query (matches) ->
-      if success? then success(_.pluck(_.pluck(matches, "doc"), "_id"))
-    , { index: "col-state", keyRange: @store.makeKeyRange(only: [@name, "removed"]), onError: error }
-
-  resolveUpsert: (doc, success, error) ->
-    # Handle both single and multiple upsert
-    items = doc
-    if not _.isArray(items)
-      items = [items]
-
-    # Get items
-    keys = _.map items, (item) => [@name, item._id]
-    @store.getBatch keys, (records) =>
-      puts = []
-      for i in [0...items.length]
-        record = records[i]
-
-        # Only safely remove upsert if doc is the same
-        if record and record.state == "upserted" and _.isEqual(record.doc, items[i])
-          record.state = "cached"
-          puts.push(record)
-
-      # Put all changed items
-      if puts.length > 0
-        @store.putBatch puts, ->
-          if success then success(doc)
-        , error
-      else
-        if success then success(doc)
-    , error
-
-  resolveRemove: (id, success, error) ->
-    @store.get [@name, id], (record) =>
-      # Only remove if removed
-      if record.state == "removed"
-        @store.remove [@name, id], ->
-          if success? then success()
-        , error
-
-  # Add but do not overwrite or record as upsert
-  seed: (doc, success, error) ->
-    @store.get [@name, doc._id], (record) =>
-      if not record?
-        record = {
-          col: @name
-          state: "cached"
-          doc: doc
+          // If removes, handle them
+          if (removes.length > 0) {
+            return this.store.removeBatch(removes, function() {
+              if (success != null) { return success(); }
+            }
+            , error);
+          } else {
+            if (success != null) { return success(); }
+          }
         }
-        @store.put record, ->
-          if success? then success()
-        , error
-      else
-        if success? then success()
+        , error);
+      }
+      , error);
+    };
 
-  # Add but do not overwrite upsert/removed and do not record as upsert
-  cacheOne: (doc, success, error) ->
-    @store.get [@name, doc._id], (record) =>
-      # If _rev present, make sure that not overwritten by lower _rev
-      if record and doc._rev and record.doc._rev and doc._rev < record.doc._rev
-        if success? then success()
-        return
+    if (docs.length === 0) {
+      return step2();
+    }
 
-      if not record?
-        record = {
-          col: @name
-          state: "cached"
-          doc: doc
+    // Create keys to get items
+    const keys = _.map(docs, doc => [this.name, doc._id]);
+
+    // Create batch of puts
+    const puts = [];
+    return this.store.getBatch(keys, records => {
+      // Add all non-local that are not upserted or removed
+      for (let i = 0, end = records.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
+        const record = records[i];
+        const doc = docs[i];
+
+        // Check if not present or not upserted/deleted
+        if ((record == null) || (record.state === "cached")) {
+          // If _rev present, make sure that not overwritten by lower _rev
+          if (!record || !doc._rev || !record.doc._rev || (doc._rev >= record.doc._rev)) {
+            puts.push({ col: this.name, state: "cached", doc });
+          }
         }
-      if record.state == "cached"
-        record.doc = doc
-        @store.put record, ->
-          if success? then success()
-        , error
-      else
-        if success? then success()
+      }
+
+      // Put batch
+      if (puts.length > 0) {
+        return this.store.putBatch(puts, step2, error);
+      } else {
+        return step2();
+      }
+    }
+    , error);
+  }
+
+  pendingUpserts(success, error) {
+    return this.store.query(function(matches) {
+      if (success != null) { return success(_.pluck(matches, "doc")); }
+    }
+    , { index: "col-state", keyRange: this.store.makeKeyRange({only: [this.name, "upserted"]}), onError: error });
+  }
+
+  pendingRemoves(success, error) {
+    return this.store.query(function(matches) {
+      if (success != null) { return success(_.pluck(_.pluck(matches, "doc"), "_id")); }
+    }
+    , { index: "col-state", keyRange: this.store.makeKeyRange({only: [this.name, "removed"]}), onError: error });
+  }
+
+  resolveUpsert(doc, success, error) {
+    // Handle both single and multiple upsert
+    let items = doc;
+    if (!_.isArray(items)) {
+      items = [items];
+    }
+
+    // Get items
+    const keys = _.map(items, item => [this.name, item._id]);
+    return this.store.getBatch(keys, records => {
+      const puts = [];
+      for (let i = 0, end = items.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
+        const record = records[i];
+
+        // Only safely remove upsert if doc is the same
+        if (record && (record.state === "upserted") && _.isEqual(record.doc, items[i])) {
+          record.state = "cached";
+          puts.push(record);
+        }
+      }
+
+      // Put all changed items
+      if (puts.length > 0) {
+        return this.store.putBatch(puts, function() {
+          if (success) { return success(doc); }
+        }
+        , error);
+      } else {
+        if (success) { return success(doc); }
+      }
+    }
+    , error);
+  }
+
+  resolveRemove(id, success, error) {
+    return this.store.get([this.name, id], record => {
+      // Only remove if removed
+      if (record.state === "removed") {
+        return this.store.remove([this.name, id], function() {
+          if (success != null) { return success(); }
+        }
+        , error);
+      }
+    });
+  }
+
+  // Add but do not overwrite or record as upsert
+  seed(doc, success, error) {
+    return this.store.get([this.name, doc._id], record => {
+      if ((record == null)) {
+        record = {
+          col: this.name,
+          state: "cached",
+          doc
+        };
+        return this.store.put(record, function() {
+          if (success != null) { return success(); }
+        }
+        , error);
+      } else {
+        if (success != null) { return success(); }
+      }
+    });
+  }
+
+  // Add but do not overwrite upsert/removed and do not record as upsert
+  cacheOne(doc, success, error) {
+    return this.store.get([this.name, doc._id], record => {
+      // If _rev present, make sure that not overwritten by lower _rev
+      if (record && doc._rev && record.doc._rev && (doc._rev < record.doc._rev)) {
+        if (success != null) { success(); }
+        return;
+      }
+
+      if ((record == null)) {
+        record = {
+          col: this.name,
+          state: "cached",
+          doc
+        };
+      }
+      if (record.state === "cached") {
+        record.doc = doc;
+        return this.store.put(record, function() {
+          if (success != null) { return success(); }
+        }
+        , error);
+      } else {
+        if (success != null) { return success(); }
+      }
+    });
+  }
+}

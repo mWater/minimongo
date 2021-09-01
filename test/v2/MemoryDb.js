@@ -1,133 +1,175 @@
-_ = require 'lodash'
-createUid = require('./utils').createUid
-processFind = require('./utils').processFind
-compileSort = require('./selector').compileSort
+let MemoryDb;
+import _ from 'lodash';
+import { createUid } from './utils';
+import { processFind } from './utils';
+import { compileSort } from './selector';
 
-module.exports = class MemoryDb
-  constructor: (options, success) ->
-    @collections = {}
+export default MemoryDb = class MemoryDb {
+  constructor(options, success) {
+    this.collections = {};
 
-    if success then success(this)
+    if (success) { success(this); }
+  }
 
-  addCollection: (name, success, error) ->
-    collection = new Collection(name)
-    @[name] = collection
-    @collections[name] = collection
-    if success? then success()
+  addCollection(name, success, error) {
+    const collection = new Collection(name);
+    this[name] = collection;
+    this.collections[name] = collection;
+    if (success != null) { return success(); }
+  }
 
-  removeCollection: (name, success, error) ->
-    delete @[name]
-    delete @collections[name]
-    if success? then success()
+  removeCollection(name, success, error) {
+    delete this[name];
+    delete this.collections[name];
+    if (success != null) { return success(); }
+  }
+};
 
-# Stores data in memory
-class Collection
-  constructor: (name) ->
-    @name = name
+// Stores data in memory
+class Collection {
+  constructor(name) {
+    this.name = name;
 
-    @items = {}
-    @upserts = {}  # Pending upserts by _id. Still in items
-    @removes = {}  # Pending removes by _id. No longer in items
+    this.items = {};
+    this.upserts = {};  // Pending upserts by _id. Still in items
+    this.removes = {};  // Pending removes by _id. No longer in items
+  }
 
-  find: (selector, options) ->
-    return fetch: (success, error) =>
-      @_findFetch(selector, options, success, error)
+  find(selector, options) {
+    return{ fetch: (success, error) => {
+      return this._findFetch(selector, options, success, error);
+    }
+  };
+  }
 
-  findOne: (selector, options, success, error) ->
-    if _.isFunction(options)
-      [options, success, error] = [{}, options, success]
+  findOne(selector, options, success, error) {
+    if (_.isFunction(options)) {
+      [options, success, error] = [{}, options, success];
+    }
 
-    @find(selector, options).fetch (results) ->
-      if success? then success(if results.length>0 then results[0] else null)
-    , error
+    return this.find(selector, options).fetch(function(results) {
+      if (success != null) { return success(results.length>0 ? results[0] : null); }
+    }
+    , error);
+  }
 
-  _findFetch: (selector, options, success, error) ->
-    if success? then success(processFind(@items, selector, options))
+  _findFetch(selector, options, success, error) {
+    if (success != null) { return success(processFind(this.items, selector, options)); }
+  }
 
-  upsert: (doc, success, error) ->
-    # Handle both single and multiple upsert
-    items = doc
-    if not _.isArray(items)
-      items = [items]
+  upsert(doc, success, error) {
+    // Handle both single and multiple upsert
+    let items = doc;
+    if (!_.isArray(items)) {
+      items = [items];
+    }
 
-    for item in items
-      if not item._id
-        item._id = createUid()
+    for (let item of items) {
+      if (!item._id) {
+        item._id = createUid();
+      }
 
-      # Replace/add
-      @items[item._id] = item
-      @upserts[item._id] = item
+      // Replace/add
+      this.items[item._id] = item;
+      this.upserts[item._id] = item;
+    }
 
-    if success then success(doc)
+    if (success) { return success(doc); }
+  }
 
-  remove: (id, success, error) ->
-    if _.has(@items, id)
-      @removes[id] = @items[id]
-      delete @items[id]
-      delete @upserts[id]
-    else
-      @removes[id] = { _id: id }
+  remove(id, success, error) {
+    if (_.has(this.items, id)) {
+      this.removes[id] = this.items[id];
+      delete this.items[id];
+      delete this.upserts[id];
+    } else {
+      this.removes[id] = { _id: id };
+    }
 
-    if success? then success()
+    if (success != null) { return success(); }
+  }
 
-  cache: (docs, selector, options, success, error) ->
-    # Add all non-local that are not upserted or removed
-    for doc in docs
-      @cacheOne(doc)
+  cache(docs, selector, options, success, error) {
+    // Add all non-local that are not upserted or removed
+    let sort;
+    for (let doc of docs) {
+      this.cacheOne(doc);
+    }
 
-    docsMap = _.object(_.pluck(docs, "_id"), docs)
+    const docsMap = _.object(_.pluck(docs, "_id"), docs);
 
-    if options.sort
-      sort = compileSort(options.sort)
+    if (options.sort) {
+      sort = compileSort(options.sort);
+    }
 
-    # Perform query, removing rows missing in docs from local db
-    @find(selector, options).fetch (results) =>
-      for result in results
-        if not docsMap[result._id] and not _.has(@upserts, result._id)
-          # If past end on sorted limited, ignore
-          if options.sort and options.limit and docs.length == options.limit
-            if sort(result, _.last(docs)) >= 0
-              continue
-          delete @items[result._id]
+    // Perform query, removing rows missing in docs from local db
+    return this.find(selector, options).fetch(results => {
+      for (let result of results) {
+        if (!docsMap[result._id] && !_.has(this.upserts, result._id)) {
+          // If past end on sorted limited, ignore
+          if (options.sort && options.limit && (docs.length === options.limit)) {
+            if (sort(result, _.last(docs)) >= 0) {
+              continue;
+            }
+          }
+          delete this.items[result._id];
+        }
+      }
 
-      if success? then success()
-    , error
+      if (success != null) { return success(); }
+    }
+    , error);
+  }
 
-  pendingUpserts: (success) ->
-    success _.values(@upserts)
+  pendingUpserts(success) {
+    return success(_.values(this.upserts));
+  }
 
-  pendingRemoves: (success) ->
-    success _.pluck(@removes, "_id")
+  pendingRemoves(success) {
+    return success(_.pluck(this.removes, "_id"));
+  }
 
-  resolveUpsert: (doc, success) ->
-    # Handle both single and multiple upsert
-    items = doc
-    if not _.isArray(items)
-      items = [items]
+  resolveUpsert(doc, success) {
+    // Handle both single and multiple upsert
+    let items = doc;
+    if (!_.isArray(items)) {
+      items = [items];
+    }
 
-    for item in items
-      if @upserts[item._id]
-        # Only safely remove upsert if doc is unchanged
-        if _.isEqual(item, @upserts[item._id])
-          delete @upserts[item._id]
-    if success? then success()
+    for (let item of items) {
+      if (this.upserts[item._id]) {
+        // Only safely remove upsert if doc is unchanged
+        if (_.isEqual(item, this.upserts[item._id])) {
+          delete this.upserts[item._id];
+        }
+      }
+    }
+    if (success != null) { return success(); }
+  }
 
-  resolveRemove: (id, success) ->
-    delete @removes[id]
-    if success? then success()
+  resolveRemove(id, success) {
+    delete this.removes[id];
+    if (success != null) { return success(); }
+  }
 
-  # Add but do not overwrite or record as upsert
-  seed: (doc, success) ->
-    if not _.has(@items, doc._id) and not _.has(@removes, doc._id)
-      @items[doc._id] = doc
-    if success? then success()
+  // Add but do not overwrite or record as upsert
+  seed(doc, success) {
+    if (!_.has(this.items, doc._id) && !_.has(this.removes, doc._id)) {
+      this.items[doc._id] = doc;
+    }
+    if (success != null) { return success(); }
+  }
 
-  # Add but do not overwrite upserts or removes
-  cacheOne: (doc, success) ->
-    if not _.has(@upserts, doc._id) and not _.has(@removes, doc._id)
-      existing = @items[doc._id]
+  // Add but do not overwrite upserts or removes
+  cacheOne(doc, success) {
+    if (!_.has(this.upserts, doc._id) && !_.has(this.removes, doc._id)) {
+      const existing = this.items[doc._id];
 
-      # If _rev present, make sure that not overwritten by lower _rev
-      if not existing or not doc._rev or not existing._rev or doc._rev >= existing._rev
-        @items[doc._id] = doc
-    if success? then success()
+      // If _rev present, make sure that not overwritten by lower _rev
+      if (!existing || !doc._rev || !existing._rev || (doc._rev >= existing._rev)) {
+        this.items[doc._id] = doc;
+      }
+    }
+    if (success != null) { return success(); }
+  }
+}

@@ -1,236 +1,269 @@
-chai = require 'chai'
-assert = chai.assert
-RemoteDb = require "../src/RemoteDb"
-_ = require 'lodash'
+import chai from 'chai';
+const {
+  assert
+} = chai;
+import RemoteDb from "../src/RemoteDb";
+import _ from 'lodash';
 
-describe 'RemoteDb', ->
-  beforeEach () ->
-    @httpCall = null
-    @callSuccessWith = null
+describe('RemoteDb', function() {
+  beforeEach(function() {
+    this.httpCall = null;
+    this.callSuccessWith = null;
 
-    @mockHttpClient = (method, url, params, data, success, error) =>
-      @httpCall = {
-        method: method
-        url: url
-        params: params
-        data: data
-        success: success
-        error: error
+    this.mockHttpClient = (method, url, params, data, success, error) => {
+      this.httpCall = {
+        method,
+        url,
+        params,
+        data,
+        success,
+        error
+      };
+      if (this.callSuccessWith) {
+        return success(this.callSuccessWith);
       }
-      if @callSuccessWith
-        success(@callSuccessWith)
+    };
 
-    @db = new RemoteDb("http://someserver.com/", "clientid", @mockHttpClient, true, true)
-    @db.addCollection("scratch")
-    @col = @db.scratch
+    this.db = new RemoteDb("http://someserver.com/", "clientid", this.mockHttpClient, true, true);
+    this.db.addCollection("scratch");
+    return this.col = this.db.scratch;
+  });
 
-  it "calls GET for find", (done) ->
-    success = (data) =>
-      assert.equal @httpCall.method, "GET"
-      assert.equal @httpCall.url, "http://someserver.com/scratch"
-      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert not @httpCall.data
+  it("calls GET for find", function(done) {
+    const success = data => {
+      assert.equal(this.httpCall.method, "GET");
+      assert.equal(this.httpCall.url, "http://someserver.com/scratch");
+      assert.deepEqual(this.httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert(!this.httpCall.data);
 
-      assert.deepEqual data, [{ x: 1 }]
-      done()
-    @callSuccessWith = [{ x: 1 }]
+      assert.deepEqual(data, [{ x: 1 }]);
+      return done();
+    };
+    this.callSuccessWith = [{ x: 1 }];
 
-    @col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () -> assert.fail())
+    return this.col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () => assert.fail());
+  });
 
-  it "calls POST for find that is too big", (done) ->
-    longStr = ""
-    for i in [0...1000]
-      longStr += "x"
+  it("calls POST for find that is too big", function(done) {
+    let longStr = "";
+    for (let i = 0; i < 1000; i++) {
+      longStr += "x";
+    }
 
-    success = (data) =>
-      assert.equal @httpCall.method, "POST"
-      assert.equal @httpCall.url, "http://someserver.com/scratch/find"
-      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert.deepEqual @httpCall.data, {
-        selector: {"a": longStr}
-        limit: 10
+    const success = data => {
+      assert.equal(this.httpCall.method, "POST");
+      assert.equal(this.httpCall.url, "http://someserver.com/scratch/find");
+      assert.deepEqual(this.httpCall.params, { client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert.deepEqual(this.httpCall.data, {
+        selector: {"a": longStr},
+        limit: 10,
         sort: ["b"]
-      }
+      });
 
-      assert.deepEqual data, [{ x: 1 }]
-      done()
-    @callSuccessWith = [{ x: 1 }]
+      assert.deepEqual(data, [{ x: 1 }]);
+      return done();
+    };
+    this.callSuccessWith = [{ x: 1 }];
 
-    @col.find({ a: longStr }, { limit: 10, sort: ["b"] }).fetch(success, () -> assert.fail())
+    return this.col.find({ a: longStr }, { limit: 10, sort: ["b"] }).fetch(success, () => assert.fail());
+  });
 
-  it "calls GET for findOne", (done) ->
-    success = (data) =>
-      assert.equal @httpCall.method, "GET"
-      assert.equal @httpCall.url, "http://someserver.com/scratch"
-      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 1, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert not @httpCall.data
+  it("calls GET for findOne", function(done) {
+    const success = data => {
+      assert.equal(this.httpCall.method, "GET");
+      assert.equal(this.httpCall.url, "http://someserver.com/scratch");
+      assert.deepEqual(this.httpCall.params, { selector: '{"a":1}', limit: 1, sort: '["b"]', client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert(!this.httpCall.data);
 
-      assert.deepEqual data, { x: 1 }
-      done()
-    @callSuccessWith = [{ x: 1 }]
+      assert.deepEqual(data, { x: 1 });
+      return done();
+    };
+    this.callSuccessWith = [{ x: 1 }];
 
-    @col.findOne({ a: 1 }, { sort: ["b"] }, success, () -> assert.fail())
+    return this.col.findOne({ a: 1 }, { sort: ["b"] }, success, () => assert.fail());
+  });
 
-  it "calls POST for new upsert", (done) ->
-    success = (data) =>
-      assert.equal @httpCall.method, "POST"
-      assert.equal @httpCall.url, "http://someserver.com/scratch"
+  it("calls POST for new upsert", function(done) {
+    const success = data => {
+      assert.equal(this.httpCall.method, "POST");
+      assert.equal(this.httpCall.url, "http://someserver.com/scratch");
 
-      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert.deepEqual @httpCall.data, { _id: "0", x: 1 }
-      assert.deepEqual data, { _id: "0", _rev: 1, x: 1 }, "success data wrong"
-      done()
-    @callSuccessWith = { _id: "0", _rev: 1, x: 1 }
+      assert.deepEqual(this.httpCall.params, { client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert.deepEqual(this.httpCall.data, { _id: "0", x: 1 });
+      assert.deepEqual(data, { _id: "0", _rev: 1, x: 1 }, "success data wrong");
+      return done();
+    };
+    this.callSuccessWith = { _id: "0", _rev: 1, x: 1 };
 
-    @col.upsert({ _id: "0", x: 1 }, success, () -> assert.fail())
+    return this.col.upsert({ _id: "0", x: 1 }, success, () => assert.fail());
+  });
 
-  it "calls POST for new single bulk upsert", (done) ->
-    success = (data) =>
-      assert.equal @httpCall.method, "POST"
-      assert.equal @httpCall.url, "http://someserver.com/scratch"
+  it("calls POST for new single bulk upsert", function(done) {
+    const success = data => {
+      assert.equal(this.httpCall.method, "POST");
+      assert.equal(this.httpCall.url, "http://someserver.com/scratch");
 
-      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert.deepEqual @httpCall.data, { _id: "0", x: 1 }
-      assert.deepEqual data, [{ _id: "0", _rev: 1, x: 1 }]
-      done()
-    @callSuccessWith = { _id: "0", _rev: 1, x: 1 }
+      assert.deepEqual(this.httpCall.params, { client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert.deepEqual(this.httpCall.data, { _id: "0", x: 1 });
+      assert.deepEqual(data, [{ _id: "0", _rev: 1, x: 1 }]);
+      return done();
+    };
+    this.callSuccessWith = { _id: "0", _rev: 1, x: 1 };
 
-    @col.upsert([{ _id: "0", x: 1 }], success, () -> assert.fail())
+    return this.col.upsert([{ _id: "0", x: 1 }], success, () => assert.fail());
+  });
 
-  it "calls POST for new multiple bulk upsert", (done) ->
-    success = (data) =>
-      assert.equal @httpCall.method, "POST"
-      assert.equal @httpCall.url, "http://someserver.com/scratch"
+  it("calls POST for new multiple bulk upsert", function(done) {
+    const success = data => {
+      assert.equal(this.httpCall.method, "POST");
+      assert.equal(this.httpCall.url, "http://someserver.com/scratch");
 
-      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert.deepEqual @httpCall.data, [{ _id: "0", x: 1 }, { _id: "1", x: 2 }]
-      assert.deepEqual data, [{ _id: "0", _rev: 1, x: 1 }, { _id: "1", _rev: 1, x: 2 }]
-      done()
-    @callSuccessWith = [{ _id: "0", _rev: 1, x: 1 }, { _id: "1", _rev: 1, x: 2 }]
+      assert.deepEqual(this.httpCall.params, { client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert.deepEqual(this.httpCall.data, [{ _id: "0", x: 1 }, { _id: "1", x: 2 }]);
+      assert.deepEqual(data, [{ _id: "0", _rev: 1, x: 1 }, { _id: "1", _rev: 1, x: 2 }]);
+      return done();
+    };
+    this.callSuccessWith = [{ _id: "0", _rev: 1, x: 1 }, { _id: "1", _rev: 1, x: 2 }];
 
-    @col.upsert([{ _id: "0", x: 1 }, { _id: "1", x: 2 }], success, () -> assert.fail())
+    return this.col.upsert([{ _id: "0", x: 1 }, { _id: "1", x: 2 }], success, () => assert.fail());
+  });
 
-  it "calls PATCH for upsert with base", (done) ->
-    success = (data) =>
-      assert.equal @httpCall.method, "PATCH"
-      assert.equal @httpCall.url, "http://someserver.com/scratch"
+  it("calls PATCH for upsert with base", function(done) {
+    const success = data => {
+      assert.equal(this.httpCall.method, "PATCH");
+      assert.equal(this.httpCall.url, "http://someserver.com/scratch");
 
-      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert.deepEqual @httpCall.data, { doc: { _id: "0", _rev: 1, x: 2 }, base: { _id: "0", _rev: 1, x: 1 } }
-      assert.deepEqual data, { _id: "0", _rev: 1, x: 2 }, "success data wrong"
-      done()
-    @callSuccessWith = { _id: "0", _rev: 1, x: 2 }
+      assert.deepEqual(this.httpCall.params, { client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert.deepEqual(this.httpCall.data, { doc: { _id: "0", _rev: 1, x: 2 }, base: { _id: "0", _rev: 1, x: 1 } });
+      assert.deepEqual(data, { _id: "0", _rev: 1, x: 2 }, "success data wrong");
+      return done();
+    };
+    this.callSuccessWith = { _id: "0", _rev: 1, x: 2 };
 
-    @col.upsert({ _id: "0", _rev: 1, x: 2 }, { _id: "0", _rev: 1, x: 1 }, success, () -> assert.fail())
+    return this.col.upsert({ _id: "0", _rev: 1, x: 2 }, { _id: "0", _rev: 1, x: 1 }, success, () => assert.fail());
+  });
 
-  it "calls PATCH for new single bulk upsert with base", (done) ->
-    success = (data) =>
-      assert.equal @httpCall.method, "PATCH"
-      assert.equal @httpCall.url, "http://someserver.com/scratch"
+  it("calls PATCH for new single bulk upsert with base", function(done) {
+    const success = data => {
+      assert.equal(this.httpCall.method, "PATCH");
+      assert.equal(this.httpCall.url, "http://someserver.com/scratch");
 
-      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert.deepEqual @httpCall.data, { doc: { _id: "0", _rev: 1, x: 2 }, base: { _id: "0", _rev: 1, x: 1 } }
-      assert.deepEqual data, [{ _id: "0", _rev: 2, x: 2 }]
-      done()
-    @callSuccessWith = { _id: "0", _rev: 2, x: 2 }
+      assert.deepEqual(this.httpCall.params, { client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert.deepEqual(this.httpCall.data, { doc: { _id: "0", _rev: 1, x: 2 }, base: { _id: "0", _rev: 1, x: 1 } });
+      assert.deepEqual(data, [{ _id: "0", _rev: 2, x: 2 }]);
+      return done();
+    };
+    this.callSuccessWith = { _id: "0", _rev: 2, x: 2 };
 
-    @col.upsert([{ _id: "0", _rev: 1, x: 2 }], [{ _id: "0", _rev: 1, x: 1 }], success, () -> assert.fail())
+    return this.col.upsert([{ _id: "0", _rev: 1, x: 2 }], [{ _id: "0", _rev: 1, x: 1 }], success, () => assert.fail());
+  });
 
-  it "calls PATCH for new multiple bulk upsert", (done) ->
-    success = (data) =>
-      assert.equal @httpCall.method, "PATCH"
-      assert.equal @httpCall.url, "http://someserver.com/scratch"
+  it("calls PATCH for new multiple bulk upsert", function(done) {
+    const success = data => {
+      assert.equal(this.httpCall.method, "PATCH");
+      assert.equal(this.httpCall.url, "http://someserver.com/scratch");
 
-      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert.deepEqual @httpCall.data, { doc: [{ _id: "0", _rev: 1, x: 2 }, { _id: "1", _rev: 1, x: 3 }], base: [{ _id: "0", _rev: 1, x: 1 }, { _id: "1", _rev: 1, x: 2 }] }
-      assert.deepEqual data, [{ _id: "0", _rev: 2, x: 2 }, { _id: "1", _rev: 2, x: 3 }]
-      done()
-    @callSuccessWith = [{ _id: "0", _rev: 2, x: 2 }, { _id: "1", _rev: 2, x: 3 }]
+      assert.deepEqual(this.httpCall.params, { client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert.deepEqual(this.httpCall.data, { doc: [{ _id: "0", _rev: 1, x: 2 }, { _id: "1", _rev: 1, x: 3 }], base: [{ _id: "0", _rev: 1, x: 1 }, { _id: "1", _rev: 1, x: 2 }] });
+      assert.deepEqual(data, [{ _id: "0", _rev: 2, x: 2 }, { _id: "1", _rev: 2, x: 3 }]);
+      return done();
+    };
+    this.callSuccessWith = [{ _id: "0", _rev: 2, x: 2 }, { _id: "1", _rev: 2, x: 3 }];
 
-    @col.upsert([{ _id: "0", _rev: 1, x: 2 }, { _id: "1", _rev: 1, x: 3 }], [{ _id: "0", _rev: 1, x: 1 }, { _id: "1", _rev: 1, x: 2 }], success, () -> assert.fail())
+    return this.col.upsert([{ _id: "0", _rev: 1, x: 2 }, { _id: "1", _rev: 1, x: 3 }], [{ _id: "0", _rev: 1, x: 1 }, { _id: "1", _rev: 1, x: 2 }], success, () => assert.fail());
+  });
 
-  it "calls POST quickfind for find if localData passed", (done) ->
-    success = (data) =>
-      assert.equal @httpCall.method, "POST"
-      assert.equal @httpCall.url, "http://someserver.com/scratch/quickfind"
-      assert.deepEqual @httpCall.params, { client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert.deepEqual @httpCall.data, {
+  it("calls POST quickfind for find if localData passed", function(done) {
+    const success = data => {
+      assert.equal(this.httpCall.method, "POST");
+      assert.equal(this.httpCall.url, "http://someserver.com/scratch/quickfind");
+      assert.deepEqual(this.httpCall.params, { client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert.deepEqual(this.httpCall.data, {
         quickfind: {
           "00": "6636b33e1be7df314fea"
-        }
-        selector: {"a":1}
-        limit: 10
+        },
+        selector: {"a":1},
+        limit: 10,
         sort: ["b"],
-      }
+      });
 
-      assert.deepEqual data, [
-        { _id: "0002", _rev: 1, a: 2, b: 1 }
+      assert.deepEqual(data, [
+        { _id: "0002", _rev: 1, a: 2, b: 1 },
         { _id: "0001", _rev: 2, a: 2, b: 2 }
-      ], JSON.stringify(data)
-      done()
+      ], JSON.stringify(data));
+      return done();
+    };
 
-    @callSuccessWith = { "00": [
-      { _id: "0001", _rev: 2, a: 2, b: 2 }
+    this.callSuccessWith = { "00": [
+      { _id: "0001", _rev: 2, a: 2, b: 2 },
       { _id: "0002", _rev: 1, a: 2, b: 1 }
-    ]}
+    ]};
 
-    localData = [
+    const localData = [
       { _id: "0001", _rev: 1, a: 1 }
-    ]
+    ];
 
-    @col.find({ a: 1 }, { limit: 10, sort: ["b"], localData: localData }).fetch(success, () -> assert.fail())
+    return this.col.find({ a: 1 }, { limit: 10, sort: ["b"], localData }).fetch(success, () => assert.fail());
+  });
 
-  it "supports array of URLs", (done) ->
-    @db = new RemoteDb(["http://someserver.com/", "http://someotherserver.com/"], "clientid", @mockHttpClient, true, true)
-    @db.addCollection("scratch")
-    @col = @db.scratch
-    success = (data) =>
-      assert.equal @httpCall.method, "GET"
-      assert.equal @httpCall.url, "http://someotherserver.com/scratch"
-      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert not @httpCall.data
+  it("supports array of URLs", function(done) {
+    this.db = new RemoteDb(["http://someserver.com/", "http://someotherserver.com/"], "clientid", this.mockHttpClient, true, true);
+    this.db.addCollection("scratch");
+    this.col = this.db.scratch;
+    const success = data => {
+      assert.equal(this.httpCall.method, "GET");
+      assert.equal(this.httpCall.url, "http://someotherserver.com/scratch");
+      assert.deepEqual(this.httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert(!this.httpCall.data);
 
-      assert.deepEqual data, [{ x: 1 }]
-      done()
-    @callSuccessWith = [{ x: 1 }]
+      assert.deepEqual(data, [{ x: 1 }]);
+      return done();
+    };
+    this.callSuccessWith = [{ x: 1 }];
 
-    @col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () -> assert.fail())
+    return this.col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () => assert.fail());
+  });
 
-  it "cycles through the provided array of URLs", (done) ->
-    @db = new RemoteDb(["http://someserver.com/", "http://someotherserver.com/"], "clientid", @mockHttpClient, true, true)
-    @db.addCollection("scratch")
-    @col = @db.scratch
+  return it("cycles through the provided array of URLs", function(done) {
+    this.db = new RemoteDb(["http://someserver.com/", "http://someotherserver.com/"], "clientid", this.mockHttpClient, true, true);
+    this.db.addCollection("scratch");
+    this.col = this.db.scratch;
 
-    success = (data) =>
-      assert.equal @httpCall.method, "GET"
-      assert.equal @httpCall.url, "http://someotherserver.com/scratch"
-      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert not @httpCall.data
+    let success = data => {
+      assert.equal(this.httpCall.method, "GET");
+      assert.equal(this.httpCall.url, "http://someotherserver.com/scratch");
+      assert.deepEqual(this.httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert(!this.httpCall.data);
 
-      assert.deepEqual data, [{ x: 1 }]
-    @callSuccessWith = [{ x: 1 }]
+      return assert.deepEqual(data, [{ x: 1 }]);
+    };
+    this.callSuccessWith = [{ x: 1 }];
 
-    @col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () -> assert.fail())
+    this.col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () => assert.fail());
 
-    success = (data) =>
-      assert.equal @httpCall.method, "GET"
-      assert.equal @httpCall.url, "http://someserver.com/scratch"
-      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert not @httpCall.data
+    success = data => {
+      assert.equal(this.httpCall.method, "GET");
+      assert.equal(this.httpCall.url, "http://someserver.com/scratch");
+      assert.deepEqual(this.httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert(!this.httpCall.data);
 
-      assert.deepEqual data, [{ x: 1 }]
-    @callSuccessWith = [{ x: 1 }]
+      return assert.deepEqual(data, [{ x: 1 }]);
+    };
+    this.callSuccessWith = [{ x: 1 }];
 
-    @col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () -> assert.fail())
+    this.col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () => assert.fail());
 
-    success = (data) =>
-      assert.equal @httpCall.method, "GET"
-      assert.equal @httpCall.url, "http://someotherserver.com/scratch"
-      assert.deepEqual @httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(@httpCall.params)
-      assert not @httpCall.data
+    success = data => {
+      assert.equal(this.httpCall.method, "GET");
+      assert.equal(this.httpCall.url, "http://someotherserver.com/scratch");
+      assert.deepEqual(this.httpCall.params, { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" }, JSON.stringify(this.httpCall.params));
+      assert(!this.httpCall.data);
 
-      assert.deepEqual data, [{ x: 1 }]
-      done()
-    @callSuccessWith = [{ x: 1 }]
+      assert.deepEqual(data, [{ x: 1 }]);
+      return done();
+    };
+    this.callSuccessWith = [{ x: 1 }];
 
-    @col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () -> assert.fail())
+    return this.col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () => assert.fail());
+  });
+});
