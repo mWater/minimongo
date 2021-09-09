@@ -57,7 +57,7 @@ options are MongoDB find options: e.g. `{ limit: 10 }`, `{ sort: ["x"] }`
 
 ### Caching
 
-A set of rows can be cached in a local database. Call 
+A set of rows can be cached in a local database. Call
 
 `db.sometable.cache(docs, selector, options, success, error)`
 
@@ -277,11 +277,11 @@ It can also be used with a simple server that just overwrites documents complete
 
 To test, run `testem` in the main directory.
 
-To test a RemoteDb implementation, use `test/LiveRemoteDbTests.coffee`. Server must have a collection called scratch with fields as specified at top of tests file.
+To test a RemoteDb implementation, use `test/LiveRemoteDbTests.ts`. Server must have a collection called scratch with fields as specified at top of tests file.
 
 
 ### Quickfind
 
 Finds can be very wasteful when the client has large collections already cached. The quickfind protocol shards the existing docs on the client by
-id and then sends a hash of them to the server, which just responds with the changed ones. See src/quickfind.coffee for more details. It needs to be 
+id and then sends a hash of them to the server, which just responds with the changed ones. See src/quickfind.ts for more details. It needs to be
 enabled and is off by default.
