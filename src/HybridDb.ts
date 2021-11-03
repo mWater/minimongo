@@ -226,7 +226,10 @@ class HybridCollection<T> implements MinimongoCollection<T> {
               // Add upserts
               if (upserts.length > 0) {
                 // Remove upserts from data
-                const upsertsMap = _.fromPairs(_.zip(_.map(upserts, (u: any) => u.doc._id), _.map(upserts, (u: any) => u.doc._id)))
+                const upsertsMap = _.fromPairs(_.zip(
+                    _.map(upserts, (u: any) => u.doc._id),
+                    _.map(upserts, (u: any) => u.doc._id))
+                    )
                 data = _.filter(data, (doc: any) => !_.has(upsertsMap, doc._id))
 
                 // Add upserts
