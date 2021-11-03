@@ -66,12 +66,12 @@ class Collection {
 
     // Upsert does to both
     return this.masterCol.upsert(
-      _.pluck(items, "doc"),
-      _.pluck(items, "base"),
+      _.map(items, "doc"),
+      _.map(items, "base"),
       () => {
         return this.replicaCol.upsert(
-          _.pluck(items, "doc"),
-          _.pluck(items, "base"),
+          _.map(items, "doc"),
+          _.map(items, "base"),
           (results: any) => {
             return success(docs)
           },
@@ -99,7 +99,7 @@ class Collection {
 
     // Index docs
     let sort: any
-    const docsMap = _.indexBy(docs, "_id")
+    const docsMap = _.keyBy(docs, "_id")
 
     // Compile sort
     if (options.sort) {
@@ -109,7 +109,7 @@ class Collection {
     // Perform query
     return this.masterCol.find(selector, options).fetch((results: any) => {
       let result
-      const resultsMap = _.indexBy(results, "_id")
+      const resultsMap = _.keyBy(results, "_id")
 
       // Determine if each result needs to be cached
       const toCache: any = []

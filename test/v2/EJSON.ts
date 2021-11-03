@@ -58,7 +58,7 @@ var builtinConverters = [
       if (_.isEmpty(obj) || _.size(obj) > 2) {
         return false
       }
-      return _.any(builtinConverters, function (converter: any) {
+      return _.some(builtinConverters, function (converter: any) {
         return converter.matchJSONValue(obj)
       })
     },
@@ -177,7 +177,7 @@ var fromJSONValueHelper = function (value: any) {
   if (typeof value === "object" && value !== null) {
     if (
       _.size(value) <= 2 &&
-      _.all(value, function (v: any, k: any) {
+      _.every(value, function (v: any, k: any) {
         return typeof k === "string" && k.substr(0, 1) === "$"
       })
     ) {
@@ -248,7 +248,7 @@ EJSON.equals = function (a: any, b: any, options: any) {
       bKeys.push(x)
     })
     i = 0
-    ret = _.all(a, function (val: any, x: any) {
+    ret = _.every(a, function (val: any, x: any) {
       if (i >= bKeys.length) {
         return false
       }
@@ -264,7 +264,7 @@ EJSON.equals = function (a: any, b: any, options: any) {
     return ret && i === bKeys.length
   } else {
     i = 0
-    ret = _.all(a, function (val: any, key: any) {
+    ret = _.every(a, function (val: any, key: any) {
       if (!_.has(b, key)) {
         return false
       }

@@ -45,7 +45,7 @@ export default class HybridDb implements MinimongoDb {
       const col = _.first(cols)
       if (col) {
         return col.upload(
-          () => uploadCols(_.rest(cols), success, error),
+          () => uploadCols(_.tail(cols), success, error),
           (err: any) => error(err)
         )
       } else {
@@ -219,21 +219,18 @@ class HybridCollection<T> implements MinimongoCollection<T> {
               let data = remoteData
 
               if (removes.length > 0) {
-                const removesMap = _.object(_.map(removes, (id: any) => [id, id]))
+                const removesMap = _.fromPairs(_.map(removes, (id: any) => [id, id]))
                 data = _.filter(remoteData, (doc: any) => !_.has(removesMap, doc._id))
               }
 
               // Add upserts
               if (upserts.length > 0) {
                 // Remove upserts from data
-                const upsertsMap = _.object(
-                  _.map(upserts, (u: any) => u.doc._id),
-                  _.map(upserts, (u: any) => u.doc._id)
-                )
+                const upsertsMap = _.fromPairs(_.zip(_.map(upserts, (u: any) => u.doc._id), _.map(upserts, (u: any) => u.doc._id)))
                 data = _.filter(data, (doc: any) => !_.has(upsertsMap, doc._id))
 
                 // Add upserts
-                data = data.concat(_.pluck(upserts, "doc"))
+                data = data.concat(_.map(upserts, "doc"))
 
                 // Refilter/sort/limit
                 data = processFind(data, selector, options)
@@ -315,7 +312,7 @@ class HybridCollection<T> implements MinimongoCollection<T> {
     let items
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
-    return this.localCol.upsert(_.pluck(items, "doc"), _.pluck(items, "base"), (result: any) => success?.(docs), error)
+    return this.localCol.upsert(_.map(items, "doc"), _.map(items, "base"), (result: any) => success?.(docs), error)
   }
 
   remove(id: any, success: any, error: any) {
@@ -343,7 +340,7 @@ class HybridCollection<T> implements MinimongoCollection<T> {
               () => {
                 // Cache new value if present
                 if (remoteDoc) {
-                  return this.localCol.cacheOne(remoteDoc, () => uploadUpserts(_.rest(upserts), success, error), error)
+                  return this.localCol.cacheOne(remoteDoc, () => uploadUpserts(_.tail(upserts), success, error), error)
                 } else {
                   // Remove local
                   return this.localCol.remove(
@@ -352,7 +349,7 @@ class HybridCollection<T> implements MinimongoCollection<T> {
                       // Resolve remove
                       return this.localCol.resolveRemove(
                         upsert.doc._id,
-                        () => uploadUpserts(_.rest(upserts), success, error),
+                        () => uploadUpserts(_.tail(upserts), success, error),
                         error
                       )
                     },
@@ -375,7 +372,7 @@ class HybridCollection<T> implements MinimongoCollection<T> {
                     function () {
                       // Continue if was 410
                       if (err.status === 410) {
-                        return uploadUpserts(_.rest(upserts), success, error)
+                        return uploadUpserts(_.tail(upserts), success, error)
                       } else {
                         return error(err)
                       }
@@ -401,7 +398,7 @@ class HybridCollection<T> implements MinimongoCollection<T> {
         return this.remoteCol.remove(
           remove,
           () => {
-            return this.localCol.resolveRemove(remove, () => uploadRemoves(_.rest(removes), success, error), error)
+            return this.localCol.resolveRemove(remove, () => uploadRemoves(_.tail(removes), success, error), error)
           },
           (err: any) => {
             // If 403 or 410, remove document
@@ -411,7 +408,7 @@ class HybridCollection<T> implements MinimongoCollection<T> {
                 function () {
                   // Continue if was 410
                   if (err.status === 410) {
-                    return uploadRemoves(_.rest(removes), success, error)
+                    return uploadRemoves(_.tail(removes), success, error)
                   } else {
                     return error(err)
                   }
