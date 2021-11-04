@@ -37,39 +37,52 @@ export interface MinimongoDb {
   getCollectionNames(): string[]
 }
 
-export interface MinimongoCollection<ItemType = any> {
+export interface MinimongoBaseCollection<T = any> {
   find(selector: any, options?: MinimongoCollectionFindOptions): { 
-    fetch(success: (items: ItemType[]) => void, error: (err: any) => void): void
+    fetch(success: (docs: T[]) => void, error: (err: any) => void): void
   }
 
-  find(selector: any): { 
-    fetch(success: (items: ItemType[]) => void, error: (err: any) => void): void
-  }
+  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void
 
-  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (item: ItemType | null) => void, error: (err: any) => void): void
+  upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(doc: T, base: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(docs: T[], bases: T[], success: (item: T | null) => void, error: (err: any) => void): void
 
-  findOne(selector: any, success: (item: ItemType | null) => void, error: (err: any) => void): void
-
-  upsert(item: ItemType, success: (item: ItemType | null) => void, error: (err: any) => void): void
-  upsert(item: ItemType, baseRow: ItemType, success: (item: ItemType | null) => void, error: (err: any) => void): void
-  upsert(items: ItemType[], success: (item: ItemType | null) => void, error: (err: any) => void): void
-  upsert(items: ItemType[], baseRows: ItemType[], success: (item: ItemType | null) => void, error: (err: any) => void): void
-
-  remove(itemId: string, success: () => void, error: (err: any) => void): void
-
-  cache?(docs: ItemType[], selector: any, options: any, success: () => void, error: (err: any) => void): void
-  pendingUpserts?(success: (items: ItemType[]) => void, error: (err: any) => void): void
-  pendingRemoves?(success: (ids: string[]) => void, error: (err: any) => void): void
-  resolveRemove?(id: string, success: () => void, error: (err: any) => void): void
-  /** Add but do not overwrite or record as upsert */
-  seed?(docs: ItemType[], success: () => void, error: (err: any) => void): void
-
-  /** Add but do not overwrite upserts or removes */
-  cacheOne?(doc: ItemType, success: () => void, error: (err: any) => void): void
-
-  /** Add but do not overwrite upserts or removes */
-  cacheList?(docs: ItemType[], success: () => void, error: (err: any) => void): void
-
-  uncache?(selector: any, success: () => void, error: (err: any) => void): void
-  uncacheList?(ids: string[], success: () => void, error: (err: any) => void): void
+  remove(id: string, success: () => void, error: (err: any) => void): void
 }
+
+export interface MinimongoLocalCollection<T = any> extends MinimongoBaseCollection<T> {
+  cache(docs: T[], selector: any, options: any, success: () => void, error: (err: any) => void): void
+  pendingUpserts(success: (items: Item<T>[]) => void, error: (err: any) => void): void
+  pendingRemoves(success: (ids: string[]) => void, error: (err: any) => void): void
+  resolveUpserts(items: Item<T>[], success: () => void, error: (err: any) => void): void
+  resolveRemove(id: string, success: () => void, error: (err: any) => void): void
+
+  /** Add but do not overwrite or record as upsert */
+  seed(docs: T[], success: () => void, error: (err: any) => void): void
+
+  /** Add but do not overwrite upserts or removes */
+  cacheOne(doc: T, success: () => void, error: (err: any) => void): void
+
+  /** Add but do not overwrite upserts or removes */
+  cacheList(docs: T[], success: () => void, error: (err: any) => void): void
+
+  uncache(selector: any, success: () => void, error: (err: any) => void): void
+  uncacheList(ids: string[], success: () => void, error: (err: any) => void): void
+}
+
+/** Document base */
+export interface Doc {
+  _id?: string
+  _rev?: number
+}
+
+/** Item with doc and optional base */
+export interface Item<T> {
+  doc: T
+  base?: T
+}
+
+export type MinimongoCollection<T = any> = MinimongoBaseCollection<T> | MinimongoLocalCollection<T>

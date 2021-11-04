@@ -1,22 +1,22 @@
 import _ from "lodash"
-import $ from "jquery"
-import async from "async"
 import * as utils from "./utils"
 import jQueryHttpClient from "./jQueryHttpClient"
 import * as quickfind from "./quickfind"
-import { MinimongoDb, MinimongoCollection } from "./types"
+import { MinimongoDb, MinimongoCollection, Doc, MinimongoCollectionFindOptions, MinimongoCollectionFindOneOptions } from "./types"
+import { MinimongoBaseCollection } from "."
 
 export default class RemoteDb implements MinimongoDb {
-  collections: { [collectionName: string]: MinimongoCollection<any> }
+  collections: { [collectionName: string]: Collection<any> }
   url: string | string[]
   client: string | null | undefined
   httpClient: any
   useQuickFind: boolean
   usePostFind: boolean
 
-  // Url must have trailing /, can be an arrau of URLs
-  // useQuickFind enables the quickfind protocol for finds
-  // usePostFind enables POST for find
+  /** Url must have trailing /, can be an arrau of URLs
+   * useQuickFind enables the quickfind protocol for finds
+   * usePostFind enables POST for find
+   */
   constructor(url: string | string[], client?: string | null, httpClient?: any, useQuickFind = false, usePostFind = false) {
     this.url = url
     this.client = client
@@ -29,7 +29,7 @@ export default class RemoteDb implements MinimongoDb {
   // Can specify url of specific collection as option.
   // useQuickFind can be overridden in options
   // usePostFind can be overridden in options
-  addCollection(name: any, options: { url?: string, useQuickFind?: boolean, usePostFind?: boolean } = {}, success: any, error: any) {
+  addCollection(name: string, options: { url?: string, useQuickFind?: boolean, usePostFind?: boolean } = {}, success: any, error: any) {
     let url
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
@@ -77,7 +77,7 @@ export default class RemoteDb implements MinimongoDb {
 }
 
 // Remote collection on server
-class Collection {
+class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
   name: any
   url: any
   client: any
@@ -107,12 +107,12 @@ class Collection {
   }
 
   // error is called with jqXHR
-  find(selector: any, options = {}) {
+  find(selector: any, options: MinimongoCollectionFindOptions = {}) { 
     return {
       fetch: (success: any, error: any) => {
         // Determine method: "get", "post" or "quickfind"
         // If in quickfind and localData present and (no fields option or _rev included) and not (limit with no sort), use quickfind
-        let method, params
+        let method
         if (
           this.useQuickFind &&
           options.localData &&
@@ -132,7 +132,7 @@ class Collection {
 
         if (method === "get") {
           // Create url
-          params = {}
+          const params: any = {}
           params.selector = JSON.stringify(selector || {})
           if (options.sort) {
             params.sort = JSON.stringify(options.sort)
@@ -165,7 +165,7 @@ class Collection {
         // Create body + params for quickfind and post
         const body = {
           selector: selector || {}
-        }
+        } as any
         if (options.sort) {
           body.sort = options.sort
         }
@@ -187,7 +187,7 @@ class Collection {
           body.orderByExprs = options.orderByExprs
         }
 
-        params = {}
+        const params: any = {}
         if (this.client) {
           params.client = this.client
         }
@@ -226,13 +226,15 @@ class Collection {
 
   // error is called with jqXHR
   // Note that findOne is not used by HybridDb, but rather find with limit is used
-  findOne(selector: any, options = {}, success: any, error: any) {
+  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(selector: any, options: any, success: any, error?: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
 
     // Create url
-    const params = {}
+    const params: any = {}
     if (options.sort) {
       params.sort = JSON.stringify(options.sort)
     }
@@ -259,7 +261,7 @@ class Collection {
   }
 
   // error is called with jqXHR
-  upsert(docs: any, bases: any, success: any, error: any) {
+  upsert(docs: any, bases: any, success: any, error?: any) {
     let items
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
@@ -268,7 +270,7 @@ class Collection {
     // Check if bases present
     const basesPresent = _.compact(_.map(items, "base")).length > 0
 
-    const params = {}
+    const params: any = {}
     if (this.client) {
       params.client = this.client
     }

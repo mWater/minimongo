@@ -3,15 +3,15 @@ import async from "async"
 import * as utils from "./utils"
 import { processFind } from "./utils"
 import { compileSort } from "./selector"
-import { MinimongoCollection, MinimongoDb } from "./types"
+import { Doc, Item, MinimongoCollection, MinimongoCollectionFindOptions, MinimongoDb, MinimongoLocalCollection } from "./types"
 
 export default class MemoryDb implements MinimongoDb {
-  collections: { [collectionName: string]: MinimongoCollection<any> }
-  options: any
+  collections: { [collectionName: string]: Collection<any> }
+  options: { safety: "clone" | "freeze" }
 
   // Options are:
   //  safety: How to protect the in-memory copies: "clone" (default) returns a fresh copy but is slow. "freeze" returns a frozen version
-  constructor(options?: any, success?: any) {
+  constructor(options?: { safety?: "clone" | "freeze" }, success?: any) {
     this.collections = {}
     this.options = _.defaults(options, { safety: "clone" })
 
@@ -43,8 +43,14 @@ export default class MemoryDb implements MinimongoDb {
 }
 
 // Stores data in memory
-class Collection {
-  constructor(name: any, options: any) {
+class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
+  name: string
+  items: { [id: string]: T }
+  upserts: { [id: string]: Item<T> }
+  removes: { [id: string]: T }
+  options: { safety?: "clone" | "freeze" }
+
+  constructor(name: any, options: { safety?: "clone" | "freeze" }) {
     this.name = name
 
     this.items = {}
@@ -53,7 +59,7 @@ class Collection {
     this.options = options || {}
   }
 
-  find(selector: any, options: any) {
+  find(selector: any, options?: MinimongoCollectionFindOptions) {
     return {
       fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
@@ -61,7 +67,7 @@ class Collection {
     }
   }
 
-  findOne(selector: any, options: any, success: any, error: any) {
+  findOne(selector: any, options: any, success: any, error?: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
@@ -91,7 +97,7 @@ class Collection {
   }
 
   // Applies safety (either freezing or cloning to object or array)
-  _applySafety = (items: any) => {
+  _applySafety = (items: any): any => {
     if (!items) {
       return items
     }
@@ -109,7 +115,7 @@ class Collection {
     throw new Error(`Unsupported safety ${this.options.safety}`)
   }
 
-  upsert(docs: any, bases: any, success: any, error: any) {
+  upsert(docs: any, bases: any, success: any, error?: any) {
     let items
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
@@ -143,15 +149,15 @@ class Collection {
     }
   }
 
-  remove(id: any, success: any, error: any) {
+  remove(id: string, success: any, error: any) {
     // Special case for filter-type remove
     if (_.isObject(id)) {
       this.find(id).fetch((rows: any) => {
         return async.each(
           rows,
-          (row: any, cb: any) => {
+          ((row: any, cb: any) => {
             return this.remove(row._id, () => cb(), cb)
-          },
+          }) as any,
           () => success()
         )
       }, error)
@@ -163,7 +169,7 @@ class Collection {
       delete this.items[id]
       delete this.upserts[id]
     } else {
-      this.removes[id] = { _id: id }
+      this.removes[id] = { _id: id } as T
     }
 
     if (success != null) {
@@ -181,7 +187,7 @@ class Collection {
         continue
       }
 
-      this.cacheOne(doc)
+      this.cacheOne(doc, () => {}, () => {})
     }
 
     const docsMap = _.fromPairs(_.zip(_.map(docs, "_id"), docs))
@@ -277,7 +283,7 @@ class Collection {
   }
 
   // Add but do not overwrite upserts or removes
-  cacheList(docs: any, success: any) {
+  cacheList(docs: any, success: any, error?: any) {
     for (let doc of docs) {
       if (!_.has(this.upserts, doc._id) && !_.has(this.removes, doc._id)) {
         const existing = this.items[doc._id]

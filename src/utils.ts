@@ -8,7 +8,7 @@ import { default as booleanPointInPolygon } from "@turf/boolean-point-in-polygon
 import { default as intersect } from "@turf/intersect"
 import { default as booleanCrosses } from "@turf/boolean-crosses"
 import { default as booleanWithin } from "@turf/boolean-within"
-import { MinimongoCollection, MinimongoDb } from "./types"
+import { MinimongoCollection, MinimongoDb, MinimongoLocalCollection } from "./types"
 
 import { default as IndexedDb } from "./IndexedDb"
 import { default as WebSQLDb } from "./WebSQLDb"
@@ -44,8 +44,8 @@ export function autoselectLocalDb(options: any, success: any, error: any) {
   }
 
   // Always use WebSQL in cordova
-  if (window.cordova) {
-    if (window.device?.platform === "iOS" && window.sqlitePlugin) {
+  if (window["cordova"]) {
+    if (window["device"]?.platform === "iOS" && window["sqlitePlugin"]) {
       console.log("Selecting WebSQLDb(sqlite) for Cordova")
       options.storage = "sqlite"
       return new WebSQLDb(options, success, error)
@@ -68,7 +68,7 @@ export function autoselectLocalDb(options: any, success: any, error: any) {
 
   // Use WebSQL in Android, Chrome,  Opera, Blackberry if supports it
   if (browser.android || browser.chrome || browser.opera || browser.blackberry) {
-    if (typeof window.openDatabase === "function") {
+    if (typeof window["openDatabase"] === "function") {
       console.log("Selecting WebSQLDb for browser")
       return new WebSQLDb(options, success, (err: any) => {
         console.log("Failed to create WebSQLDb: " + (err ? err.message : undefined))
@@ -142,7 +142,7 @@ export function cloneLocalDb(
   // First cache all data
   return async.each(
     _.values(fromDb.collections),
-    (fromCol: any, cb: any) => {
+    ((fromCol: any, cb: any) => {
       const toCol = toDb[fromCol.name]
 
       // Get all items
@@ -161,7 +161,7 @@ export function cloneLocalDb(
                   return fromCol.pendingRemoves((removes: any) => {
                     return async.eachSeries(
                       removes,
-                      (remove: any, cb2: any) => {
+                      ((remove: any, cb2: any) => {
                         return toCol.remove(
                           remove,
                           () => {
@@ -169,7 +169,7 @@ export function cloneLocalDb(
                           },
                           cb2
                         )
-                      },
+                      }) as any,
                       cb
                     )
                   }, cb)
@@ -181,7 +181,7 @@ export function cloneLocalDb(
           cb
         )
       }, cb)
-    },
+    }) as any,
     (err: any) => {
       if (err) {
         return error(err)
@@ -195,8 +195,8 @@ export function cloneLocalDb(
 /** Clone a local database collection's caches, pending upserts and removes from one database to another
  * Useful for making a replica */
 export function cloneLocalCollection(
-  fromCol: MinimongoCollection,
-  toCol: MinimongoCollection,
+  fromCol: MinimongoLocalCollection,
+  toCol: MinimongoLocalCollection,
   success: () => void,
   error: (err: any) => void
 ): void {
@@ -214,17 +214,19 @@ export function cloneLocalCollection(
             () => {
               // Copy removes
               return fromCol.pendingRemoves((removes: any) => {
+                const iterator: any = (remove: any, cb2: any) => {
+                  return toCol.remove(
+                    remove,
+                    () => {
+                      return cb2()
+                    },
+                    cb2
+                  )
+                }
+
                 return async.eachSeries(
                   removes,
-                  (remove: any, cb2: any) => {
-                    return toCol.remove(
-                      remove,
-                      () => {
-                        return cb2()
-                      },
-                      cb2
-                    )
-                  },
+                  iterator,
                   (err: any) => {
                     if (err) {
                       return error(err)
@@ -312,7 +314,7 @@ export function filterFields(items: any[], fields: any = {}): any[] {
         }
 
         // Copy value
-        to[_.last(path)] = from[_.last(path)]
+        to[_.last(path)!] = from[_.last(path)!]
       }
 
       return newItem
@@ -337,7 +339,7 @@ export function filterFields(items: any[], fields: any = {}): any[] {
           continue
         }
 
-        delete obj[_.last(path)]
+        delete obj[_.last(path)!]
       }
 
       return item
@@ -461,10 +463,11 @@ function processGeoIntersectsOperator(selector: any, list: any) {
   return list
 }
 
-// Tidy up upsert parameters to always be a list of { doc: <doc>, base: <base> },
-// doing basic error checking and making sure that _id is present
-// Returns [items, success, error]
-export function regularizeUpsert(docs: any, bases: any, success: any, error: any) {
+/** Tidy up upsert parameters to always be a list of { doc: <doc>, base: <base> },
+ * doing basic error checking and making sure that _id is present
+ * Returns [items, success, error]
+ */
+export function regularizeUpsert<T>(docs: any, bases: any, success: any, error: any): [{ doc: T, base?: T }[], (docs: T[]) => void, (err: any) => void] {
   // Handle case of bases not present
   if (_.isFunction(bases)) {
     ;[bases, success, error] = [undefined, bases, success]

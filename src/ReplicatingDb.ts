@@ -1,13 +1,13 @@
 import _ from "lodash"
 import * as utils from "./utils"
 import { compileSort } from "./selector"
-import { MinimongoCollection, MinimongoDb } from "./types"
+import { Doc, MinimongoCollection, MinimongoDb, MinimongoLocalCollection } from "./types"
 
 // Replicates data into a both a master and a replica db. Assumes both are identical at start
 // and then only uses master for finds and does all changes to both
 // Warning: removing a collection removes it from the underlying master and replica!
 export default class ReplicatingDb implements MinimongoDb {
-  collections: { [collectionName: string]: MinimongoCollection<any> }
+  collections: { [collectionName: string]: Collection<any> }
   masterDb: MinimongoDb
   replicaDb: MinimongoDb
 
@@ -41,12 +41,12 @@ export default class ReplicatingDb implements MinimongoDb {
 }
 
 // Replicated collection.
-class Collection {
+class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
   name: string
-  masterCol: MinimongoCollection<any>
-  replicaCol: MinimongoCollection<any>
+  masterCol: MinimongoLocalCollection<T>
+  replicaCol: MinimongoLocalCollection<T>
 
-  constructor(name: string, masterCol: MinimongoCollection, replicaCol: MinimongoCollection) {
+  constructor(name: string, masterCol: MinimongoLocalCollection, replicaCol: MinimongoLocalCollection) {
     this.name = name
     this.masterCol = masterCol
     this.replicaCol = replicaCol
@@ -56,11 +56,11 @@ class Collection {
     return this.masterCol.find(selector, options)
   }
 
-  findOne(selector: any, options: any, success: any, error: any) {
+  findOne(selector: any, options: any, success: any, error?: any) {
     return this.masterCol.findOne(selector, options, success, error)
   }
 
-  upsert(docs: any, bases: any, success: any, error: any) {
+  upsert(docs: any, bases: any, success: any, error?: any) {
     let items: any
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 

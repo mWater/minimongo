@@ -1,14 +1,15 @@
 import _ from "lodash"
 import { processFind } from "./utils"
 import * as utils from "./utils"
-import { MinimongoCollection, MinimongoCollectionFindOneOptions, MinimongoDb } from "./types"
+import { Doc, Item, MinimongoBaseCollection, MinimongoCollection, MinimongoCollectionFindOneOptions, MinimongoDb, MinimongoLocalCollection } from "./types"
 
-// Bridges a local and remote database, querying from the local first and then
-// getting the remote. Also uploads changes from local to remote.
+/** Bridges a local and remote database, querying from the local first and then
+ * getting the remote. Also uploads changes from local to remote.
+ */
 export default class HybridDb implements MinimongoDb {
   localDb: MinimongoDb
   remoteDb: MinimongoDb
-  collections: { [collectionName: string]: MinimongoCollection<any> }
+  collections: { [collectionName: string]: HybridCollection<any> }
 
   constructor(localDb: MinimongoDb, remoteDb: MinimongoDb) {
     this.localDb = localDb
@@ -16,7 +17,7 @@ export default class HybridDb implements MinimongoDb {
     this.collections = {}
   }
 
-  addCollection(name: any, options: any, success: any, error: any) {
+  addCollection(name: any, options?: any, success?: any, error?: any) {
     // Shift options over if not present
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
@@ -39,9 +40,9 @@ export default class HybridDb implements MinimongoDb {
   }
 
   upload(success: any, error: any) {
-    const cols = _.values(this.collections)
+    const cols = Object.values(this.collections)
 
-    function uploadCols(cols: any, success: any, error: any) {
+    function uploadCols(cols: HybridCollection<any>[], success: any, error: any) {
       const col = _.first(cols)
       if (col) {
         return col.upload(
@@ -61,14 +62,14 @@ export default class HybridDb implements MinimongoDb {
   }
 }
 
-class HybridCollection<T> implements MinimongoCollection<T> {
+class HybridCollection<T extends Doc> implements MinimongoBaseCollection<T> {
   name: string
-  localCol: MinimongoCollection<any>
+  localCol: MinimongoLocalCollection<any>
   remoteCol: MinimongoCollection<any>
   options: any
 
   // Options includes
-  constructor(name: string, localCol: MinimongoCollection<T>, remoteCol: MinimongoCollection<T>, options: any) {
+  constructor(name: string, localCol: MinimongoLocalCollection<T>, remoteCol: MinimongoCollection<T>, options: any) {
     this.name = name
     this.localCol = localCol
     this.remoteCol = remoteCol
@@ -153,7 +154,7 @@ class HybridCollection<T> implements MinimongoCollection<T> {
         error
       )
     } else {
-      return step2()
+      return step2(null)
     }
   }
 
@@ -311,7 +312,12 @@ class HybridCollection<T> implements MinimongoCollection<T> {
     }, error)
   }
 
-  upsert(docs: any, bases: any, success: any, error: any) {
+  upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(doc: T, base: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(docs: T[], bases: T[], success: (item: T | null) => void, error: (err: any) => void): void
+  upsert(docs: any, bases: any, success: any, error?: any): void 
+  {
     let items
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
@@ -331,7 +337,7 @@ class HybridCollection<T> implements MinimongoCollection<T> {
   }
 
   upload(success: any, error: any) {
-    var uploadUpserts = (upserts: any, success: any, error: any) => {
+    const uploadUpserts = (upserts: Item<T>[], success: () => void, error: (err: any) => void): void => {
       const upsert = _.first(upserts)
       if (upsert) {
         return this.remoteCol.upsert(
@@ -347,11 +353,11 @@ class HybridCollection<T> implements MinimongoCollection<T> {
                 } else {
                   // Remove local
                   return this.localCol.remove(
-                    upsert.doc._id,
+                    upsert.doc._id!,
                     () => {
                       // Resolve remove
                       return this.localCol.resolveRemove(
-                        upsert.doc._id,
+                        upsert.doc._id!,
                         () => uploadUpserts(_.tail(upserts), success, error),
                         error
                       )
@@ -367,11 +373,11 @@ class HybridCollection<T> implements MinimongoCollection<T> {
             // If 410 error or 403, remove document
             if (err.status === 410 || err.status === 403) {
               return this.localCol.remove(
-                upsert.doc._id,
+                upsert.doc._id!,
                 () => {
                   // Resolve remove
                   return this.localCol.resolveRemove(
-                    upsert.doc._id,
+                    upsert.doc._id!,
                     function () {
                       // Continue if was 410
                       if (err.status === 410) {
@@ -395,7 +401,7 @@ class HybridCollection<T> implements MinimongoCollection<T> {
       }
     }
 
-    var uploadRemoves = (removes: any, success: any, error: any) => {
+    const uploadRemoves = (removes: string[], success: () => void, error: (error: any) => void): void => {
       const remove = _.first(removes)
       if (remove) {
         return this.remoteCol.remove(
@@ -421,16 +427,15 @@ class HybridCollection<T> implements MinimongoCollection<T> {
             } else {
               return error(err)
             }
-          },
-          error
+          }
         )
       } else {
-        return success()
+        success()
       }
     }
 
     // Get pending upserts
-    return this.localCol.pendingUpserts((upserts: any) => {
+    this.localCol.pendingUpserts((upserts: any) => {
       // Sort upserts if sort defined
       if (this.options.sortUpserts) {
         upserts.sort((u1: any, u2: any) => this.options.sortUpserts(u1.doc, u2.doc))

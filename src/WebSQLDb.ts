@@ -3,7 +3,7 @@ import async from "async"
 import * as utils from "./utils"
 import { processFind } from "./utils"
 import { compileSort } from "./selector"
-import { MinimongoCollection, MinimongoDb } from "./types"
+import { MinimongoCollection, MinimongoDb, MinimongoLocalCollection } from "./types"
 
 // Do nothing callback for success
 function doNothing() {}
@@ -12,15 +12,16 @@ function doNothing() {}
 // Supports sqlite plugin, if available and specified in option as {storage: 'sqlite'}
 export default class WebSQLDb implements MinimongoDb {
   collections: { [collectionName: string]: MinimongoCollection<any> }
+  db: any
 
   constructor(options: any, success: any, error: any) {
     this.collections = {}
 
-    if (options.storage === "sqlite" && window.sqlitePlugin) {
+    if (options.storage === "sqlite" && window["sqlitePlugin"]) {
       // sqlite plugin does not support db.version
       // and since db operations can only be executed once the db is properly open
       // we add the schema version migration to the success callback
-      window.sqlitePlugin.openDatabase(
+      window["sqlitePlugin"].openDatabase(
         { name: "minimongo_" + options.namespace, location: "default" },
         (sqliteDb: any) => {
           console.log("Database open successful")
@@ -68,7 +69,7 @@ PRIMARY KEY (col, id));`,
       try {
         // Create database
         // TODO escape name
-        this.db = window.openDatabase(
+        this.db = window["openDatabase"](
           "minimongo_" + options.namespace,
           "",
           "Minimongo:" + options.namespace,
@@ -162,13 +163,16 @@ ALTER TABLE docs ADD COLUMN base TEXT;`,
 }
 
 // Stores data in indexeddb store
-class Collection {
-  constructor(name: any, db: any) {
+class Collection<T> implements MinimongoLocalCollection<T> {
+  name: string
+  db: any
+
+  constructor(name: string, db: any) {
     this.name = name
     this.db = db
   }
 
-  find(selector: any, options: any) {
+  find(selector: any, options?: any) {
     return {
       fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
@@ -176,7 +180,7 @@ class Collection {
     }
   }
 
-  findOne(selector: any, options: any, success: any, error: any) {
+  findOne(selector: any, options: any, success: any, error?: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
@@ -214,7 +218,7 @@ class Collection {
     }, error)
   }
 
-  upsert(docs: any, bases: any, success: any, error: any) {
+  upsert(docs: any, bases: any, success: any, error?: any) {
     let items: any
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
@@ -229,7 +233,7 @@ class Collection {
         bases = {}
         return async.eachSeries(
           ids,
-          (id: any, callback: any) => {
+          ((id: any, callback: any) => {
             return tx.executeSql(
               "SELECT * FROM docs WHERE col = ? AND id = ?",
               [this.name, id],
@@ -247,7 +251,7 @@ class Collection {
               },
               (tx: any, err: any) => error(err)
             )
-          },
+          }) as any,
           () => {
             return (() => {
               const result = []
@@ -292,9 +296,9 @@ class Collection {
       this.find(id).fetch((rows: any) => {
         return async.each(
           rows,
-          (row: any, cb: any) => {
+          ((row: any, cb: any) => {
             return this.remove(row._id, () => cb(), cb)
-          },
+          }) as any,
           () => success()
         )
       }, error)
@@ -348,7 +352,7 @@ class Collection {
       // Add all non-local that are not upserted or removed
       return async.eachSeries(
         docs,
-        (doc: any, callback: any) => {
+        ((doc: any, callback: any) => {
           return tx.executeSql(
             "SELECT * FROM docs WHERE col = ? AND id = ?",
             [this.name, doc._id],
@@ -381,7 +385,7 @@ class Collection {
             },
             (tx: any, err: any) => error(err)
           )
-        },
+        }) as any,
         (err: any) => {
           let sort: any
           if (err) {
@@ -403,7 +407,7 @@ class Collection {
             return this.db.transaction((tx: any) => {
               return async.eachSeries(
                 results,
-                (result: any, callback: any) => {
+                ((result: any, callback: any) => {
                   // If not present in docs and is present locally and not upserted/deleted
                   return tx.executeSql(
                     "SELECT * FROM docs WHERE col = ? AND id = ?",
@@ -441,7 +445,7 @@ class Collection {
                     },
                     (tx: any, err: any) => error(err)
                   )
-                },
+                }) as any,
                 function (err: any) {
                   if (err != null) {
                     if (error != null) {
@@ -515,7 +519,7 @@ class Collection {
     return this.db.transaction((tx: any) => {
       return async.eachSeries(
         upserts,
-        (upsert: any, cb: any) => {
+        ((upsert: any, cb: any) => {
           return tx.executeSql(
             "SELECT * FROM docs WHERE col = ? AND id = ?",
             [this.name, upsert.doc._id],
@@ -546,7 +550,7 @@ class Collection {
             },
             (tx: any, err: any) => error(err)
           )
-        },
+        }) as any,
         function (err: any) {
           if (err) {
             return error(err)
@@ -594,7 +598,7 @@ class Collection {
       // Add all non-local that are not upserted or removed
       return async.eachSeries(
         docs,
-        (doc: any, callback: any) => {
+        ((doc: any, callback: any) => {
           return tx.executeSql(
             "SELECT * FROM docs WHERE col = ? AND id = ?",
             [this.name, doc._id],
@@ -614,7 +618,7 @@ class Collection {
             },
             (tx: any, err: any) => error(err)
           )
-        },
+        }) as any,
         (err: any) => {
           if (err) {
             if (error) {
@@ -643,7 +647,7 @@ class Collection {
       // Add all non-local that are not upserted or removed
       return async.eachSeries(
         docs,
-        (doc: any, callback: any) => {
+        ((doc: any, callback: any) => {
           return tx.executeSql(
             "SELECT * FROM docs WHERE col = ? AND id = ?",
             [this.name, doc._id],
@@ -669,7 +673,7 @@ class Collection {
             },
             (tx: any, err: any) => callback(err)
           )
-        },
+        }) as any,
         (err: any) => {
           if (err) {
             if (error) {
@@ -709,7 +713,7 @@ class Collection {
           // Add all non-local that are not upserted or removed
           return async.eachSeries(
             toRemove,
-            (id: any, callback: any) => {
+            ((id: any, callback: any) => {
               // Only safely remove if removed state
               return tx.executeSql(
                 'DELETE FROM docs WHERE state="cached" AND col = ? AND id = ?',
@@ -717,7 +721,7 @@ class Collection {
                 () => callback(),
                 (tx: any, err: any) => error(err)
               )
-            },
+            }) as any,
             (err: any) => {
               if (err) {
                 if (error) {
@@ -744,7 +748,7 @@ class Collection {
       // Add all non-local that are not upserted or removed
       return async.eachSeries(
         ids,
-        (id: any, callback: any) => {
+        ((id: any, callback: any) => {
           // Only safely remove if removed state
           return tx.executeSql(
             'DELETE FROM docs WHERE state="cached" AND col = ? AND id = ?',
@@ -752,7 +756,7 @@ class Collection {
             () => callback(),
             (tx: any, err: any) => error(err)
           )
-        },
+        }) as any,
         (err: any) => {
           if (err) {
             if (error) {

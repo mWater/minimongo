@@ -3,7 +3,8 @@ import async from "async"
 import * as utils from "./utils"
 import { processFind } from "./utils"
 import { compileSort } from "./selector"
-import { MinimongoCollection, MinimongoDb } from "./types"
+import { Doc, MinimongoCollection, MinimongoCollectionFindOptions, MinimongoDb } from "./types"
+import { Item, MinimongoLocalCollection } from "."
 
 export default class LocalStorageDb implements MinimongoDb {
   collections: { [collectionName: string]: MinimongoCollection<any> }
@@ -40,7 +41,7 @@ export default class LocalStorageDb implements MinimongoDb {
     if (this.namespace && window.localStorage) {
       const keys = []
       for (let i = 0, end = window.localStorage.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
-        keys.push(window.localStorage.key(i))
+        keys.push(window.localStorage.key(i)!)
       }
 
       for (let key of keys) {
@@ -64,8 +65,15 @@ export default class LocalStorageDb implements MinimongoDb {
 }
 
 // Stores data in memory, optionally backed by local storage
-class Collection {
-  constructor(name: any, namespace: any) {
+class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
+  name: string
+  namespace: string | undefined
+  items: { [id: string]: T }
+  upserts: { [id: string]: Item<T> }
+  removes: { [id: string]: T }
+  itemNamespace: string
+
+  constructor(name: string, namespace?: string) {
     this.name = name
     this.namespace = namespace
 
@@ -85,7 +93,7 @@ class Collection {
     this.itemNamespace = this.namespace + "_"
 
     for (let i = 0, end = window.localStorage.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
-      key = window.localStorage.key(i)
+      key = window.localStorage.key(i)!
       if (key.substring(0, this.itemNamespace.length) === this.itemNamespace) {
         const item = JSON.parse(window.localStorage[key])
         this.items[item._id] = item
@@ -112,7 +120,7 @@ class Collection {
     return (this.removes = _.fromPairs(_.zip(_.map(removeItems, "_id"), removeItems)))
   }
 
-  find(selector: any, options: any) {
+  find(selector: any, options?: MinimongoCollectionFindOptions) {
     return {
       fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
@@ -120,7 +128,7 @@ class Collection {
     }
   }
 
-  findOne(selector: any, options: any, success: any, error: any) {
+  findOne(selector: any, options: any, success: any, error?: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
@@ -139,7 +147,11 @@ class Collection {
     }
   }
 
-  upsert(docs: any, bases: any, success: any, error: any) {
+  upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(doc: T, base: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(docs: T[], bases: T[], success: (item: T | null) => void, error: (err: any) => void): void
+  upsert(docs: any, bases: any, success: any, error?: any) {
     let items
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
@@ -176,9 +188,9 @@ class Collection {
       this.find(id).fetch((rows: any) => {
         return async.each(
           rows,
-          (row: any, cb: any) => {
+          ((row: any, cb: any) => {
             return this.remove(row._id, () => cb(), cb)
-          },
+          }) as any,
           () => success()
         )
       }, error)
@@ -198,17 +210,17 @@ class Collection {
     }
   }
 
-  _putItem(doc: any) {
-    this.items[doc._id] = doc
+  _putItem(doc: T) {
+    this.items[doc._id!] = doc
     if (this.namespace) {
-      return (window.localStorage[this.itemNamespace + doc._id] = JSON.stringify(doc))
+      window.localStorage[this.itemNamespace + doc._id] = JSON.stringify(doc)
     }
   }
 
   _deleteItem(id: any) {
     delete this.items[id]
     if (this.namespace) {
-      return window.localStorage.removeItem(this.itemNamespace + id)
+      window.localStorage.removeItem(this.itemNamespace + id)
     }
   }
 
@@ -216,28 +228,28 @@ class Collection {
     this.upserts[upsert.doc._id] = upsert
     if (this.namespace) {
       window.localStorage[this.namespace + "upserts"] = JSON.stringify(_.keys(this.upserts))
-      return (window.localStorage[this.namespace + "upsertbase_" + upsert.doc._id] = JSON.stringify(upsert.base))
+      window.localStorage[this.namespace + "upsertbase_" + upsert.doc._id] = JSON.stringify(upsert.base)
     }
   }
 
   _deleteUpsert(id: any) {
     delete this.upserts[id]
     if (this.namespace) {
-      return (window.localStorage[this.namespace + "upserts"] = JSON.stringify(_.keys(this.upserts)))
+      window.localStorage[this.namespace + "upserts"] = JSON.stringify(_.keys(this.upserts))
     }
   }
 
   _putRemove(doc: any) {
     this.removes[doc._id] = doc
     if (this.namespace) {
-      return (window.localStorage[this.namespace + "removes"] = JSON.stringify(_.values(this.removes)))
+      window.localStorage[this.namespace + "removes"] = JSON.stringify(_.values(this.removes))
     }
   }
 
   _deleteRemove(id: any) {
     delete this.removes[id]
     if (this.namespace) {
-      return (window.localStorage[this.namespace + "removes"] = JSON.stringify(_.values(this.removes)))
+      window.localStorage[this.namespace + "removes"] = JSON.stringify(_.values(this.removes))
     }
   }
 
@@ -250,7 +262,7 @@ class Collection {
         continue
       }
 
-      this.cacheOne(doc)
+      this.cacheOne(doc, () => {}, () => {})
     }
 
     const docsMap = _.fromPairs(_.zip(_.map(docs, "_id"), docs))
@@ -345,7 +357,7 @@ class Collection {
   }
 
   // Add but do not overwrite upserts or removes
-  cacheList(docs: any, success: any) {
+  cacheList(docs: any, success: any, error: any) {
     for (let doc of docs) {
       if (!_.has(this.upserts, doc._id) && !_.has(this.removes, doc._id)) {
         const existing = this.items[doc._id]
@@ -365,7 +377,7 @@ class Collection {
     const compiledSelector = utils.compileDocumentSelector(selector)
 
     for (let item of _.values(this.items)) {
-      if (this.upserts[item._id] == null && compiledSelector(item)) {
+      if (this.upserts[item._id!] == null && compiledSelector(item)) {
         this._deleteItem(item._id)
       }
     }

@@ -96,7 +96,7 @@ var compileValueSelector = function (valueSelector: any) {
     var operatorFunctions: any = []
     _.each(valueSelector, function (operand: any, operator: any) {
       if (!_.has(VALUE_OPERATORS, operator)) throw new Error("Unrecognized operator: " + operator)
-      operatorFunctions.push(VALUE_OPERATORS[operator](operand, valueSelector.$options))
+      operatorFunctions.push(VALUE_OPERATORS[operator](operand, valueSelector["$options"]))
     })
     return function (value: any) {
       return _.every(operatorFunctions, function (f: any) {

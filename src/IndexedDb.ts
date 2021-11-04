@@ -4,11 +4,13 @@ import IDBStore from "idb-wrapper"
 import * as utils from "./utils"
 import { processFind } from "./utils"
 import { compileSort } from "./selector"
-import { MinimongoCollection, MinimongoDb } from "./types"
+import { MinimongoCollection, MinimongoCollectionFindOneOptions, MinimongoCollectionFindOptions, MinimongoDb } from "./types"
+import { MinimongoLocalCollection } from "."
 
 // Create a database backed by IndexedDb. options must contain namespace: <string to uniquely identify database>
 export default class IndexedDb implements MinimongoDb {
-  collections: { [collectionName: string]: MinimongoCollection<any> }
+  collections: { [collectionName: string]: IndexedDbCollection<any> }
+  store: any
 
   constructor(options: any, success: any, error: any) {
     this.collections = {}
@@ -39,8 +41,8 @@ export default class IndexedDb implements MinimongoDb {
     }
   }
 
-  addCollection(name: any, success: any, error: any) {
-    const collection = new Collection(name, this.store)
+  addCollection(name: string, success: any, error: any) {
+    const collection = new IndexedDbCollection(name, this.store)
     this[name] = collection
     this.collections[name] = collection
     if (success) {
@@ -82,13 +84,16 @@ export default class IndexedDb implements MinimongoDb {
 }
 
 // Stores data in indexeddb store
-class Collection {
-  constructor(name: any, store: any) {
+class IndexedDbCollection<T> implements MinimongoLocalCollection<T> {
+  name: string
+  store: any
+
+  constructor(name: string, store: any) {
     this.name = name
     this.store = store
   }
 
-  find(selector: any, options: any) {
+  find(selector: any, options?: MinimongoCollectionFindOptions) { 
     return {
       fetch: (success: any, error: any) => {
         return this._findFetch(selector, options, success, error)
@@ -96,12 +101,14 @@ class Collection {
     }
   }
 
-  findOne(selector: any, options: any, success: any, error: any) {
+  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(selector: any, options: any, success: any, error?: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
 
-    return this.find(selector, options).fetch(function (results: any) {
+    this.find(selector, options).fetch(function (results: any) {
       if (success != null) {
         return success(results.length > 0 ? results[0] : null)
       }
@@ -122,7 +129,11 @@ class Collection {
     )
   }
 
-  upsert(docs: any, bases: any, success: any, error: any) {
+  upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(doc: T, base: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(docs: T[], bases: T[], success: (item: T | null) => void, error: (err: any) => void): void
+  upsert(docs: any, bases: any, success: any, error?: any) {
     let items: any
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
@@ -166,15 +177,15 @@ class Collection {
     )
   }
 
-  remove(id: any, success: any, error: any) {
+  remove(id: string, success: () => void, error: (err: any) => void): void {
     // Special case for filter-type remove
     if (_.isObject(id)) {
       this.find(id).fetch((rows: any) => {
         return async.each(
           rows,
-          (row: any, cb: any) => {
-            return this.remove(row._id, () => cb(), cb)
-          },
+          ((row: any, cb: any) => {
+            this.remove(row._id, () => cb(), cb)
+          }) as any,
           () => success()
         )
       }, error)
@@ -199,7 +210,7 @@ class Collection {
         record,
         function () {
           if (success) {
-            return success(id)
+            return success()
           }
         },
         error
