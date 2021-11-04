@@ -8,16 +8,6 @@ import _ from "lodash"
 describe("RemoteDb", function () {
   beforeEach(function (
     this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any
   ) {
     this.httpCall = null
     this.callSuccessWith = null

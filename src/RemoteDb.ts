@@ -8,11 +8,16 @@ import { MinimongoDb, MinimongoCollection } from "./types"
 
 export default class RemoteDb implements MinimongoDb {
   collections: { [collectionName: string]: MinimongoCollection<any> }
+  url: string | string[]
+  client: string | null | undefined
+  httpClient: any
+  useQuickFind: boolean
+  usePostFind: boolean
 
   // Url must have trailing /, can be an arrau of URLs
   // useQuickFind enables the quickfind protocol for finds
   // usePostFind enables POST for find
-  constructor(url: string, client: any, httpClient: any, useQuickFind = false, usePostFind = false) {
+  constructor(url: string | string[], client?: string | null, httpClient?: any, useQuickFind = false, usePostFind = false) {
     this.url = url
     this.client = client
     this.collections = {}
@@ -24,7 +29,7 @@ export default class RemoteDb implements MinimongoDb {
   // Can specify url of specific collection as option.
   // useQuickFind can be overridden in options
   // usePostFind can be overridden in options
-  addCollection(name: any, options = {}, success: any, error: any) {
+  addCollection(name: any, options: { url?: string, useQuickFind?: boolean, usePostFind?: boolean } = {}, success: any, error: any) {
     let url
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
@@ -73,6 +78,13 @@ export default class RemoteDb implements MinimongoDb {
 
 // Remote collection on server
 class Collection {
+  name: any
+  url: any
+  client: any
+  httpClient: any
+  useQuickFind: any
+  usePostFind: any
+  
   // usePostFind allows POST to <collection>/find for long selectors
   constructor(name: any, url: any, client: any, httpClient: any, useQuickFind: any, usePostFind: any) {
     this.name = name
