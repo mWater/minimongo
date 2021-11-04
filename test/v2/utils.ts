@@ -5,8 +5,7 @@ import _ from "lodash"
 
 import async from "async"
 import bowser from "bowser"
-import { compileDocumentSelector } from "./selector"
-import { compileSort } from "./selector"
+import { compileDocumentSelector, compileSort } from "./selector";
 
 // Select appropriate local database, prefering IndexedDb, then WebSQLDb, then LocalStorageDb, then MemoryDb
 export function autoselectLocalDb(options: any, success: any, error: any) {
@@ -195,7 +194,7 @@ function processNearOperator(selector: any, list: any) {
       distances = _.first(distances, 100)
 
       // Extract docs
-      list = _.pluck(distances, "doc")
+      list = _.map(distances, "doc")
     }
   }
   return list

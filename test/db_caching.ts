@@ -162,7 +162,7 @@ export default () =>
             { exclude: ["2", "4"] },
             () => {
               return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
-                assert.deepEqual(_.pluck(results, "_id"), ["1", "2", "5"])
+                assert.deepEqual(_.map(results, "_id"), ["1", "2", "5"])
                 done()
               })
             }
@@ -186,7 +186,7 @@ export default () =>
         () => {
           return this.col.cache([{ _id: "1", a: "a" }], { _id: { $lt: "3" } }, {}, () => {
             return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
-              assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
+              assert.deepEqual(_.map(results, "_id"), ["1", "3"])
               done()
             })
           })
@@ -206,7 +206,7 @@ export default () =>
         () => {
           return this.col.cache([{ _id: "1", a: "a" }], {}, { sort: ["_id"], limit: 2 }, () => {
             return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
-              assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
+              assert.deepEqual(_.map(results, "_id"), ["1", "3"])
               done()
             })
           })
@@ -235,7 +235,7 @@ export default () =>
               { sort: ["_id"], limit: 2 },
               () => {
                 return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
-                  assert.deepEqual(_.pluck(results, "_id"), ["1", "3", "4"])
+                  assert.deepEqual(_.map(results, "_id"), ["1", "3", "4"])
                   done()
                 })
               }
@@ -265,7 +265,7 @@ export default () =>
             { limit: 2 },
             () => {
               return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
-                assert.deepEqual(_.pluck(results, "_id"), ["1", "2", "3", "4"])
+                assert.deepEqual(_.map(results, "_id"), ["1", "2", "3", "4"])
                 done()
               })
             }
@@ -286,7 +286,7 @@ export default () =>
         () => {
           return this.col.uncache({ a: "b" }, () => {
             return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
-              assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
+              assert.deepEqual(_.map(results, "_id"), ["1", "3"])
               done()
             })
           })
@@ -307,7 +307,7 @@ export default () =>
           return this.col.upsert({ _id: "2", a: "b" }, () => {
             return this.col.uncache({ a: "b" }, () => {
               return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
-                assert.deepEqual(_.pluck(results, "_id"), ["1", "2", "3"])
+                assert.deepEqual(_.map(results, "_id"), ["1", "2", "3"])
                 done()
               })
             })
@@ -329,7 +329,7 @@ export default () =>
           return this.col.remove("2", () => {
             return this.col.uncache({ a: "b" }, () => {
               return this.col.find({}, { sort: ["_id"] }).fetch((results: any) => {
-                assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
+                assert.deepEqual(_.map(results, "_id"), ["1", "3"])
                 return this.col.pendingRemoves((results: any) => {
                   assert.deepEqual(results, ["2"])
                   done()
@@ -350,7 +350,7 @@ export default () =>
         ],
         () => {
           return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
-            assert.deepEqual(_.pluck(results, "_id"), ["1", "2", "3"])
+            assert.deepEqual(_.map(results, "_id"), ["1", "2", "3"])
             done()
           })
         }
@@ -393,7 +393,7 @@ export default () =>
         () => {
           return this.col.uncacheList(["2"], () => {
             return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
-              assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
+              assert.deepEqual(_.map(results, "_id"), ["1", "3"])
               done()
             })
           })
@@ -414,7 +414,7 @@ export default () =>
           return this.col.upsert({ _id: "2", a: "b" }, () => {
             return this.col.uncacheList(["2"], () => {
               return this.col.find({}, { sort: ["_id"] }).fetch(function (results: any) {
-                assert.deepEqual(_.pluck(results, "_id"), ["1", "2", "3"])
+                assert.deepEqual(_.map(results, "_id"), ["1", "2", "3"])
                 done()
               })
             })
@@ -436,7 +436,7 @@ export default () =>
           return this.col.remove("2", () => {
             return this.col.uncacheList(["2"], () => {
               return this.col.find({}, { sort: ["_id"] }).fetch((results: any) => {
-                assert.deepEqual(_.pluck(results, "_id"), ["1", "3"])
+                assert.deepEqual(_.map(results, "_id"), ["1", "3"])
                 return this.col.pendingRemoves((results: any) => {
                   assert.deepEqual(results, ["2"])
                   done()
@@ -532,8 +532,8 @@ export default () =>
       ]
       return this.col.upsert(docs, () => {
         return this.col.pendingUpserts(function (results: any) {
-          assert.deepEqual(_.pluck(results, "doc"), docs)
-          assert.deepEqual(_.pluck(results, "base"), [null, null, null])
+          assert.deepEqual(_.map(results, "doc"), docs)
+          assert.deepEqual(_.map(results, "base"), [null, null, null])
           done()
         })
       })
@@ -552,8 +552,8 @@ export default () =>
       ]
       return this.col.upsert(docs, bases, () => {
         return this.col.pendingUpserts(function (results: any) {
-          assert.deepEqual(_.pluck(results, "doc"), docs)
-          assert.deepEqual(_.pluck(results, "base"), bases)
+          assert.deepEqual(_.map(results, "doc"), docs)
+          assert.deepEqual(_.map(results, "base"), bases)
           done()
         })
       })

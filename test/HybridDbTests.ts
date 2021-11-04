@@ -173,7 +173,7 @@ describe("HybridDb", function () {
           if (calls === 2) {
             return this.lc.find({}).fetch(function (data: any) {
               assert.equal(data.length, 2)
-              assert.deepEqual(_.pluck(data, "a"), [3, 2])
+              assert.deepEqual(_.map(data, "a"), [3, 2])
               done()
             })
           }
@@ -326,7 +326,7 @@ describe("HybridDb", function () {
             }
             if (calls >= 2) {
               assert.deepEqual(data, { _id: "1", a: 3 })
-              this.lc.find({}, {}).fetch((data: any) => assert.deepEqual(_.pluck(data, "a"), [3, 2]))
+              this.lc.find({}, {}).fetch((data: any) => assert.deepEqual(_.map(data, "a"), [3, 2]))
               done()
             }
           },
@@ -555,7 +555,7 @@ describe("HybridDb", function () {
           if (calls === 2) {
             return this.lc.find({}).fetch(function (data: any) {
               assert.equal(data.length, 2)
-              assert.deepEqual(_.pluck(data, "a"), [1, 2])
+              assert.deepEqual(_.map(data, "a"), [1, 2])
               done()
             })
           }
@@ -694,7 +694,7 @@ describe("HybridDb", function () {
 
       it("find only calls remote", function (done: any) {
         return this.hc.find({}, { cacheFind: false, interim: false }).fetch(function (data: any) {
-          assert.deepEqual(_.pluck(data, "a"), [3, 4])
+          assert.deepEqual(_.map(data, "a"), [3, 4])
           done()
         })
       })
@@ -702,7 +702,7 @@ describe("HybridDb", function () {
       it("find does not cache results", function (done: any) {
         return this.hc.find({}, { cacheFind: false, interim: false }).fetch((data: any) => {
           return this.lc.find({}).fetch((data: any) => {
-            assert.deepEqual(_.pluck(data, "a"), [1, 2])
+            assert.deepEqual(_.map(data, "a"), [1, 2])
             done()
           })
         })
@@ -715,7 +715,7 @@ describe("HybridDb", function () {
           }
         })
         return this.hc.find({}, { cacheFind: false, interim: false }).fetch(function (data: any) {
-          assert.deepEqual(_.pluck(data, "a"), [1, 2])
+          assert.deepEqual(_.map(data, "a"), [1, 2])
           done()
         })
       })
@@ -740,7 +740,7 @@ describe("HybridDb", function () {
         this.lc.upsert({ _id: "1", a: 9 })
 
         return this.hc.find({}, { cacheFind: false, interim: false, sort: ["_id"] }).fetch((data: any) => {
-          assert.deepEqual(_.pluck(data, "a"), [9, 4])
+          assert.deepEqual(_.map(data, "a"), [9, 4])
           done()
         })
       })
@@ -749,7 +749,7 @@ describe("HybridDb", function () {
         this.lc.remove("1")
 
         return this.hc.find({}, { cacheFind: false, interim: false }).fetch(function (data: any) {
-          assert.deepEqual(_.pluck(data, "a"), [4])
+          assert.deepEqual(_.map(data, "a"), [4])
           done()
         })
       })
@@ -764,7 +764,7 @@ describe("HybridDb", function () {
           assert.equal(data.length, 0)
 
           return this.rc.pendingUpserts(function (data: any) {
-            assert.deepEqual(_.pluck(_.pluck(data, "doc"), "a"), [1, 2])
+            assert.deepEqual(_.map(_.map(data, "doc"), "a"), [1, 2])
             done()
           })
         })
@@ -796,7 +796,7 @@ describe("HybridDb", function () {
         return this.lc.pendingUpserts((data: any) => {
           assert.equal(data.length, 0)
 
-          assert.deepEqual(_.pluck(upserts, "a"), [2, 1])
+          assert.deepEqual(_.map(upserts, "a"), [2, 1])
           done()
         })
       }, fail)
@@ -1069,7 +1069,7 @@ describe("HybridDb", function () {
 
     it("find uses remote", function (done: any) {
       return this.hc.find({}, { cacheFind: false, interim: false }).fetch((data: any) => {
-        assert.deepEqual(_.pluck(data, "a"), [3, 4])
+        assert.deepEqual(_.map(data, "a"), [3, 4])
         done()
       })
     })
@@ -1087,7 +1087,7 @@ describe("HybridDb", function () {
       this.lc.upsert({ _id: "1", a: 9 })
 
       return this.hc.find({}, { cacheFind: false, interim: false, sort: ["_id"] }).fetch((data: any) => {
-        assert.deepEqual(_.pluck(data, "a"), [9, 4])
+        assert.deepEqual(_.map(data, "a"), [9, 4])
         done()
       })
     })
@@ -1096,7 +1096,7 @@ describe("HybridDb", function () {
       this.lc.remove("1")
 
       return this.hc.find({}, { cacheFind: false, interim: false }).fetch((data: any) => {
-        assert.deepEqual(_.pluck(data, "a"), [4])
+        assert.deepEqual(_.map(data, "a"), [4])
         done()
       })
     })

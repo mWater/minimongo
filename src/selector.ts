@@ -31,13 +31,13 @@ var isArray = function (x: any) {
 }
 
 var _anyIfArray = function (x: any, f: any) {
-  if (isArray(x)) return _.any(x, f)
+  if (isArray(x)) return _.some(x, f)
   return f(x)
 }
 
 var _anyIfArrayPlus = function (x: any, f: any) {
   if (f(x)) return true
-  return isArray(x) && _.any(x, f)
+  return isArray(x) && _.some(x, f)
 }
 
 var hasOperators = function (valueSelector: any) {
@@ -99,7 +99,7 @@ var compileValueSelector = function (valueSelector: any) {
       operatorFunctions.push(VALUE_OPERATORS[operator](operand, valueSelector.$options))
     })
     return function (value: any) {
-      return _.all(operatorFunctions, function (f: any) {
+      return _.every(operatorFunctions, function (f: any) {
         return f(value)
       })
     }
@@ -120,7 +120,7 @@ var LOGICAL_OPERATORS = {
     if (!isArray(subSelector) || _.isEmpty(subSelector)) throw Error("$and/$or/$nor must be nonempty array")
     var subSelectorFunctions = _.map(subSelector, compileDocumentSelector)
     return function (doc: any) {
-      return _.all(subSelectorFunctions, function (f: any) {
+      return _.every(subSelectorFunctions, function (f: any) {
         return f(doc)
       })
     }
@@ -130,7 +130,7 @@ var LOGICAL_OPERATORS = {
     if (!isArray(subSelector) || _.isEmpty(subSelector)) throw Error("$and/$or/$nor must be nonempty array")
     var subSelectorFunctions = _.map(subSelector, compileDocumentSelector)
     return function (doc: any) {
-      return _.any(subSelectorFunctions, function (f: any) {
+      return _.some(subSelectorFunctions, function (f: any) {
         return f(doc)
       })
     }
@@ -140,7 +140,7 @@ var LOGICAL_OPERATORS = {
     if (!isArray(subSelector) || _.isEmpty(subSelector)) throw Error("$and/$or/$nor must be nonempty array")
     var subSelectorFunctions = _.map(subSelector, compileDocumentSelector)
     return function (doc: any) {
-      return _.all(subSelectorFunctions, function (f: any) {
+      return _.every(subSelectorFunctions, function (f: any) {
         return !f(doc)
       })
     }
@@ -162,13 +162,13 @@ var VALUE_OPERATORS = {
 
     // Create index if all strings
     var index: any = null
-    if (_.all(operand, _.isString)) index = _.indexBy(operand)
+    if (_.every(operand, _.isString)) index = _.keyBy(operand)
 
     return function (value: any) {
       return _anyIfArrayPlus(value, function (x: any) {
         if (_.isString(x) && index !== null) return index[x] != undefined
 
-        return _.any(operand, function (operandElt: any) {
+        return _.some(operand, function (operandElt: any) {
           return LocalCollection._f._equal(operandElt, x)
         })
       })
@@ -179,8 +179,8 @@ var VALUE_OPERATORS = {
     if (!isArray(operand)) throw new Error("Argument to $all must be array")
     return function (value: any) {
       if (!isArray(value)) return false
-      return _.all(operand, function (operandElt: any) {
-        return _.any(value, function (valueElt: any) {
+      return _.every(operand, function (operandElt: any) {
+        return _.some(value, function (valueElt: any) {
           return LocalCollection._f._equal(operandElt, valueElt)
         })
       })
@@ -306,7 +306,7 @@ var VALUE_OPERATORS = {
     var matcher = compileDocumentSelector(operand)
     return function (value: any) {
       if (!isArray(value)) return false
-      return _.any(value, function (x: any) {
+      return _.some(value, function (x: any) {
         return matcher(x)
       })
     }
@@ -571,13 +571,13 @@ export function compileDocumentSelector(docSelector: any): (doc: any) => boolean
         // We apply the selector to each "branched" value and return true if any
         // match. This isn't 100% consistent with MongoDB; eg, see:
         // https://jira.mongodb.org/browse/SERVER-8585
-        return _.any(branchValues, valueSelectorFunc)
+        return _.some(branchValues, valueSelectorFunc)
       })
     }
   })
 
   return function (doc: any) {
-    return _.all(perKeySelectors, function (f: any) {
+    return _.every(perKeySelectors, function (f: any) {
       return f(doc)
     })
   }

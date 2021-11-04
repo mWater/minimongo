@@ -52,7 +52,7 @@ export function encodeResponse(serverRows: any, encodedRequest: any) {
   }
 
   // Only keep ones where different from encoded request
-  const response = _.pick(serverRows, (rows: any, key: any) => hashRows(rows) !== encodedRequest[key])
+  const response = _.pickBy(serverRows, (rows: any, key: any) => hashRows(rows) !== encodedRequest[key])
 
   return response
 }

@@ -254,7 +254,7 @@ class Collection {
     const results = []
 
     // Check if bases present
-    const basesPresent = _.compact(_.pluck(items, "base")).length > 0
+    const basesPresent = _.compact(_.map(items, "base")).length > 0
 
     const params = {}
     if (this.client) {
@@ -310,7 +310,7 @@ class Collection {
           "PATCH",
           this.getUrl(),
           params,
-          { doc: _.pluck(items, "doc"), base: _.pluck(items, "base") },
+          { doc: _.map(items, "doc"), base: _.map(items, "base") },
           (result: any) => success(result),
           function (err: any) {
             if (error) {
@@ -323,7 +323,7 @@ class Collection {
           "POST",
           this.getUrl(),
           params,
-          _.pluck(items, "doc"),
+          _.map(items, "doc"),
           (result: any) => success(result),
           function (err: any) {
             if (error) {

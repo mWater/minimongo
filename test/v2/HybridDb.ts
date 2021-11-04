@@ -47,7 +47,7 @@ export default HybridDb = class HybridDb {
       const col = _.first(cols)
       if (col) {
         return col.upload(
-          () => uploadCols(_.rest(cols), success, error),
+          () => uploadCols(_.tail(cols), success, error),
           (err: any) => error(err)
         )
       } else {
@@ -153,7 +153,7 @@ class HybridCollection {
         const remoteSuccess2 = (remoteData: any) => {
           // Check for local upsert
           return this.localCol.pendingUpserts((pendingUpserts: any) => {
-            const localData = _.findWhere(pendingUpserts, { _id: selector._id })
+            const localData = _.find(pendingUpserts, { _id: selector._id })
             if (localData) {
               return success(localData)
             }
@@ -242,7 +242,7 @@ class HybridCollection {
 
         return this.localCol.pendingRemoves((removes: any) => {
           if (removes.length > 0) {
-            const removesMap = _.object(_.map(removes, (id: any) => [id, id]))
+            const removesMap = _.fromPairs(_.map(removes, (id: any) => [id, id]))
             data = _.filter(remoteData, (doc: any) => !_.has(removesMap, doc._id))
           }
 
@@ -250,7 +250,7 @@ class HybridCollection {
           return this.localCol.pendingUpserts(function (upserts: any) {
             if (upserts.length > 0) {
               // Remove upserts from data
-              const upsertsMap = _.object(_.pluck(upserts, "_id"), _.pluck(upserts, "_id"))
+              const upsertsMap = _.fromPairs(_.zip(_.map(upserts, "_id"), _.map(upserts, "_id")))
               data = _.filter(data, (doc: any) => !_.has(upsertsMap, doc._id))
 
               // Add upserts
@@ -319,7 +319,7 @@ class HybridCollection {
               () => {
                 // Cache new value if caching
                 if (this.caching) {
-                  return this.localCol.cacheOne(remoteDoc, () => uploadUpserts(_.rest(upserts), success, error), error)
+                  return this.localCol.cacheOne(remoteDoc, () => uploadUpserts(_.tail(upserts), success, error), error)
                 } else {
                   // Remove document
                   return this.localCol.remove(
@@ -328,7 +328,7 @@ class HybridCollection {
                       // Resolve remove
                       return this.localCol.resolveRemove(
                         upsert._id,
-                        () => uploadUpserts(_.rest(upserts), success, error),
+                        () => uploadUpserts(_.tail(upserts), success, error),
                         error
                       )
                     },
@@ -351,7 +351,7 @@ class HybridCollection {
                     function () {
                       // Continue if was 410
                       if (err.status === 410) {
-                        return uploadUpserts(_.rest(upserts), success, error)
+                        return uploadUpserts(_.tail(upserts), success, error)
                       } else {
                         return error(err)
                       }
@@ -377,7 +377,7 @@ class HybridCollection {
         return this.remoteCol.remove(
           remove,
           () => {
-            return this.localCol.resolveRemove(remove, () => uploadRemoves(_.rest(removes), success, error), error)
+            return this.localCol.resolveRemove(remove, () => uploadRemoves(_.tail(removes), success, error), error)
           },
           (err: any) => {
             // If 403 or 410, remove document
@@ -387,7 +387,7 @@ class HybridCollection {
                 function () {
                   // Continue if was 410
                   if (err.status === 410) {
-                    return uploadRemoves(_.rest(removes), success, error)
+                    return uploadRemoves(_.tail(removes), success, error)
                   } else {
                     return error(err)
                   }

@@ -2,8 +2,7 @@
 // Sanity-check the conversion and remove this comment.
 let MemoryDb
 import _ from "lodash"
-import { createUid } from "./utils"
-import { processFind } from "./utils"
+import { createUid, processFind } from "./utils";
 import { compileSort } from "./selector"
 
 export default MemoryDb = class MemoryDb {
@@ -112,7 +111,7 @@ class Collection {
       this.cacheOne(doc)
     }
 
-    const docsMap = _.object(_.pluck(docs, "_id"), docs)
+    const docsMap = _.fromPairs(_.zip(_.map(docs, "_id"), docs))
 
     if (options.sort) {
       sort = compileSort(options.sort)
@@ -143,7 +142,7 @@ class Collection {
   }
 
   pendingRemoves(success: any) {
-    return success(_.pluck(this.removes, "_id"))
+    return success(_.map(this.removes, "_id"))
   }
 
   resolveUpsert(doc: any, success: any) {

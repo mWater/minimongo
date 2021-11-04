@@ -392,7 +392,7 @@ class Collection {
           }
 
           // Rows have been cached, now look for stale ones to remove
-          const docsMap = _.object(_.pluck(docs, "_id"), docs)
+          const docsMap = _.fromPairs(_.zip(_.map(docs, "_id"), docs))
 
           if (options.sort) {
             sort = compileSort(options.sort)

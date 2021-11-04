@@ -4,8 +4,7 @@ let IndexedDb
 import _ from "lodash"
 import async from "async"
 import IDBStore from "idb-wrapper"
-import { createUid } from "./utils"
-import { processFind } from "./utils"
+import { createUid, processFind } from "./utils";
 import { compileSort } from "./selector"
 
 // Create a database backed by IndexedDb. options must contain namespace: <string to uniquely identify database>
@@ -104,7 +103,7 @@ class Collection {
         // Filter removed docs
         matches = _.filter(matches, (m: any) => m.state !== "removed")
         if (success != null) {
-          return success(processFind(_.pluck(matches, "doc"), selector, options))
+          return success(processFind(_.map(matches, "doc"), selector, options))
         }
       },
       { index: "col", keyRange: this.store.makeKeyRange({ only: this.name }), onError: error }
@@ -174,7 +173,7 @@ class Collection {
     const step2 = () => {
       // Rows have been cached, now look for stale ones to remove
       let sort: any
-      const docsMap = _.object(_.pluck(docs, "_id"), docs)
+      const docsMap = _.fromPairs(_.zip(_.map(docs, "_id"), docs))
 
       if (options.sort) {
         sort = compileSort(options.sort)
@@ -274,7 +273,7 @@ class Collection {
     return this.store.query(
       function (matches: any) {
         if (success != null) {
-          return success(_.pluck(matches, "doc"))
+          return success(_.map(matches, "doc"))
         }
       },
       { index: "col-state", keyRange: this.store.makeKeyRange({ only: [this.name, "upserted"] }), onError: error }
@@ -285,7 +284,7 @@ class Collection {
     return this.store.query(
       function (matches: any) {
         if (success != null) {
-          return success(_.pluck(_.pluck(matches, "doc"), "_id"))
+          return success(_.map(_.map(matches, "doc"), "_id"))
         }
       },
       { index: "col-state", keyRange: this.store.makeKeyRange({ only: [this.name, "removed"] }), onError: error }

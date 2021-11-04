@@ -134,11 +134,11 @@ class Collection {
 
     if (_.isArray(docs)) {
       if (success) {
-        return success(this._applySafety(_.pluck(items, "doc")))
+        return success(this._applySafety(_.map(items, "doc")))
       }
     } else {
       if (success) {
-        return success(this._applySafety(_.pluck(items, "doc")[0]))
+        return success(this._applySafety(_.map(items, "doc")[0]))
       }
     }
   }
@@ -184,7 +184,7 @@ class Collection {
       this.cacheOne(doc)
     }
 
-    const docsMap = _.object(_.pluck(docs, "_id"), docs)
+    const docsMap = _.fromPairs(_.zip(_.map(docs, "_id"), docs))
 
     if (options.sort) {
       sort = compileSort(options.sort)
@@ -226,7 +226,7 @@ class Collection {
   }
 
   pendingRemoves(success: any) {
-    return success(_.pluck(this.removes, "_id"))
+    return success(_.map(this.removes, "_id"))
   }
 
   resolveUpserts(upserts: any, success: any) {
@@ -301,20 +301,20 @@ class Collection {
       return this.upserts[item._id] != null || !compiledSelector(item)
     })
 
-    this.items = _.object(_.pluck(items, "_id"), items)
+    this.items = _.fromPairs(_.zip(_.map(items, "_id"), items))
     if (success != null) {
       return success()
     }
   }
 
   uncacheList(ids: any, success: any, error: any) {
-    const idIndex = _.indexBy(ids)
+    const idIndex = _.keyBy(ids)
 
     const items = _.filter(_.values(this.items), (item: any) => {
       return this.upserts[item._id] != null || !idIndex[item._id]
     })
 
-    this.items = _.object(_.pluck(items, "_id"), items)
+    this.items = _.fromPairs(_.zip(_.map(items, "_id"), items))
     if (success != null) {
       return success()
     }

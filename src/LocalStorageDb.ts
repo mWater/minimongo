@@ -109,7 +109,7 @@ class Collection {
     const removeItems = window.localStorage[this.namespace + "removes"]
       ? JSON.parse(window.localStorage[this.namespace + "removes"])
       : []
-    return (this.removes = _.object(_.pluck(removeItems, "_id"), removeItems))
+    return (this.removes = _.fromPairs(_.zip(_.map(removeItems, "_id"), removeItems)))
   }
 
   find(selector: any, options: any) {
@@ -253,7 +253,7 @@ class Collection {
       this.cacheOne(doc)
     }
 
-    const docsMap = _.object(_.pluck(docs, "_id"), docs)
+    const docsMap = _.fromPairs(_.zip(_.map(docs, "_id"), docs))
 
     if (options.sort) {
       sort = compileSort(options.sort)
@@ -295,7 +295,7 @@ class Collection {
   }
 
   pendingRemoves(success: any) {
-    return success(_.pluck(this.removes, "_id"))
+    return success(_.map(this.removes, "_id"))
   }
 
   resolveUpserts(upserts: any, success: any) {
