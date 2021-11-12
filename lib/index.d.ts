@@ -8,7 +8,7 @@ import { default as WebSQLDb } from './WebSQLDb';
 import { default as RemoteDb } from './RemoteDb';
 import { default as HybridDb, HybridCollection } from './HybridDb';
 import { default as ReplicatingDb } from './ReplicatingDb';
-export { quickfind, utils, MemoryDb, LocalStorageDb, IndexedDb, WebSQLDb, RemoteDb, HybridDb, ReplicatingDb };
+export { quickfind, utils, MemoryDb, LocalStorageDb, IndexedDb, WebSQLDb, RemoteDb, HybridDb, ReplicatingDb, HybridCollection };
 declare const _default: {
     quickfind: typeof quickfind;
     utils: typeof utils;
