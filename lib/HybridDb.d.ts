@@ -11,10 +11,10 @@ export default class HybridDb implements MinimongoDb {
     constructor(localDb: MinimongoDb, remoteDb: MinimongoDb);
     addCollection(name: any, options?: any, success?: any, error?: any): any;
     removeCollection(name: any, success: any, error: any): any;
-    upload(success: any, error: any): any;
+    upload(success: any, error: any): void;
     getCollectionNames(): string[];
 }
-declare class HybridCollection<T extends Doc> implements MinimongoBaseCollection<T> {
+export declare class HybridCollection<T extends Doc> implements MinimongoBaseCollection<T> {
     name: string;
     localCol: MinimongoLocalCollection<any>;
     remoteCol: MinimongoCollection<any>;
@@ -30,7 +30,6 @@ declare class HybridCollection<T extends Doc> implements MinimongoBaseCollection
     upsert(doc: T, base: T, success: (doc: T | null) => void, error: (err: any) => void): void;
     upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void;
     upsert(docs: T[], bases: T[], success: (item: T | null) => void, error: (err: any) => void): void;
-    remove(id: any, success: any, error: any): void;
-    upload(success: any, error: any): void;
+    remove(id: any, success: () => void, error: (err: any) => void): void;
+    upload(success: () => void, error: (err: any) => void): void;
 }
-export {};

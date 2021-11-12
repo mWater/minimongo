@@ -6,7 +6,7 @@ import { default as LocalStorageDb } from "./LocalStorageDb";
 import { default as MemoryDb } from "./MemoryDb";
 export { compileDocumentSelector };
 export declare function autoselectLocalDb(options: any, success: any, error: any): MemoryDb | LocalStorageDb | WebSQLDb | IndexedDb;
-export declare function migrateLocalDb(fromDb: any, toDb: any, success: any, error: any): any;
+export declare function migrateLocalDb(fromDb: any, toDb: any, success: any, error: any): void;
 /** Clone a local database collection's caches, pending upserts and removes from one database to another
  * Useful for making a replica */
 export declare function cloneLocalDb(fromDb: MinimongoDb, toDb: MinimongoDb, success: () => void, error: (err: any) => void): void;

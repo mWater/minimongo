@@ -45,12 +45,12 @@ export default class HybridDb implements MinimongoDb {
     function uploadCols(cols: HybridCollection<any>[], success: any, error: any) {
       const col = _.first(cols)
       if (col) {
-        return col.upload(
+        col.upload(
           () => uploadCols(_.tail(cols), success, error),
           (err: any) => error(err)
         )
       } else {
-        return success()
+        success()
       }
     }
 
@@ -62,7 +62,7 @@ export default class HybridDb implements MinimongoDb {
   }
 }
 
-class HybridCollection<T extends Doc> implements MinimongoBaseCollection<T> {
+export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<T> {
   name: string
   localCol: MinimongoLocalCollection<any>
   remoteCol: MinimongoCollection<any>
@@ -324,7 +324,7 @@ class HybridCollection<T extends Doc> implements MinimongoBaseCollection<T> {
     return this.localCol.upsert(_.map(items, "doc"), _.map(items, "base"), (result: any) => success?.(docs), error)
   }
 
-  remove(id: any, success: any, error: any) {
+  remove(id: any, success: () => void, error: (err: any) => void) {
     return this.localCol.remove(
       id,
       function () {
@@ -336,7 +336,7 @@ class HybridCollection<T extends Doc> implements MinimongoBaseCollection<T> {
     )
   }
 
-  upload(success: any, error: any) {
+  upload(success: () => void, error: (err: any) => void) {
     const uploadUpserts = (upserts: Item<T>[], success: () => void, error: (err: any) => void): void => {
       const upsert = _.first(upserts)
       if (upsert) {
