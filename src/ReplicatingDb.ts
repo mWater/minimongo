@@ -1,12 +1,13 @@
 import _ from "lodash"
 import * as utils from "./utils"
 import { compileSort } from "./selector"
-import { Doc, MinimongoCollection, MinimongoDb, MinimongoLocalCollection } from "./types"
+import { Doc, MinimongoCollection, MinimongoDb, MinimongoLocalCollection, MinimongoLocalDb } from "./types"
 
-// Replicates data into a both a master and a replica db. Assumes both are identical at start
-// and then only uses master for finds and does all changes to both
-// Warning: removing a collection removes it from the underlying master and replica!
-export default class ReplicatingDb implements MinimongoDb {
+/** Replicates data into a both a master and a replica db. Assumes both are identical at start
+ * and then only uses master for finds and does all changes to both
+ * Warning: removing a collection removes it from the underlying master and replica!
+ */
+export default class ReplicatingDb implements MinimongoLocalDb {
   collections: { [collectionName: string]: Collection<any> }
   masterDb: MinimongoDb
   replicaDb: MinimongoDb

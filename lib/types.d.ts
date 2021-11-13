@@ -27,7 +27,7 @@ export interface MinimongoCollectionFindOneOptions {
     shortcut?: boolean;
 }
 export interface MinimongoDb {
-    localDb?: MinimongoDb;
+    localDb?: MinimongoLocalDb;
     remoteDb?: MinimongoDb;
     collections: {
         [collectionName: string]: MinimongoCollection;
@@ -35,6 +35,13 @@ export interface MinimongoDb {
     addCollection<T>(name: string, options?: any, success?: (collection: MinimongoCollection<T>) => void, error?: (err: any) => void): void;
     removeCollection<T>(name: string, success?: () => void, error?: (err: any) => void): void;
     getCollectionNames(): string[];
+}
+/** Local minimongo db which has local collections */
+export interface MinimongoLocalDb extends MinimongoDb {
+    collections: {
+        [collectionName: string]: MinimongoLocalCollection;
+    };
+    addCollection<T>(name: string, options?: any, success?: (collection: MinimongoLocalCollection<T>) => void, error?: (err: any) => void): void;
 }
 export interface MinimongoBaseCollection<T = any> {
     find(selector: any, options?: MinimongoCollectionFindOptions): {
