@@ -19,7 +19,7 @@ export interface MinimongoCollectionFindOptions {
   shortcut?: boolean
 
   /** Compare function to sort upserts sent to server */
-  sortUpserts: any 
+  sortUpserts?: any 
 
   /** Only for RemoteDb.find */ 
   localData?: any[]

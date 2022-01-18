@@ -15,7 +15,7 @@ export interface MinimongoCollectionFindOptions {
     /** true to return `findOne` results if any matching result is found in the local database. Useful for documents that change rarely. */
     shortcut?: boolean;
     /** Compare function to sort upserts sent to server */
-    sortUpserts: any;
+    sortUpserts?: any;
     /** Only for RemoteDb.find */
     localData?: any[];
     /** Only for RemoteDb.find, Must be an mwater-expression */
