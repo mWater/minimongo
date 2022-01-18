@@ -4,8 +4,22 @@ export interface MinimongoCollectionFindOptions {
   limit?: number
   skip?: number
   cacheFind?: boolean
+  /** Return interim results from local db while waiting for remote db. Return again if different */
   interim?: boolean
+  /** Set to ms to timeout in for remote calls */
   timeout?: number
+
+  /** Cache findOne results in local db */
+  cacheFindOne?: boolean
+
+  /** Use local results if the remote find fails. Only applies if interim is false. */
+  useLocalOnRemoteError?: boolean
+  
+  /** true to return `findOne` results if any matching result is found in the local database. Useful for documents that change rarely. */
+  shortcut?: boolean
+
+  /** Compare function to sort upserts sent to server */
+  sortUpserts: any 
 
   /** Only for RemoteDb.find */ 
   localData?: any[]
