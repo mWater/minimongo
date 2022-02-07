@@ -2,22 +2,25 @@ import _ from "lodash"
 import { processFind } from "./utils"
 import * as utils from "./utils"
 import { Doc, Item, MinimongoBaseCollection, MinimongoCollection, MinimongoCollectionFindOneOptions, MinimongoDb, MinimongoLocalCollection } from "./types"
+import { MinimongoLocalDb } from "."
 
 /** Bridges a local and remote database, querying from the local first and then
  * getting the remote. Also uploads changes from local to remote.
  */
 export default class HybridDb implements MinimongoDb {
-  localDb: MinimongoDb
+  localDb: MinimongoLocalDb
   remoteDb: MinimongoDb
   collections: { [collectionName: string]: HybridCollection<any> }
 
-  constructor(localDb: MinimongoDb, remoteDb: MinimongoDb) {
+  constructor(localDb: MinimongoLocalDb, remoteDb: MinimongoDb) {
     this.localDb = localDb
     this.remoteDb = remoteDb
     this.collections = {}
   }
 
-  addCollection(name: any, options?: any, success?: any, error?: any) {
+  addCollection(name: string, success?: () => void, error?: (error: any) => void): void
+  addCollection(name: string, options?: HybridCollectionOptions, success?: any, error?: any): void
+  addCollection(name: string, options?: any, success?: any, error?: any) {
     // Shift options over if not present
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
@@ -62,6 +65,29 @@ export default class HybridDb implements MinimongoDb {
   }
 }
 
+export interface HybridCollectionOptions {
+  /** Cache find results in local db */
+  cacheFind?: boolean
+
+  /** Cache findOne results in local db */
+  cacheFindOne?: boolean
+
+  /** Return interim results from local db while waiting for remote db. Return again if different */
+  interim?: boolean
+
+  /** Set to ms to timeout in for remote calls */
+  timeout?: number
+
+  /** Use local results if the remote find fails. Only applies if interim is false. */
+  useLocalOnRemoteError?: boolean
+  
+  /** true to return `findOne` results if any matching result is found in the local database. Useful for documents that change rarely. */
+  shortcut?: boolean
+
+  /** Compare function to sort upserts sent to server */
+  sortUpserts: (a: Doc, b: Doc) => number
+}
+
 export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<T> {
   name: string
   localCol: MinimongoLocalCollection<any>
@@ -69,7 +95,7 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
   options: any
 
   // Options includes
-  constructor(name: string, localCol: MinimongoLocalCollection<T>, remoteCol: MinimongoCollection<T>, options: any) {
+  constructor(name: string, localCol: MinimongoLocalCollection<T>, remoteCol: MinimongoCollection<T>, options?: HybridCollectionOptions) {
     this.name = name
     this.localCol = localCol
     this.remoteCol = remoteCol
