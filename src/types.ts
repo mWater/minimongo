@@ -56,6 +56,8 @@ export interface MinimongoLocalDb extends MinimongoDb {
 }
 
 export interface MinimongoBaseCollection<T = any> {
+  name: string
+    
   find(selector: any, options?: MinimongoCollectionFindOptions): { 
     fetch(success: (docs: T[]) => void, error: (err: any) => void): void
   }
