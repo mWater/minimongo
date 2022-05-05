@@ -4,7 +4,8 @@ export interface MinimongoCollectionFindOptions {
   limit?: number
   skip?: number
   cacheFind?: boolean
-  /** Return interim results from local db while waiting for remote db. Return again if different */
+  /** Return interim results from local db while waiting for remote db. Return again if different. Only applicable to HybridDb
+   * or a ReplicatingDb on top of a HybridDb. */
   interim?: boolean
   /** Set to ms to timeout in for remote calls */
   timeout?: number

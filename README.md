@@ -42,24 +42,40 @@ db.animals.upsert(doc, function() {
 
 ### Upserting
 
-`db.sometable.upsert(docs, bases, success, error)` can take either a single document or multiple documents (array) for the first and second parameter.
+`db.collection["sometable"].upsert(docs, bases, success, error)` can take either a single document or multiple documents (array) for the first and second parameter.
 
 docs is the document(s) to upsert. If bases is present, it is the base version on which the update is based. It can be omitted to use the current cached value
 as the base, or put as `null` to force an overwrite (a true upsert, not a patch)
 
+Promise interface is also available:
+
+`await db.collection["sometable"].upsert(docs, bases)` can take either a single document or multiple documents (array) for the first and second parameter.
+
+### Removing
+
+`db.collection["sometable"].remove(docId, success, error)` to remove a document.
+
+Promise interface is also available:
+
+`db.collection["sometable"].remove(docId)`
+
 ### Finding
 
-`db.sometable.find(selector, options).fetch(success, error)`
+`db.collection["sometable"].find(selector, options).fetch(success, error)`
 
 selector is a standard MongoDB selector, e.g. `{ x: 5, y: { $in: ['a', 'b'] } }`
 
 options are MongoDB find options: e.g. `{ limit: 10 }`, `{ sort: ["x"] }`
 
+Promise interface is also available: 
+
+`await db.collection["sometable"].find(selector, options).fetch()`
+
 ### Caching
 
 A set of rows can be cached in a local database. Call
 
-`db.sometable.cache(docs, selector, options, success, error)`
+`db.collection["sometable"].cache(docs, selector, options, success, error)`
 
 selector and options are the selector and options that were used to perform the find that produced docs. The local database will add/remove/update its local copy appropriately.
 
@@ -67,13 +83,13 @@ selector and options are the selector and options that were used to perform the 
 
 A set of rows can be seeded in a local database. Seeding does not overwrite an existing row; it only makes sure that a row with that _id exists.
 
-`db.sometable.seed(docs, success, error)`
+`db.collection["sometable"].seed(docs, success, error)`
 
 ### Un-caching
 
 Cached rows matching a selector can be removed with:
 
-`db.sometable.uncache(selector, success, error)`
+`db.collection["sometable"].uncache(selector, success, error)`
 
 It will not affect upserted rows.
 
@@ -83,7 +99,7 @@ Upserts are stored in local databases in a special state to record that they are
 
 To resolve the upsert (for example once sent to central db), use resolveUpserts on collection
 
-`db.sometable.resolveUpserts(upserts, success, error)` takes the list of upserts to resolve
+`db.collection["sometable"].resolveUpserts(upserts, success, error)` takes the list of upserts to resolve
 
 `resolveUpserts` does not resolve an upsert if another upsert on the same row has taken place. Instead, the base value is updated (since the change has been accepted by the server) but the new upserted value is left alone.
 

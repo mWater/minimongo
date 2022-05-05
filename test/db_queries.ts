@@ -375,6 +375,21 @@ export default function () {
     })
   })
 
+  it("upserts multiple rows (promise)", function (done: any) {
+    this.timeout(10000)
+    return this.reset(async () => {
+      const docs = []
+      for (let i = 0; i < 100; i++) {
+        docs.push({ b: i })
+      }
+
+      await this.col.upsert(docs)
+      const results = await this.col.find({}).fetch()
+      assert.equal(results.length, 100)
+      done()
+    })
+  })
+
   context("With sample with capitalization", function () {
     beforeEach(function (done: any) {
       return this.reset(() => {
