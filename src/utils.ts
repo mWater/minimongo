@@ -3,7 +3,7 @@ import _ from "lodash"
 
 import async from "async"
 import bowser from "bowser"
-import { compileDocumentSelector, compileSort } from "./selector";
+import { compileDocumentSelector, compileSort } from "./selector"
 import { default as booleanPointInPolygon } from "@turf/boolean-point-in-polygon"
 import { default as intersect } from "@turf/intersect"
 import { default as booleanCrosses } from "@turf/boolean-crosses"
@@ -121,7 +121,6 @@ export function migrateLocalDb(fromDb: any, toDb: any, success: any, error: any)
   return hybridDb.upload(success, error)
 }
 
-
 /** Clone a local database collection's caches, pending upserts and removes from one database to another
  * Useful for making a replica */
 export function cloneLocalDb(
@@ -224,16 +223,12 @@ export function cloneLocalCollection(
                   )
                 }
 
-                return async.eachSeries(
-                  removes,
-                  iterator,
-                  (err: any) => {
-                    if (err) {
-                      return error(err)
-                    }
-                    return success()
+                return async.eachSeries(removes, iterator, (err: any) => {
+                  if (err) {
+                    return error(err)
                   }
-                )
+                  return success()
+                })
               }, error)
             },
             error
@@ -467,7 +462,12 @@ function processGeoIntersectsOperator(selector: any, list: any) {
  * doing basic error checking and making sure that _id is present
  * Returns [items, success, error]
  */
-export function regularizeUpsert<T>(docs: any, bases: any, success: any, error: any): [{ doc: T, base?: T }[], (docs: T[]) => void, (err: any) => void] {
+export function regularizeUpsert<T>(
+  docs: any,
+  bases: any,
+  success: any,
+  error: any
+): [{ doc: T; base?: T }[], (docs: T[]) => void, (err: any) => void] {
   // Handle case of bases not present
   if (_.isFunction(bases)) {
     ;[bases, success, error] = [undefined, bases, success]

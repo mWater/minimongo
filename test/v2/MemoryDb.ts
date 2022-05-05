@@ -2,7 +2,7 @@
 // Sanity-check the conversion and remove this comment.
 let MemoryDb
 import _ from "lodash"
-import { createUid, processFind } from "./utils";
+import { createUid, processFind } from "./utils"
 import { compileSort } from "./selector"
 
 export default MemoryDb = class MemoryDb {

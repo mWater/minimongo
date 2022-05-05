@@ -1,1 +1,1 @@
-declare module "idb-wrapper";
+declare module "idb-wrapper"

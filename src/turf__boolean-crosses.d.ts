@@ -1,1 +1,1 @@
-declare module "@turf/boolean-crosses";
+declare module "@turf/boolean-crosses"

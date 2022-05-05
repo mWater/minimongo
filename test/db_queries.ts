@@ -321,7 +321,7 @@ export default function () {
       assert(doc !== doc2)
       assert(doc2.a !== "xyz")
     })
-    
+
     it("adds _id to rows", function (done: any) {
       return this.col.upsert({ a: "1" }, function (item: any) {
         assert.property(item, "_id")

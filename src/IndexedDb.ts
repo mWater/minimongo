@@ -4,7 +4,13 @@ import IDBStore from "idb-wrapper"
 import * as utils from "./utils"
 import { processFind } from "./utils"
 import { compileSort } from "./selector"
-import { MinimongoCollection, MinimongoCollectionFindOneOptions, MinimongoCollectionFindOptions, MinimongoDb, MinimongoLocalDb } from "./types"
+import {
+  MinimongoCollection,
+  MinimongoCollectionFindOneOptions,
+  MinimongoCollectionFindOptions,
+  MinimongoDb,
+  MinimongoLocalDb
+} from "./types"
 import { MinimongoLocalCollection } from "."
 
 // Create a database backed by IndexedDb. options must contain namespace: <string to uniquely identify database>
@@ -93,7 +99,7 @@ class IndexedDbCollection<T> implements MinimongoLocalCollection<T> {
     this.store = store
   }
 
-  find(selector: any, options?: MinimongoCollectionFindOptions) { 
+  find(selector: any, options?: MinimongoCollectionFindOptions) {
     return {
       fetch: (success?: any, error?: any) => {
         return this._findFetch(selector, options, success, error)
@@ -102,7 +108,12 @@ class IndexedDbCollection<T> implements MinimongoLocalCollection<T> {
   }
 
   findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>
-  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(
+    selector: any,
+    options: MinimongoCollectionFindOneOptions,
+    success: (doc: T | null) => void,
+    error: (err: any) => void
+  ): void
   findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void
   findOne(selector: any, options?: any, success?: any, error?: any) {
     if (_.isFunction(options)) {
@@ -116,7 +127,7 @@ class IndexedDbCollection<T> implements MinimongoLocalCollection<T> {
         this.findOne(selector, options, resolve, reject)
       })
     }
-    
+
     this.find(selector, options).fetch(function (results: any) {
       if (success != null) {
         success(results.length > 0 ? results[0] : null)
@@ -153,15 +164,25 @@ class IndexedDbCollection<T> implements MinimongoLocalCollection<T> {
   upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
   upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void
   upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
-  upsert(docs: T[], bases: (T | null | undefined)[], success: (item: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(
+    docs: T[],
+    bases: (T | null | undefined)[],
+    success: (item: (T | null)[]) => void,
+    error: (err: any) => void
+  ): void
   upsert(docs: any, bases?: any, success?: any, error?: any): any {
-    let items: { doc: T, base?: T }[]
+    let items: { doc: T; base?: T }[]
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
     // If promise case
     if (!success) {
       return new Promise((resolve, reject) => {
-        this.upsert(items.map(item => item.doc), items.map(item => item.base), resolve, reject)
+        this.upsert(
+          items.map((item) => item.doc),
+          items.map((item) => item.base),
+          resolve,
+          reject
+        )
       })
     }
 

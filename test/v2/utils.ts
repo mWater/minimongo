@@ -5,7 +5,7 @@ import _ from "lodash"
 
 import async from "async"
 import bowser from "bowser"
-import { compileDocumentSelector, compileSort } from "./selector";
+import { compileDocumentSelector, compileSort } from "./selector"
 
 // Select appropriate local database, prefering IndexedDb, then WebSQLDb, then LocalStorageDb, then MemoryDb
 export function autoselectLocalDb(options: any, success: any, error: any) {

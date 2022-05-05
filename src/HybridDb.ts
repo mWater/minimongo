@@ -1,7 +1,15 @@
 import _ from "lodash"
 import { processFind } from "./utils"
 import * as utils from "./utils"
-import { Doc, Item, MinimongoBaseCollection, MinimongoCollection, MinimongoCollectionFindOneOptions, MinimongoDb, MinimongoLocalCollection } from "./types"
+import {
+  Doc,
+  Item,
+  MinimongoBaseCollection,
+  MinimongoCollection,
+  MinimongoCollectionFindOneOptions,
+  MinimongoDb,
+  MinimongoLocalCollection
+} from "./types"
 import { MinimongoLocalDb } from "."
 
 /** Bridges a local and remote database, querying from the local first and then
@@ -80,7 +88,7 @@ export interface HybridCollectionOptions {
 
   /** Use local results if the remote find fails. Only applies if interim is false. */
   useLocalOnRemoteError?: boolean
-  
+
   /** true to return `findOne` results if any matching result is found in the local database. Useful for documents that change rarely. */
   shortcut?: boolean
 
@@ -95,7 +103,12 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
   options: any
 
   // Options includes
-  constructor(name: string, localCol: MinimongoLocalCollection<T>, remoteCol: MinimongoCollection<T>, options?: HybridCollectionOptions) {
+  constructor(
+    name: string,
+    localCol: MinimongoLocalCollection<T>,
+    remoteCol: MinimongoCollection<T>,
+    options?: HybridCollectionOptions
+  ) {
     this.name = name
     this.localCol = localCol
     this.remoteCol = remoteCol
@@ -123,7 +136,12 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
 
   // Finds one row.
   findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>
-  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (item: T | null) => void, error: (err: any) => void): void
+  findOne(
+    selector: any,
+    options: MinimongoCollectionFindOneOptions,
+    success: (item: T | null) => void,
+    error: (err: any) => void
+  ): void
   findOne(selector: any, success: (item: T | null) => void, error: (err: any) => void): void
   findOne(selector: any, options?: any, success?: any, error?: any): any {
     if (_.isFunction(options)) {
@@ -270,10 +288,12 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
               // Add upserts
               if (upserts.length > 0) {
                 // Remove upserts from data
-                const upsertsMap = _.fromPairs(_.zip(
+                const upsertsMap = _.fromPairs(
+                  _.zip(
                     _.map(upserts, (u: any) => u.doc._id),
-                    _.map(upserts, (u: any) => u.doc._id))
-                    )
+                    _.map(upserts, (u: any) => u.doc._id)
+                  )
+                )
                 data = _.filter(data, (doc: any) => !_.has(upsertsMap, doc._id))
 
                 // Add upserts
@@ -362,14 +382,24 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
   upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
   upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void
   upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
-  upsert(docs: T[], bases: (T | null | undefined)[], success: (item: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(
+    docs: T[],
+    bases: (T | null | undefined)[],
+    success: (item: (T | null)[]) => void,
+    error: (err: any) => void
+  ): void
   upsert(docs: any, bases?: any, success?: any, error?: any): any {
-    let items: { doc: T, base?: T }[]
+    let items: { doc: T; base?: T }[]
     ;[items, success, error] = utils.regularizeUpsert<T>(docs, bases, success, error)
 
     if (!success) {
       return new Promise((resolve, reject) => {
-        this.upsert(items.map(item => item.doc), items.map(item => item.base), resolve, reject)
+        this.upsert(
+          items.map((item) => item.doc),
+          items.map((item) => item.base),
+          resolve,
+          reject
+        )
       })
     }
 

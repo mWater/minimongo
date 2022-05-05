@@ -3,7 +3,7 @@
 let WebSQLDb
 import _ from "lodash"
 import async from "async"
-import { createUid, processFind } from "./utils";
+import { createUid, processFind } from "./utils"
 import { compileSort } from "./selector"
 
 // Do nothing callback for success

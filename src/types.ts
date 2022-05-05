@@ -15,17 +15,17 @@ export interface MinimongoCollectionFindOptions {
 
   /** Use local results if the remote find fails. Only applies if interim is false. */
   useLocalOnRemoteError?: boolean
-  
+
   /** true to return `findOne` results if any matching result is found in the local database. Useful for documents that change rarely. */
   shortcut?: boolean
 
-  /** Only for RemoteDb.find */ 
+  /** Only for RemoteDb.find */
   localData?: any[]
 
-  /** Only for RemoteDb.find, Must be an mwater-expression */ 
+  /** Only for RemoteDb.find, Must be an mwater-expression */
   whereExpr?: any
-  /** Only for RemoteDb.find. expr must be an mwater-expression */ 
-  orderByExprs?: { expr: any, dir: "asc" | "desc" }[]
+  /** Only for RemoteDb.find. expr must be an mwater-expression */
+  orderByExprs?: { expr: any; dir: "asc" | "desc" }[]
 }
 
 export interface MinimongoCollectionFindOneOptions {
@@ -41,10 +41,15 @@ export interface MinimongoCollectionFindOneOptions {
 
 export interface MinimongoDb {
   localDb?: MinimongoLocalDb
-  remoteDb?: MinimongoDb 
+  remoteDb?: MinimongoDb
   collections: { [collectionName: string]: MinimongoCollection }
 
-  addCollection<T>(name: string, options?: any, success?: (collection: MinimongoCollection<T>) => void, error?: (err: any) => void): void
+  addCollection<T>(
+    name: string,
+    options?: any,
+    success?: (collection: MinimongoCollection<T>) => void,
+    error?: (err: any) => void
+  ): void
   removeCollection<T>(name: string, success?: () => void, error?: (err: any) => void): void
   getCollectionNames(): string[]
 }
@@ -53,20 +58,38 @@ export interface MinimongoDb {
 export interface MinimongoLocalDb extends MinimongoDb {
   collections: { [collectionName: string]: MinimongoLocalCollection }
 
-  addCollection<T>(name: string, options?: any, success?: (collection: MinimongoLocalCollection<T>) => void, error?: (err: any) => void): void
+  addCollection<T>(
+    name: string,
+    options?: any,
+    success?: (collection: MinimongoLocalCollection<T>) => void,
+    error?: (err: any) => void
+  ): void
 }
 
 export interface MinimongoBaseCollection<T = any> {
   name: string
-    
-  find(selector: any, options?: MinimongoCollectionFindOptions): { 
+
+  find(
+    selector: any,
+    options?: MinimongoCollectionFindOptions
+  ): {
     fetch(success: (docs: T[]) => void, error: (err: any) => void): void
     fetch(): Promise<T[]>
   }
 
   findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>
-  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
-  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(
+    selector: any,
+    options: MinimongoCollectionFindOneOptions,
+    success: (doc: T | null) => void,
+    error: (err: any) => void
+  ): void
+  findOne(
+    selector: any,
+    options: MinimongoCollectionFindOneOptions,
+    success: (doc: T | null) => void,
+    error: (err: any) => void
+  ): void
   findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void
 
   upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void

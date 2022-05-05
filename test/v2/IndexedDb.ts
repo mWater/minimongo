@@ -4,7 +4,7 @@ let IndexedDb
 import _ from "lodash"
 import async from "async"
 import IDBStore from "idb-wrapper"
-import { createUid, processFind } from "./utils";
+import { createUid, processFind } from "./utils"
 import { compileSort } from "./selector"
 
 // Create a database backed by IndexedDb. options must contain namespace: <string to uniquely identify database>

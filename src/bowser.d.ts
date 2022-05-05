@@ -1,1 +1,1 @@
-declare module "bowser";
+declare module "bowser"

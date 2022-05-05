@@ -2,7 +2,13 @@ import _ from "lodash"
 import * as utils from "./utils"
 import jQueryHttpClient from "./jQueryHttpClient"
 import * as quickfind from "./quickfind"
-import { MinimongoDb, MinimongoCollection, Doc, MinimongoCollectionFindOptions, MinimongoCollectionFindOneOptions } from "./types"
+import {
+  MinimongoDb,
+  MinimongoCollection,
+  Doc,
+  MinimongoCollectionFindOptions,
+  MinimongoCollectionFindOneOptions
+} from "./types"
 import { MinimongoBaseCollection } from "."
 
 export default class RemoteDb implements MinimongoDb {
@@ -17,7 +23,13 @@ export default class RemoteDb implements MinimongoDb {
    * useQuickFind enables the quickfind protocol for finds
    * usePostFind enables POST for find
    */
-  constructor(url: string | string[], client?: string | null, httpClient?: any, useQuickFind = false, usePostFind = false) {
+  constructor(
+    url: string | string[],
+    client?: string | null,
+    httpClient?: any,
+    useQuickFind = false,
+    usePostFind = false
+  ) {
     this.url = url
     this.client = client
     this.collections = {}
@@ -29,7 +41,12 @@ export default class RemoteDb implements MinimongoDb {
   // Can specify url of specific collection as option.
   // useQuickFind can be overridden in options
   // usePostFind can be overridden in options
-  addCollection(name: string, options: { url?: string, useQuickFind?: boolean, usePostFind?: boolean } = {}, success: any, error: any) {
+  addCollection(
+    name: string,
+    options: { url?: string; useQuickFind?: boolean; usePostFind?: boolean } = {},
+    success: any,
+    error: any
+  ) {
     let url
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
@@ -84,7 +101,7 @@ class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
   httpClient: any
   useQuickFind: any
   usePostFind: any
-  
+
   // usePostFind allows POST to <collection>/find for long selectors
   constructor(name: any, url: any, client: any, httpClient: any, useQuickFind: any, usePostFind: any) {
     this.name = name
@@ -107,7 +124,7 @@ class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
   }
 
   // error is called with jqXHR
-  find(selector: any, options: MinimongoCollectionFindOptions = {}) { 
+  find(selector: any, options: MinimongoCollectionFindOptions = {}) {
     return {
       fetch: (success?: any, error?: any) => {
         return this._findFetch(selector, options, success, error)
@@ -239,7 +256,12 @@ class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
   // error is called with jqXHR
   // Note that findOne is not used by HybridDb, but rather find with limit is used
   findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>
-  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(
+    selector: any,
+    options: MinimongoCollectionFindOneOptions,
+    success: (doc: T | null) => void,
+    error: (err: any) => void
+  ): void
   findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void
   findOne(selector: any, options?: any, success?: any, error?: any) {
     if (_.isFunction(options)) {
@@ -253,7 +275,7 @@ class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
         this.findOne(selector, options, resolve, reject)
       })
     }
-    
+
     // Create url
     const params: any = {}
     if (options.sort) {
@@ -288,15 +310,25 @@ class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
   upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
   upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void
   upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
-  upsert(docs: T[], bases: (T | null | undefined)[], success: (item: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(
+    docs: T[],
+    bases: (T | null | undefined)[],
+    success: (item: (T | null)[]) => void,
+    error: (err: any) => void
+  ): void
   upsert(docs: any, bases?: any, success?: any, error?: any): any {
-    let items: { doc: T, base?: T }[]
+    let items: { doc: T; base?: T }[]
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
     // If promise case
     if (!success) {
       return new Promise((resolve, reject) => {
-        this.upsert(items.map(item => item.doc), items.map(item => item.base), resolve, reject)
+        this.upsert(
+          items.map((item) => item.doc),
+          items.map((item) => item.base),
+          resolve,
+          reject
+        )
       })
     }
 

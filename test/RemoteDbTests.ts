@@ -6,9 +6,7 @@ import RemoteDb from "../src/RemoteDb"
 import _ from "lodash"
 
 describe("RemoteDb", function () {
-  beforeEach(function (
-    this: any,
-  ) {
+  beforeEach(function (this: any) {
     this.httpCall = null
     this.callSuccessWith = null
 

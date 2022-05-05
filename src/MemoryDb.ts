@@ -3,7 +3,15 @@ import async from "async"
 import * as utils from "./utils"
 import { processFind } from "./utils"
 import { compileSort } from "./selector"
-import { Doc, Item, MinimongoCollection, MinimongoCollectionFindOneOptions, MinimongoCollectionFindOptions, MinimongoDb, MinimongoLocalCollection } from "./types"
+import {
+  Doc,
+  Item,
+  MinimongoCollection,
+  MinimongoCollectionFindOneOptions,
+  MinimongoCollectionFindOptions,
+  MinimongoDb,
+  MinimongoLocalCollection
+} from "./types"
 
 export default class MemoryDb implements MinimongoDb {
   collections: { [collectionName: string]: Collection<any> }
@@ -68,7 +76,12 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
   }
 
   findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>
-  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(
+    selector: any,
+    options: MinimongoCollectionFindOneOptions,
+    success: (doc: T | null) => void,
+    error: (err: any) => void
+  ): void
   findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void
   findOne(selector: any, options?: any, success?: any, error?: any) {
     if (_.isFunction(options)) {
@@ -82,7 +95,7 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
         this.findOne(selector, options, resolve, reject)
       })
     }
-    
+
     this.find(selector, options).fetch((results: any) => {
       if (success != null) {
         return success(this._applySafety(results.length > 0 ? results[0] : null))
@@ -142,15 +155,25 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
   upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
   upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void
   upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
-  upsert(docs: T[], bases: (T | null | undefined)[], success: (item: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(
+    docs: T[],
+    bases: (T | null | undefined)[],
+    success: (item: (T | null)[]) => void,
+    error: (err: any) => void
+  ): void
   upsert(docs: any, bases?: any, success?: any, error?: any): any {
-    let items: { doc: T, base?: T }[]
+    let items: { doc: T; base?: T }[]
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
     // If promise case
     if (!success) {
       return new Promise((resolve, reject) => {
-        this.upsert(items.map(item => item.doc), items.map(item => item.base), resolve, reject)
+        this.upsert(
+          items.map((item) => item.doc),
+          items.map((item) => item.base),
+          resolve,
+          reject
+        )
       })
     }
 
@@ -230,7 +253,11 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
         continue
       }
 
-      this.cacheOne(doc, () => {}, () => {})
+      this.cacheOne(
+        doc,
+        () => {},
+        () => {}
+      )
     }
 
     const docsMap = _.fromPairs(_.zip(_.map(docs, "_id"), docs))

@@ -1,1 +1,1 @@
-declare module "@turf/boolean-within";
+declare module "@turf/boolean-within"
