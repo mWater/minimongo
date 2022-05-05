@@ -32,11 +32,21 @@ declare class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
     constructor(name: any, url: any, client: any, httpClient: any, useQuickFind: any, usePostFind: any);
     getUrl(): any;
     find(selector: any, options?: MinimongoCollectionFindOptions): {
-        fetch: (success: any, error: any) => any;
+        fetch: (success?: any, error?: any) => any;
     };
+    _findFetch(selector: any, options: MinimongoCollectionFindOptions, success: any, error: any): any;
+    findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>;
     findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void;
     findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void;
-    upsert(docs: any, bases: any, success: any, error?: any): any;
-    remove(id: any, success: any, error: any): any;
+    upsert(doc: T): Promise<T | null>;
+    upsert(doc: T, base: T | null | undefined): Promise<T | null>;
+    upsert(docs: T[]): Promise<(T | null)[]>;
+    upsert(docs: T[], bases: (T | null | undefined)[]): Promise<(T | null)[]>;
+    upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void;
+    upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void;
+    upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void;
+    upsert(docs: T[], bases: (T | null | undefined)[], success: (item: (T | null)[]) => void, error: (err: any) => void): void;
+    remove(id: any): Promise<void>;
+    remove(id: any, success: () => void, error: (err: any) => void): void;
 }
 export {};

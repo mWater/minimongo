@@ -60,15 +60,18 @@ export interface MinimongoBaseCollection<T = any> {
     
   find(selector: any, options?: MinimongoCollectionFindOptions): { 
     fetch(success: (docs: T[]) => void, error: (err: any) => void): void
+    fetch(): Promise<T[]>
   }
 
+  findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>
+  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
   findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
   findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void
 
   upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
-  upsert(doc: T, base: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void
   upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
-  upsert(docs: T[], bases: T[], success: (item: T | null) => void, error: (err: any) => void): void
+  upsert(docs: T[], bases: (T | null | undefined)[], success: (item: T | null) => void, error: (err: any) => void): void
 
   remove(id: string, success: () => void, error: (err: any) => void): void
 }

@@ -109,130 +109,151 @@ class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
   // error is called with jqXHR
   find(selector: any, options: MinimongoCollectionFindOptions = {}) { 
     return {
-      fetch: (success: any, error: any) => {
-        // Determine method: "get", "post" or "quickfind"
-        // If in quickfind and localData present and (no fields option or _rev included) and not (limit with no sort), use quickfind
-        let method
-        if (
-          this.useQuickFind &&
-          options.localData &&
-          (!options.fields || options.fields._rev) &&
-          !(options.limit && !options.sort && !options.orderByExprs)
-        ) {
-          method = "quickfind"
-          // If selector or fields or sort is too big, use post
-        } else if (
-          this.usePostFind &&
-          JSON.stringify({ selector, sort: options.sort, fields: options.fields }).length > 500
-        ) {
-          method = "post"
-        } else {
-          method = "get"
-        }
-
-        if (method === "get") {
-          // Create url
-          const params: any = {}
-          params.selector = JSON.stringify(selector || {})
-          if (options.sort) {
-            params.sort = JSON.stringify(options.sort)
-          }
-          if (options.limit) {
-            params.limit = options.limit
-          }
-          if (options.skip) {
-            params.skip = options.skip
-          }
-          if (options.fields) {
-            params.fields = JSON.stringify(options.fields)
-          }
-
-          // Advanced options for mwater-expression-based filtering and ordering
-          if (options.whereExpr) {
-            params.whereExpr = JSON.stringify(options.whereExpr)
-          }
-          if (options.orderByExprs) {
-            params.orderByExprs = JSON.stringify(options.orderByExprs)
-          }
-
-          if (this.client) {
-            params.client = this.client
-          }
-          this.httpClient("GET", this.getUrl(), params, null, success, error)
-          return
-        }
-
-        // Create body + params for quickfind and post
-        const body = {
-          selector: selector || {}
-        } as any
-        if (options.sort) {
-          body.sort = options.sort
-        }
-        if (options.limit != null) {
-          body.limit = options.limit
-        }
-        if (options.skip != null) {
-          body.skip = options.skip
-        }
-        if (options.fields) {
-          body.fields = options.fields
-        }
-
-        // Advanced options for mwater-expression-based filtering and ordering
-        if (options.whereExpr) {
-          body.whereExpr = options.whereExpr
-        }
-        if (options.orderByExprs) {
-          body.orderByExprs = options.orderByExprs
-        }
-
-        const params: any = {}
-        if (this.client) {
-          params.client = this.client
-        }
-
-        if (method === "quickfind") {
-          // Send quickfind data
-          body.quickfind = quickfind.encodeRequest(options.localData)
-
-          this.httpClient(
-            "POST",
-            this.getUrl() + "/quickfind",
-            params,
-            body,
-            (encodedResponse: any) => {
-              return success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort))
-            },
-            error
-          )
-          return
-        }
-
-        // POST method
-        return this.httpClient(
-          "POST",
-          this.getUrl() + "/find",
-          params,
-          body,
-          (response: any) => {
-            return success(response)
-          },
-          error
-        )
+      fetch: (success?: any, error?: any) => {
+        return this._findFetch(selector, options, success, error)
       }
     }
   }
 
+  _findFetch(selector: any, options: MinimongoCollectionFindOptions, success: any, error: any): any {
+    // If promise case
+    if (success == null) {
+      return new Promise((resolve, reject) => {
+        this._findFetch(selector, options, resolve, reject)
+      })
+    }
+
+    // Determine method: "get", "post" or "quickfind"
+    // If in quickfind and localData present and (no fields option or _rev included) and not (limit with no sort), use quickfind
+    let method
+    if (
+      this.useQuickFind &&
+      options.localData &&
+      (!options.fields || options.fields._rev) &&
+      !(options.limit && !options.sort && !options.orderByExprs)
+    ) {
+      method = "quickfind"
+      // If selector or fields or sort is too big, use post
+    } else if (
+      this.usePostFind &&
+      JSON.stringify({ selector, sort: options.sort, fields: options.fields }).length > 500
+    ) {
+      method = "post"
+    } else {
+      method = "get"
+    }
+
+    if (method === "get") {
+      // Create url
+      const params: any = {}
+      params.selector = JSON.stringify(selector || {})
+      if (options.sort) {
+        params.sort = JSON.stringify(options.sort)
+      }
+      if (options.limit) {
+        params.limit = options.limit
+      }
+      if (options.skip) {
+        params.skip = options.skip
+      }
+      if (options.fields) {
+        params.fields = JSON.stringify(options.fields)
+      }
+
+      // Advanced options for mwater-expression-based filtering and ordering
+      if (options.whereExpr) {
+        params.whereExpr = JSON.stringify(options.whereExpr)
+      }
+      if (options.orderByExprs) {
+        params.orderByExprs = JSON.stringify(options.orderByExprs)
+      }
+
+      if (this.client) {
+        params.client = this.client
+      }
+      this.httpClient("GET", this.getUrl(), params, null, success, error)
+      return
+    }
+
+    // Create body + params for quickfind and post
+    const body = {
+      selector: selector || {}
+    } as any
+    if (options.sort) {
+      body.sort = options.sort
+    }
+    if (options.limit != null) {
+      body.limit = options.limit
+    }
+    if (options.skip != null) {
+      body.skip = options.skip
+    }
+    if (options.fields) {
+      body.fields = options.fields
+    }
+
+    // Advanced options for mwater-expression-based filtering and ordering
+    if (options.whereExpr) {
+      body.whereExpr = options.whereExpr
+    }
+    if (options.orderByExprs) {
+      body.orderByExprs = options.orderByExprs
+    }
+
+    const params: any = {}
+    if (this.client) {
+      params.client = this.client
+    }
+
+    if (method === "quickfind") {
+      // Send quickfind data
+      body.quickfind = quickfind.encodeRequest(options.localData)
+
+      this.httpClient(
+        "POST",
+        this.getUrl() + "/quickfind",
+        params,
+        body,
+        (encodedResponse: any) => {
+          return success(quickfind.decodeResponse(encodedResponse, options.localData, options.sort))
+        },
+        error
+      )
+      return
+    }
+
+    // POST method
+    this.httpClient(
+      "POST",
+      this.getUrl() + "/find",
+      params,
+      body,
+      (response: any) => {
+        return success(response)
+      },
+      error
+    )
+    return
+  }
+
   // error is called with jqXHR
   // Note that findOne is not used by HybridDb, but rather find with limit is used
+  findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>
   findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
   findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void
-  findOne(selector: any, options: any, success: any, error?: any) {
+  findOne(selector: any, options?: any, success?: any, error?: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
+    options = options || {}
 
+    // If promise case
+    if (success == null) {
+      return new Promise((resolve, reject) => {
+        this.findOne(selector, options, resolve, reject)
+      })
+    }
+    
     // Create url
     const params: any = {}
     if (options.sort) {
@@ -260,10 +281,24 @@ class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
     )
   }
 
-  // error is called with jqXHR
-  upsert(docs: any, bases: any, success: any, error?: any) {
-    let items
+  upsert(doc: T): Promise<T | null>
+  upsert(doc: T, base: T | null | undefined): Promise<T | null>
+  upsert(docs: T[]): Promise<(T | null)[]>
+  upsert(docs: T[], bases: (T | null | undefined)[]): Promise<(T | null)[]>
+  upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(docs: T[], bases: (T | null | undefined)[], success: (item: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(docs: any, bases?: any, success?: any, error?: any): any {
+    let items: { doc: T, base?: T }[]
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
+
+    // If promise case
+    if (!success) {
+      return new Promise((resolve, reject) => {
+        this.upsert(items.map(item => item.doc), items.map(item => item.base), resolve, reject)
+      })
+    }
 
     const results = []
 
@@ -350,7 +385,15 @@ class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
   }
 
   // error is called with jqXHR
-  remove(id: any, success: any, error: any) {
+  remove(id: any): Promise<void>
+  remove(id: any, success: () => void, error: (err: any) => void): void
+  remove(id: any, success?: () => void, error?: (err: any) => void): any {
+    if (!success) {
+      return new Promise<void>((resolve, reject) => {
+        this.remove(id, resolve, reject)
+      })
+    }
+
     if (!this.client) {
       throw new Error("Client required to remove")
     }
@@ -361,7 +404,7 @@ class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
       if (err.status === 410) {
         return success()
       } else {
-        return error(err)
+        return error!(err)
       }
     })
   }

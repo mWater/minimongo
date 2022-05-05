@@ -3,7 +3,7 @@ import async from "async"
 import * as utils from "./utils"
 import { processFind } from "./utils"
 import { compileSort } from "./selector"
-import { Doc, Item, MinimongoCollection, MinimongoCollectionFindOptions, MinimongoDb, MinimongoLocalCollection } from "./types"
+import { Doc, Item, MinimongoCollection, MinimongoCollectionFindOneOptions, MinimongoCollectionFindOptions, MinimongoDb, MinimongoLocalCollection } from "./types"
 
 export default class MemoryDb implements MinimongoDb {
   collections: { [collectionName: string]: Collection<any> }
@@ -61,27 +61,46 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
 
   find(selector: any, options?: MinimongoCollectionFindOptions) {
     return {
-      fetch: (success: any, error: any) => {
+      fetch: (success?: any, error?: any) => {
         return this._findFetch(selector, options, success, error)
       }
     }
   }
 
-  findOne(selector: any, options: any, success: any, error?: any) {
+  findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>
+  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(selector: any, options?: any, success?: any, error?: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
+    options = options || {}
 
-    return this.find(selector, options).fetch((results: any) => {
+    // If promise case
+    if (success == null) {
+      return new Promise((resolve, reject) => {
+        this.findOne(selector, options, resolve, reject)
+      })
+    }
+    
+    this.find(selector, options).fetch((results: any) => {
       if (success != null) {
         return success(this._applySafety(results.length > 0 ? results[0] : null))
       }
     }, error)
+    return
   }
 
-  _findFetch(selector: any, options: any, success: any, error: any) {
+  _findFetch(selector: any, options: any, success: any, error: any): any {
+    // If promise case
+    if (success == null) {
+      return new Promise((resolve, reject) => {
+        this._findFetch(selector, options, resolve, reject)
+      })
+    }
+
     // Defer to allow other processes to run
-    return setTimeout(() => {
+    setTimeout(() => {
       // Shortcut if _id is specified
       let allItems
       if (selector && selector._id && _.isString(selector._id)) {
@@ -91,9 +110,10 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
       }
       const results = processFind(allItems, selector, options)
       if (success != null) {
-        return success(this._applySafety(results))
+        success(this._applySafety(results))
       }
     }, 0)
+    return
   }
 
   // Applies safety (either freezing or cloning to object or array)
@@ -115,9 +135,24 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
     throw new Error(`Unsupported safety ${this.options.safety}`)
   }
 
-  upsert(docs: any, bases: any, success: any, error?: any) {
-    let items
+  upsert(doc: T): Promise<T | null>
+  upsert(doc: T, base: T | null | undefined): Promise<T | null>
+  upsert(docs: T[]): Promise<(T | null)[]>
+  upsert(docs: T[], bases: (T | null | undefined)[]): Promise<(T | null)[]>
+  upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(docs: T[], bases: (T | null | undefined)[], success: (item: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(docs: any, bases?: any, success?: any, error?: any): any {
+    let items: { doc: T, base?: T }[]
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
+
+    // If promise case
+    if (!success) {
+      return new Promise((resolve, reject) => {
+        this.upsert(items.map(item => item.doc), items.map(item => item.base), resolve, reject)
+      })
+    }
 
     // Keep independent copies to prevent modification
     items = JSON.parse(JSON.stringify(items))
@@ -126,16 +161,16 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
       // Fill in base if undefined
       if (item.base === undefined) {
         // Use existing base
-        if (this.upserts[item.doc._id]) {
-          item.base = this.upserts[item.doc._id].base
+        if (this.upserts[item.doc._id!]) {
+          item.base = this.upserts[item.doc._id!].base
         } else {
-          item.base = this.items[item.doc._id] || null
+          item.base = this.items[item.doc._id!] || null
         }
       }
 
       // Replace/add
-      this.items[item.doc._id] = item.doc
-      this.upserts[item.doc._id] = item
+      this.items[item.doc._id!] = item.doc
+      this.upserts[item.doc._id!] = item
     }
 
     if (_.isArray(docs)) {
@@ -149,7 +184,15 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
     }
   }
 
-  remove(id: string, success: any, error: any) {
+  remove(id: any): Promise<void>
+  remove(id: any, success: () => void, error: (err: any) => void): void
+  remove(id: any, success?: () => void, error?: (err: any) => void): any {
+    if (!success) {
+      return new Promise<void>((resolve, reject) => {
+        this.remove(id, resolve, reject)
+      })
+    }
+
     // Special case for filter-type remove
     if (_.isObject(id)) {
       this.find(id).fetch((rows: any) => {

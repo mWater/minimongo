@@ -115,18 +115,27 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
 
   find(selector: any, options = {}) {
     return {
-      fetch: (success: any, error: any) => {
+      fetch: (success?: any, error?: any) => {
         return this._findFetch(selector, options, success, error)
       }
     }
   }
 
   // Finds one row.
+  findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>
   findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (item: T | null) => void, error: (err: any) => void): void
   findOne(selector: any, success: (item: T | null) => void, error: (err: any) => void): void
-  findOne(selector: any, options: any, success: any, error?: any) {
+  findOne(selector: any, options?: any, success?: any, error?: any): any {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
+    }
+    options = options || {}
+
+    // If promise case
+    if (success == null) {
+      return new Promise((resolve, reject) => {
+        this.findOne(selector, { ...options, interim: false }, resolve, reject)
+      })
     }
 
     // Merge options
@@ -184,13 +193,21 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
     }
   }
 
-  _findFetch(selector: any, options: any, success: any, error: any) {
+  _findFetch(selector: any, options: any, success: any, error: any): any {
+    // If promise case
+    if (success == null) {
+      // Implies interim false (since promises cannot resolve twice)
+      return new Promise((resolve, reject) => {
+        this._findFetch(selector, { ...options, interim: false }, resolve, reject)
+      })
+    }
+
     // Merge options
     _.defaults(options, this.options)
 
     // Get pending removes and upserts immediately to avoid odd race conditions
-    return this.localCol.pendingUpserts!((upserts: any) => {
-      return this.localCol.pendingRemoves!((removes: any) => {
+    this.localCol.pendingUpserts!((upserts: any) => {
+      this.localCol.pendingRemoves!((removes: any) => {
         const step2 = (localData: any) => {
           // Setup remote options
           const remoteOptions = _.cloneDeep(options)
@@ -338,19 +355,36 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
     }, error)
   }
 
+  upsert(doc: T): Promise<T | null>
+  upsert(doc: T, base: T | null | undefined): Promise<T | null>
+  upsert(docs: T[]): Promise<(T | null)[]>
+  upsert(docs: T[], bases: (T | null | undefined)[]): Promise<(T | null)[]>
   upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
-  upsert(doc: T, base: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void
   upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
-  upsert(docs: T[], bases: T[], success: (item: T | null) => void, error: (err: any) => void): void
-  upsert(docs: any, bases: any, success: any, error?: any): void 
-  {
-    let items
-    ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
+  upsert(docs: T[], bases: (T | null | undefined)[], success: (item: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(docs: any, bases?: any, success?: any, error?: any): any {
+    let items: { doc: T, base?: T }[]
+    ;[items, success, error] = utils.regularizeUpsert<T>(docs, bases, success, error)
+
+    if (!success) {
+      return new Promise((resolve, reject) => {
+        this.upsert(items.map(item => item.doc), items.map(item => item.base), resolve, reject)
+      })
+    }
 
     return this.localCol.upsert(_.map(items, "doc"), _.map(items, "base"), (result: any) => success?.(docs), error)
   }
 
-  remove(id: any, success: () => void, error: (err: any) => void) {
+  remove(id: any): Promise<void>
+  remove(id: any, success: () => void, error: (err: any) => void): void
+  remove(id: any, success?: () => void, error?: (err: any) => void): any {
+    if (!success) {
+      return new Promise<void>((resolve, reject) => {
+        this.remove(id, resolve, reject)
+      })
+    }
+
     return this.localCol.remove(
       id,
       function () {
@@ -358,7 +392,7 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
           return success()
         }
       },
-      error
+      error!
     )
   }
 

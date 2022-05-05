@@ -34,13 +34,13 @@ gulp.task("test", gulp.series([
     const webpackConfig = require('./webpack.config.tests.js');
     const compiler = webpack(webpackConfig);
 
-    return new WebpackDevServer(compiler, { }).listen(8081, "localhost", err => {
+    return new WebpackDevServer(compiler, { }).listen(8083, "localhost", err => {
       if (err) { 
         throw new gutil.PluginError("webpack-dev-server", err);
       }
 
       // Server listening
-      return gutil.log("[webpack-dev-server]", "http://localhost:8081/mocha.html");
+      return gutil.log("[webpack-dev-server]", "http://localhost:8083/mocha.html");
     });
   }
 ])

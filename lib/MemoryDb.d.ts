@@ -1,5 +1,4 @@
-/// <reference types="node" />
-import { Doc, Item, MinimongoCollectionFindOptions, MinimongoDb, MinimongoLocalCollection } from "./types";
+import { Doc, Item, MinimongoCollectionFindOneOptions, MinimongoCollectionFindOptions, MinimongoDb, MinimongoLocalCollection } from "./types";
 export default class MemoryDb implements MinimongoDb {
     collections: {
         [collectionName: string]: Collection<any>;
@@ -32,14 +31,24 @@ declare class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
         safety?: "clone" | "freeze";
     });
     find(selector: any, options?: MinimongoCollectionFindOptions): {
-        fetch: (success: any, error: any) => NodeJS.Timeout;
+        fetch: (success?: any, error?: any) => any;
     };
-    findOne(selector: any, options: any, success: any, error?: any): NodeJS.Timeout;
-    _findFetch(selector: any, options: any, success: any, error: any): NodeJS.Timeout;
+    findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>;
+    findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void;
+    findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void;
+    _findFetch(selector: any, options: any, success: any, error: any): any;
     _applySafety: (items: any) => any;
-    upsert(docs: any, bases: any, success: any, error?: any): any;
-    remove(id: string, success: any, error: any): any;
-    cache(docs: any, selector: any, options: any, success: any, error: any): NodeJS.Timeout;
+    upsert(doc: T): Promise<T | null>;
+    upsert(doc: T, base: T | null | undefined): Promise<T | null>;
+    upsert(docs: T[]): Promise<(T | null)[]>;
+    upsert(docs: T[], bases: (T | null | undefined)[]): Promise<(T | null)[]>;
+    upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void;
+    upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void;
+    upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void;
+    upsert(docs: T[], bases: (T | null | undefined)[], success: (item: (T | null)[]) => void, error: (err: any) => void): void;
+    remove(id: any): Promise<void>;
+    remove(id: any, success: () => void, error: (err: any) => void): void;
+    cache(docs: any, selector: any, options: any, success: any, error: any): any;
     pendingUpserts(success: any): any;
     pendingRemoves(success: any): any;
     resolveUpserts(upserts: any, success: any): any;

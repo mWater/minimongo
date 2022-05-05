@@ -1,7 +1,7 @@
 import _ from "lodash"
 import * as utils from "./utils"
 import { compileSort } from "./selector"
-import { Doc, MinimongoCollection, MinimongoDb, MinimongoLocalCollection, MinimongoLocalDb } from "./types"
+import { Doc, MinimongoCollection, MinimongoCollectionFindOneOptions, MinimongoDb, MinimongoLocalCollection, MinimongoLocalDb } from "./types"
 
 /** Replicates data into a both a master and a replica db. Assumes both are identical at start
  * and then only uses master for finds and does all changes to both
@@ -57,16 +57,45 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
     return this.masterCol.find(selector, options)
   }
 
-  findOne(selector: any, options: any, success: any, error?: any) {
+  findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>
+  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(selector: any, options?: any, success?: any, error?: any) {
+    if (_.isFunction(options)) {
+      ;[options, success, error] = [{}, options, success]
+    }
+    options = options || {}
+
+    // If promise case
+    if (success == null) {
+      return new Promise((resolve, reject) => {
+        this.findOne(selector, options, resolve, reject)
+      })
+    }
     return this.masterCol.findOne(selector, options, success, error)
   }
 
-  upsert(docs: any, bases: any, success: any, error?: any) {
-    let items: any
+  upsert(doc: T): Promise<T | null>
+  upsert(doc: T, base: T | null | undefined): Promise<T | null>
+  upsert(docs: T[]): Promise<(T | null)[]>
+  upsert(docs: T[], bases: (T | null | undefined)[]): Promise<(T | null)[]>
+  upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(docs: T[], bases: (T | null | undefined)[], success: (item: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(docs: any, bases?: any, success?: any, error?: any): any {
+    let items: { doc: T, base?: T }[]
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
+    // If promise case
+    if (!success) {
+      return new Promise((resolve, reject) => {
+        this.upsert(items.map(item => item.doc), items.map(item => item.base), resolve, reject)
+      })
+    }
+
     // Upsert does to both
-    return this.masterCol.upsert(
+    this.masterCol.upsert(
       _.map(items, "doc"),
       _.map(items, "base"),
       () => {
@@ -83,14 +112,22 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
     )
   }
 
-  remove(id: any, success: any, error: any) {
+  remove(id: any): Promise<void>
+  remove(id: any, success: () => void, error: (err: any) => void): void
+  remove(id: any, success?: () => void, error?: (err: any) => void): any {
+    if (!success) {
+      return new Promise<void>((resolve, reject) => {
+        this.remove(id, resolve, reject)
+      })
+    }
+
     // Do to both
     this.masterCol.remove(
       id,
       () => {
-        this.replicaCol.remove(id, success, error)
+        this.replicaCol.remove(id, success, error!)
       },
-      error
+      error!
     )
   }
 

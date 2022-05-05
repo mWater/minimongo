@@ -39,15 +39,21 @@ export declare class HybridCollection<T extends Doc> implements MinimongoBaseCol
     options: any;
     constructor(name: string, localCol: MinimongoLocalCollection<T>, remoteCol: MinimongoCollection<T>, options?: HybridCollectionOptions);
     find(selector: any, options?: {}): {
-        fetch: (success: any, error: any) => void;
+        fetch: (success?: any, error?: any) => any;
     };
+    findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>;
     findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (item: T | null) => void, error: (err: any) => void): void;
     findOne(selector: any, success: (item: T | null) => void, error: (err: any) => void): void;
-    _findFetch(selector: any, options: any, success: any, error: any): void;
+    _findFetch(selector: any, options: any, success: any, error: any): any;
+    upsert(doc: T): Promise<T | null>;
+    upsert(doc: T, base: T | null | undefined): Promise<T | null>;
+    upsert(docs: T[]): Promise<(T | null)[]>;
+    upsert(docs: T[], bases: (T | null | undefined)[]): Promise<(T | null)[]>;
     upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void;
-    upsert(doc: T, base: T, success: (doc: T | null) => void, error: (err: any) => void): void;
+    upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void;
     upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void;
-    upsert(docs: T[], bases: T[], success: (item: T | null) => void, error: (err: any) => void): void;
+    upsert(docs: T[], bases: (T | null | undefined)[], success: (item: (T | null)[]) => void, error: (err: any) => void): void;
+    remove(id: any): Promise<void>;
     remove(id: any, success: () => void, error: (err: any) => void): void;
     upload(success: () => void, error: (err: any) => void): void;
 }

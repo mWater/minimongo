@@ -43,11 +43,21 @@ export default function () {
       })
     })
 
+    it("finds all rows (promise)", async function () {
+      const results = await this.col.find({}).fetch()
+      assert.equal(results.length, 3)
+    })
+
     it("finds all rows with options", function (done: any) {
       return this.col.find({}, {}).fetch(function (results: any) {
         assert.equal(3, results.length)
         done()
       })
+    })
+
+    it("finds all rows with options (promise)", async function () {
+      const results = await this.col.find({}, {}).fetch()
+      assert.equal(3, results.length)
     })
 
     it("filters by id", function (done: any) {
@@ -204,6 +214,36 @@ export default function () {
       )
     })
 
+    it("removes item (promise)", async function () {
+      await this.col.remove("2")
+
+      const results = await this.col.find({}).fetch()
+      assert.equal(2, results.length)
+
+      let needle, needle1
+      let result
+      assert(
+        ((needle = "1"),
+        (() => {
+          const result1 = []
+          for (result of results) {
+            result1.push(result._id)
+          }
+          return result1
+        })().includes(needle))
+      )
+      assert(
+        ((needle1 = "2"),
+        !(() => {
+          const result2 = []
+          for (result of results) {
+            result2.push(result._id)
+          }
+          return result2
+        })().includes(needle1))
+      )
+    })
+
     it("removes non-existent item", function (done: any) {
       return this.col.remove("999", () => {
         return this.col.find({}).fetch(function (results: any) {
@@ -253,7 +293,7 @@ export default function () {
 
     // MemoryDb is much faster if we relax this constraint
     it("upsert keeps independent copies", function (done: any) {
-      const doc = { _id: "2" }
+      const doc: any = { _id: "2" }
       return this.col.upsert(doc, (item: any) => {
         doc.a = "xyz"
         item.a = "xyz"
@@ -265,6 +305,18 @@ export default function () {
       })
     })
 
+    // MemoryDb is much faster if we relax this constraint
+    it("upsert keeps independent copies (promise)", async function () {
+      const doc: any = { _id: "2" }
+      const item = await this.col.upsert(doc)
+      doc.a = "xyz"
+      item.a = "xyz"
+
+      const doc2 = await this.col.findOne({ _id: "2" })
+      assert(doc !== doc2)
+      assert(doc2.a !== "xyz")
+    })
+    
     it("adds _id to rows", function (done: any) {
       return this.col.upsert({ a: "1" }, function (item: any) {
         assert.property(item, "_id")
@@ -437,7 +489,7 @@ export default function () {
     })
   })
 
-  const geopoint = (lng, lat) => ({
+  const geopoint = (lng: number, lat: number) => ({
     type: "Point",
     coordinates: [lng, lat]
   })

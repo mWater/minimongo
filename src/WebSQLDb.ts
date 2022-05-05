@@ -3,7 +3,7 @@ import async from "async"
 import * as utils from "./utils"
 import { processFind } from "./utils"
 import { compileSort } from "./selector"
-import { MinimongoCollection, MinimongoDb, MinimongoLocalCollection } from "./types"
+import { Doc, MinimongoCollection, MinimongoCollectionFindOneOptions, MinimongoDb, MinimongoLocalCollection } from "./types"
 
 // Do nothing callback for success
 function doNothing() {}
@@ -163,7 +163,7 @@ ALTER TABLE docs ADD COLUMN base TEXT;`,
 }
 
 // Stores data in indexeddb store
-class Collection<T> implements MinimongoLocalCollection<T> {
+class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
   name: string
   db: any
 
@@ -174,17 +174,28 @@ class Collection<T> implements MinimongoLocalCollection<T> {
 
   find(selector: any, options?: any) {
     return {
-      fetch: (success: any, error: any) => {
+      fetch: (success?: any, error?: any) => {
         return this._findFetch(selector, options, success, error)
       }
     }
   }
 
-  findOne(selector: any, options: any, success: any, error?: any) {
+  findOne(selector: any, options?: MinimongoCollectionFindOneOptions): Promise<T | null>
+  findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void
+  findOne(selector: any, options?: any, success?: any, error?: any) {
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
+    options = options || {}
 
+    // If promise case
+    if (success == null) {
+      return new Promise((resolve, reject) => {
+        this.findOne(selector, options, resolve, reject)
+      })
+    }
+    
     return this.find(selector, options).fetch(function (results: any) {
       if (success != null) {
         return success(results.length > 0 ? results[0] : null)
@@ -193,6 +204,13 @@ class Collection<T> implements MinimongoLocalCollection<T> {
   }
 
   _findFetch(selector: any, options: any, success: any, error: any) {
+    // If promise case
+    if (success == null) {
+      return new Promise((resolve, reject) => {
+        this._findFetch(selector, options, resolve, reject)
+      })
+    }
+
     // Android 2.x requires error callback
     error = error || function () {}
 
@@ -218,9 +236,24 @@ class Collection<T> implements MinimongoLocalCollection<T> {
     }, error)
   }
 
-  upsert(docs: any, bases: any, success: any, error?: any) {
-    let items: any
+  upsert(doc: T): Promise<T | null>
+  upsert(doc: T, base: T | null | undefined): Promise<T | null>
+  upsert(docs: T[]): Promise<(T | null)[]>
+  upsert(docs: T[], bases: (T | null | undefined)[]): Promise<(T | null)[]>
+  upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void
+  upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(docs: T[], bases: (T | null | undefined)[], success: (item: (T | null)[]) => void, error: (err: any) => void): void
+  upsert(docs: any, bases?: any, success?: any, error?: any): any {
+    let items: { doc: T, base?: T }[]
     ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
+
+    // If promise case
+    if (!success) {
+      return new Promise((resolve, reject) => {
+        this.upsert(items.map(item => item.doc), items.map(item => item.base), resolve, reject)
+      })
+    }
 
     // Android 2.x requires error callback
     error = error || function () {}
@@ -257,7 +290,7 @@ class Collection<T> implements MinimongoLocalCollection<T> {
               const result = []
               for (let item of items) {
                 var base
-                const id = item.doc._id
+                const id = item.doc._id!
 
                 // Prefer explicit base
                 if (item.base !== undefined) {
@@ -270,7 +303,7 @@ class Collection<T> implements MinimongoLocalCollection<T> {
                 result.push(
                   tx.executeSql(
                     "INSERT OR REPLACE INTO docs (col, id, state, doc, base) VALUES (?, ?, ?, ?, ?)",
-                    [this.name, item.doc._id, "upserted", JSON.stringify(item.doc), JSON.stringify(base)],
+                    [this.name, item.doc._id!, "upserted", JSON.stringify(item.doc), JSON.stringify(base)],
                     doNothing,
                     (tx: any, err: any) => error(err)
                   )
@@ -290,7 +323,15 @@ class Collection<T> implements MinimongoLocalCollection<T> {
     )
   }
 
-  remove(id: any, success: any, error: any) {
+  remove(id: any): Promise<void>
+  remove(id: any, success: () => void, error: (err: any) => void): void
+  remove(id: any, success?: () => void, error?: (err: any) => void): any {
+    if (!success) {
+      return new Promise<void>((resolve, reject) => {
+        this.remove(id, resolve, reject)
+      })
+    }
+
     // Special case for filter-type remove
     if (_.isObject(id)) {
       this.find(id).fetch((rows: any) => {
@@ -321,10 +362,10 @@ class Collection<T> implements MinimongoLocalCollection<T> {
               [this.name, id],
               function () {
                 if (success) {
-                  return success(id)
+                  return success()
                 }
               },
-              (tx: any, err: any) => error(err)
+              (tx: any, err: any) => error!(err)
             )
           } else {
             return tx.executeSql(
@@ -332,14 +373,14 @@ class Collection<T> implements MinimongoLocalCollection<T> {
               [this.name, id, "removed", JSON.stringify({ _id: id })],
               function () {
                 if (success) {
-                  return success(id)
+                  return success()
                 }
               },
-              (tx: any, err: any) => error(err)
+              (tx: any, err: any) => error!(err)
             )
           }
         },
-        (tx: any, err: any) => error(err)
+        (tx: any, err: any) => error!(err)
       )
     }, error)
   }
