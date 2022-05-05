@@ -179,6 +179,11 @@ export default function () {
       })
     })
 
+    it("finds one row (promise)", async function () {
+      const result = await this.col.findOne({ _id: "2" })
+      assert.equal("Charlie", result.a)
+    })
+
     it("removes item", function (done: any) {
       return this.col.remove(
         "2",
