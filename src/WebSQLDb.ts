@@ -32,6 +32,7 @@ export default class WebSQLDb implements MinimongoDb {
             [],
             (rs: any) => {
               const version = rs.rows.item(0).user_version
+              console.log("Database version :: ", version)              
               if (version === 0) {
                 this.db.transaction((tx: any) => {
                   tx.executeSql(
@@ -45,7 +46,13 @@ base TEXT,
 PRIMARY KEY (col, id));`,
                     [],
                     doNothing,
-                    (tx: any, err: any) => error(err)
+                    (tx: any, err: any) => {
+                      console.log(
+                        "Version 0 migration failed",
+                        JSON.stringify(err)
+                      )
+                      error(err)
+                    }
                   )
                   tx.executeSql("PRAGMA user_version = 2", [], doNothing, (tx: any, err: any) => error(err))
                   return success(this)
