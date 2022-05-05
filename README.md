@@ -38,6 +38,9 @@ db.animals.upsert(doc, function() {
 		console.log("Dog's name is: " + res.name);
 	});
 });
+
+// Access collections via collection for Typescript
+await db.collection["animals"].upsert(doc)
 ```
 
 ### Upserting
