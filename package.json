@@ -34,7 +34,7 @@
     "build-library": "github:mWater/build-library",
     "chai": "~1.9.0",
     "glob": "^3.2.9",
-    "gulp": "git://github.com/gulpjs/gulp.git#4.0",
+    "gulp": "^4.0.2",
     "gulp-rename": "^1.2.0",
     "gulp-uglify": "^0.3.1",
     "gulp-util": "^2.2.14",
