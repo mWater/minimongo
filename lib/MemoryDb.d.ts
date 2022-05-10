@@ -9,7 +9,7 @@ export default class MemoryDb implements MinimongoDb {
     constructor(options?: {
         safety?: "clone" | "freeze";
     }, success?: any);
-    addCollection(name: any, success: any, error: any): any;
+    addCollection(name: string, success?: () => void, error?: (err: any) => void): void;
     removeCollection(name: any, success: any, error: any): any;
     getCollectionNames(): string[];
 }

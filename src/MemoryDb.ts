@@ -28,7 +28,7 @@ export default class MemoryDb implements MinimongoDb {
     }
   }
 
-  addCollection(name: any, success: any, error: any) {
+  addCollection(name: string, success?: () => void, error?: (err: any) => void) {
     const collection = new Collection(name, this.options)
     this[name] = collection
     this.collections[name] = collection

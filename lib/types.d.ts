@@ -41,7 +41,7 @@ export interface MinimongoDb {
     collections: {
         [collectionName: string]: MinimongoCollection;
     };
-    addCollection<T>(name: string, options?: any, success?: (collection: MinimongoCollection<T>) => void, error?: (err: any) => void): void;
+    addCollection<T>(name: string, options?: any, success?: () => void, error?: (err: any) => void): void;
     removeCollection<T>(name: string, success?: () => void, error?: (err: any) => void): void;
     getCollectionNames(): string[];
 }

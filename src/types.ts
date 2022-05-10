@@ -47,7 +47,7 @@ export interface MinimongoDb {
   addCollection<T>(
     name: string,
     options?: any,
-    success?: (collection: MinimongoCollection<T>) => void,
+    success?: () => void,
     error?: (err: any) => void
   ): void
   removeCollection<T>(name: string, success?: () => void, error?: (err: any) => void): void
