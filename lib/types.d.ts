@@ -62,6 +62,8 @@ export interface MinimongoBaseCollection<T = any> {
     findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void;
     findOne(selector: any, options: MinimongoCollectionFindOneOptions, success: (doc: T | null) => void, error: (err: any) => void): void;
     findOne(selector: any, success: (doc: T | null) => void, error: (err: any) => void): void;
+    upsert(doc: T): Promise<T | null>;
+    upsert(doc: T, base: T | null | undefined): Promise<T | null>;
     upsert(doc: T, success: (doc: T | null) => void, error: (err: any) => void): void;
     upsert(doc: T, base: T | null | undefined, success: (doc: T | null) => void, error: (err: any) => void): void;
     upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void;
