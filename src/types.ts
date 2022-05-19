@@ -99,6 +99,7 @@ export interface MinimongoBaseCollection<T = any> {
   upsert(docs: T[], success: (docs: (T | null)[]) => void, error: (err: any) => void): void
   upsert(docs: T[], bases: (T | null | undefined)[], success: (item: T | null) => void, error: (err: any) => void): void
 
+  remove(id: string): Promise<void>
   remove(id: string, success: () => void, error: (err: any) => void): void
 }
 
