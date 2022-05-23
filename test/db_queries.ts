@@ -322,6 +322,23 @@ export default function () {
       assert(doc2.a !== "xyz")
     })
 
+    it("upsert returns doc", function (done: any) {
+      const doc: any = { _id: "2" }
+
+      this.col.upsert(doc, (item: any) => {
+        assert.equal(item._id, "2")
+        done()
+      }, () => { 
+        assert.fail()
+      })
+    })
+    
+    it("upsert returns doc (promise)", async function () {
+      const doc: any = { _id: "2" }
+      const item = await this.col.upsert(doc)
+      assert.equal(item._id, "2")
+    })
+
     it("adds _id to rows", function (done: any) {
       return this.col.upsert({ a: "1" }, function (item: any) {
         assert.property(item, "_id")

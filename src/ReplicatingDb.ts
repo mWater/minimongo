@@ -101,20 +101,20 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
     error: (err: any) => void
   ): void
   upsert(docs: any, bases?: any, success?: any, error?: any): any {
-    let items: { doc: T; base?: T }[]
-    ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
-
     // If promise case
-    if (!success) {
+    if (!success && !_.isFunction(bases)) {
       return new Promise((resolve, reject) => {
         this.upsert(
-          items.map((item) => item.doc),
-          items.map((item) => item.base),
+          docs,
+          bases,
           resolve,
           reject
         )
       })
     }
+
+    let items: { doc: T; base?: T }[]
+    ;[items, success, error] = utils.regularizeUpsert(docs, bases, success, error)
 
     // Upsert does to both
     this.masterCol.upsert(
