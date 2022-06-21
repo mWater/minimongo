@@ -14,11 +14,11 @@ export default class RemoteDb implements MinimongoDb {
      * usePostFind enables POST for find
      */
     constructor(url: string | string[], client?: string | null, httpClient?: any, useQuickFind?: boolean, usePostFind?: boolean);
-    addCollection(name: string, options: {
-        url?: string | undefined;
-        useQuickFind?: boolean | undefined;
-        usePostFind?: boolean | undefined;
-    } | undefined, success: any, error: any): any;
+    addCollection(name: string, options?: {
+        url?: string;
+        useQuickFind?: boolean;
+        usePostFind?: boolean;
+    }, success?: any, error?: any): any;
     removeCollection(name: any, success: any, error: any): any;
     getCollectionNames(): string[];
 }

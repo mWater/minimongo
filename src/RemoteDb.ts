@@ -44,8 +44,8 @@ export default class RemoteDb implements MinimongoDb {
   addCollection(
     name: string,
     options: { url?: string; useQuickFind?: boolean; usePostFind?: boolean } = {},
-    success: any,
-    error: any
+    success?: any,
+    error?: any
   ) {
     let url
     if (_.isFunction(options)) {
