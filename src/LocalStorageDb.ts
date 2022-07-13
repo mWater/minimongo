@@ -172,7 +172,7 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
 
     // Deep clone to prevent modification
     if (success != null) {
-      return success(processFind(_.cloneDeep(_.values(this.items)), selector, options))
+      return success(processFind(JSON.parse(JSON.stringify(_.values(this.items))), selector, options))
     }
   }
 
@@ -220,7 +220,7 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
       }
 
       // Keep independent copies
-      item = _.cloneDeep(item)
+      item = JSON.parse(JSON.stringify(item))
 
       // Replace/add
       this._putItem(item.doc)

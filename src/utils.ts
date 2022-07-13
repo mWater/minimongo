@@ -315,7 +315,7 @@ export function filterFields(items: any[], fields: any = {}): any[] {
       return newItem
     } else {
       // Deep clone as we will be deleting keys from item to exclude fields
-      item = _.cloneDeep(item)
+      item = JSON.parse(JSON.stringify(item))
 
       // Exclude fields
       for (field of _.keys(fields)) {

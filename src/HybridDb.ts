@@ -161,7 +161,7 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
 
     // Happens after initial find
     const step2 = (localDoc: any) => {
-      const findOptions = _.cloneDeep(options)
+      const findOptions = { ...options }
       findOptions.interim = false
       findOptions.cacheFind = options.cacheFindOne
       if (selector._id) {
@@ -195,7 +195,7 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
         function (localDoc: any) {
           // If found, return
           if (localDoc) {
-            success(_.cloneDeep(localDoc))
+            success(JSON.parse(JSON.stringify(localDoc)))
 
             // If shortcut, we're done
             if (options.shortcut) {
@@ -228,7 +228,7 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
       this.localCol.pendingRemoves!((removes: any) => {
         const step2 = (localData: any) => {
           // Setup remote options
-          const remoteOptions = _.cloneDeep(options)
+          const remoteOptions = { ...options }
 
           // If caching, get all fields
           if (options.cacheFind) {
