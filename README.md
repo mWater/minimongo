@@ -106,6 +106,20 @@ To resolve the upsert (for example once sent to central db), use resolveUpserts 
 
 `resolveUpserts` does not resolve an upsert if another upsert on the same row has taken place. Instead, the base value is updated (since the change has been accepted by the server) but the new upserted value is left alone.
 
+### Resolving removes
+
+Removed rows are still stored locally until they are resolved. This is so they can be later sent to the server.
+
+To resolve all removes, first get a list of all ids to be removed, then resolve them one by one:
+
+```
+const idsToRemove = await new Promise((resolve, reject) => collection.pendingRemoves(resolve, reject))
+
+for (const id of idsToRemove) {
+	await new Promise((resolve, reject) => collection.resolveRemove(id, resolve, reject))
+}
+```
+
 ### ReplicatingDb
 
 Keeps two local databases in sync. Finds go only to master.
