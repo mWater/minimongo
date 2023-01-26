@@ -105,7 +105,7 @@ describe("HybridDb", function () {
         }, fail)
       })
 
-      return it("local upserts are respected", function (done: any) {
+      it("local upserts are respected", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.upsert({ _id: "2", a: 2 })
 
@@ -163,7 +163,7 @@ describe("HybridDb", function () {
         })
       })
 
-      return it("snapshots local upserts/removes to prevent race condition", function (done: any) {
+      it("snapshots local upserts/removes to prevent race condition", function (done: any) {
         // If the server receives the upsert/remove *after* the query and returns *before* the
         // query does, a newly upserted item may be removed from cache
 
@@ -292,7 +292,7 @@ describe("HybridDb", function () {
         )
       })
 
-      return it("findOne keeps local cache updated on remote change", function (done: any) {
+      it("findOne keeps local cache updated on remote change", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -472,7 +472,7 @@ describe("HybridDb", function () {
         return this.clock.tick(1)
       }) // Tick for setTimeout 0
 
-      return it("find gives local results once if out of time then remote fails", function (done: any) {
+      it("find gives local results once if out of time then remote fails", function (done: any) {
         this.lc.upsert({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -522,7 +522,7 @@ describe("HybridDb", function () {
         })
       })
 
-      return it("does not cache remote data", function (done: any) {
+      it("does not cache remote data", function (done: any) {
         this.lc.seed({ _id: "1", a: 1 })
         this.lc.seed({ _id: "2", a: 2 })
 
@@ -608,7 +608,7 @@ describe("HybridDb", function () {
         })
       )
 
-      return it("findOne calls remote if not found", function (done: any) {
+      it("findOne calls remote if not found", function (done: any) {
         this.lc.seed({ _id: "2", a: 2 })
 
         this.rc.seed({ _id: "1", a: 3 })
@@ -647,7 +647,7 @@ describe("HybridDb", function () {
         )
       })
 
-      return it("findOne calls remote if not found", function (done: any) {
+      it("findOne calls remote if not found", function (done: any) {
         this.lc.seed({ _id: "2", a: 2 })
 
         this.rc.seed({ _id: "1", a: 3 })
@@ -728,7 +728,7 @@ describe("HybridDb", function () {
         })
       })
 
-      return it("find respects local removes", function (done: any) {
+      it("find respects local removes", function (done: any) {
         this.lc.remove("1")
 
         return this.hc.find({}, { cacheFind: false, interim: false }).fetch(function (data: any) {
@@ -1003,7 +1003,7 @@ describe("HybridDb", function () {
       })
     })
 
-    return it("removes to local db", function (done: any) {
+    it("removes to local db", function (done: any) {
       this.lc.seed({ _id: "1", a: 1 })
       this.hc.remove("1")
       return this.lc.pendingRemoves(function (data: any) {
@@ -1013,7 +1013,7 @@ describe("HybridDb", function () {
     })
   })
 
-  return context("cacheFind: false, interim: false", function () {
+  context("cacheFind: false, interim: false", function () {
     beforeEach(function (
       this: any,
     ) {
@@ -1108,7 +1108,7 @@ describe("HybridDb", function () {
       })
     })
 
-    return it("findOne with _id selector respects local remove", function (done: any) {
+    it("findOne with _id selector respects local remove", function (done: any) {
       this.lc.remove("1")
 
       return this.hc.findOne({ _id: "1" }, { cacheFindOne: false, interim: false, sort: ["_id"] }, (data: any) => {
