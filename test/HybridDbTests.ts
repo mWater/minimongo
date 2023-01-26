@@ -17,23 +17,6 @@ function fail() {
 describe("HybridDb", function () {
   before(function (
     this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
-    this: any,
     done: any
   ) {
     this.reset = (done: any) => {
@@ -249,7 +232,7 @@ describe("HybridDb", function () {
         this.lc.seed({ _id: "1", a: 1 })
 
         this.rc.findOne = (selector: any, options = {}, success: any, error: any) => error(new Error("fail"))
-        this.rc.find = (selector, options) => ({
+        this.rc.find = (selector: any, options: any) => ({
           fetch(success: any, error: any) {
             return error()
           }
@@ -269,7 +252,7 @@ describe("HybridDb", function () {
         this.lc.seed({ _id: "1", a: 1 })
 
         this.rc.findOne = (selector: any, options = {}, success: any, error: any) => error(new Error("fail"))
-        this.rc.find = (selector, options) => ({
+        this.rc.find = (selector: any, options: any) => ({
           fetch(success: any, error: any) {
             return error()
           }
@@ -291,7 +274,7 @@ describe("HybridDb", function () {
           called = called + 1
           return error(new Error("fail"))
         }
-        this.rc.find = (selector, options) => ({
+        this.rc.find = (selector: any, options: any) => ({
           fetch(success: any, error: any) {
             called = called + 1
             return error()
@@ -709,7 +692,7 @@ describe("HybridDb", function () {
       })
 
       it("find falls back to local if remote fails", function (done: any) {
-        this.rc.find = (selector, options) => ({
+        this.rc.find = (selector: any, options: any) => ({
           fetch(success: any, error: any) {
             return error()
           }
@@ -1033,21 +1016,6 @@ describe("HybridDb", function () {
   return context("cacheFind: false, interim: false", function () {
     beforeEach(function (
       this: any,
-      this: any,
-      this: any,
-      this: any,
-      this: any,
-      this: any,
-      this: any,
-      this: any,
-      this: any,
-      this: any,
-      this: any,
-      this: any,
-      this: any,
-      this: any,
-      this: any,
-      this: any
     ) {
       this.local = new MemoryDb()
       this.remote = new MemoryDb()
