@@ -1,4 +1,4 @@
-import { MinimongoDb, Doc, MinimongoCollectionFindOptions, MinimongoCollectionFindOneOptions } from "./types";
+import { MinimongoDb, Doc, MinimongoCollectionFindOptions, MinimongoCollectionFindOneOptions, HttpClient } from "./types";
 import { MinimongoBaseCollection } from ".";
 export default class RemoteDb implements MinimongoDb {
     collections: {
@@ -6,7 +6,7 @@ export default class RemoteDb implements MinimongoDb {
     };
     url: string | string[];
     client: string | null | undefined;
-    httpClient: any;
+    httpClient: HttpClient;
     useQuickFind: boolean;
     usePostFind: boolean;
     /** Url must have trailing /, can be an arrau of URLs
@@ -23,14 +23,21 @@ export default class RemoteDb implements MinimongoDb {
     getCollectionNames(): string[];
 }
 declare class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
-    name: any;
-    url: any;
-    client: any;
-    httpClient: any;
+    name: string;
+    url: string | string[];
+    client?: string | null;
+    httpClient: HttpClient;
     useQuickFind: any;
     usePostFind: any;
-    constructor(name: any, url: any, client: any, httpClient: any, useQuickFind: any, usePostFind: any);
-    getUrl(): any;
+    /** Cycles through urls if array and not GET request */
+    urlIndex: number;
+    constructor(name: string, url: string | string[], client: string | null | undefined, httpClient: any, useQuickFind: any, usePostFind: any);
+    /** Get a URL to use from an array, if present.
+     * Stable if a GET request, but not if a POST, etc request
+     * to allow caching. Accomplished by passing in a key
+     * to use for hashing for GET only.
+     */
+    getUrl(key?: string): string;
     find(selector: any, options?: MinimongoCollectionFindOptions): {
         fetch: (success?: any, error?: any) => any;
     };

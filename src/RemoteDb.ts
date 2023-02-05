@@ -7,15 +7,17 @@ import {
   MinimongoCollection,
   Doc,
   MinimongoCollectionFindOptions,
-  MinimongoCollectionFindOneOptions
+  MinimongoCollectionFindOneOptions,
+  HttpClient
 } from "./types"
 import { MinimongoBaseCollection } from "."
+import sha1 from "js-sha1"
 
 export default class RemoteDb implements MinimongoDb {
   collections: { [collectionName: string]: Collection<any> }
   url: string | string[]
   client: string | null | undefined
-  httpClient: any
+  httpClient: HttpClient
   useQuickFind: boolean
   usePostFind: boolean
 
@@ -47,7 +49,7 @@ export default class RemoteDb implements MinimongoDb {
     success?: any,
     error?: any
   ) {
-    let url
+    let url: string | string[]
     if (_.isFunction(options)) {
       ;[options, success, error] = [{}, options, success]
     }
@@ -95,32 +97,56 @@ export default class RemoteDb implements MinimongoDb {
 
 // Remote collection on server
 class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
-  name: any
-  url: any
-  client: any
-  httpClient: any
+  name: string
+  url: string | string[]
+  client?: string | null
+  httpClient: HttpClient
   useQuickFind: any
   usePostFind: any
 
+  /** Cycles through urls if array and not GET request */
+  urlIndex: number
+
   // usePostFind allows POST to <collection>/find for long selectors
-  constructor(name: any, url: any, client: any, httpClient: any, useQuickFind: any, usePostFind: any) {
+  constructor(name: string, url: string | string[], client: string | null | undefined, httpClient: any, useQuickFind: any, usePostFind: any) {
     this.name = name
     this.url = url
     this.client = client
     this.httpClient = httpClient || jQueryHttpClient
     this.useQuickFind = useQuickFind
     this.usePostFind = usePostFind
+    this.urlIndex = 0
   }
 
-  getUrl() {
-    let url
-    if (_.isArray(this.url)) {
-      url = this.url.pop()
-      // Add the URL to the front of the array
-      this.url.unshift(url)
+  /** Get a URL to use from an array, if present.
+   * Stable if a GET request, but not if a POST, etc request
+   * to allow caching. Accomplished by passing in a key
+   * to use for hashing for GET only.
+   */
+  getUrl(key?: string) {
+    if (typeof this.url === "string") {
+      return this.url
+    }
+
+    // If no key, use next URL
+    if (!key) {
+      const url = this.url[this.urlIndex]
+      this.urlIndex = (this.urlIndex + 1) % this.url.length
       return url
     }
-    return this.url
+
+    // Hash key to get index
+    const hash = sha1.create()
+    hash.update(key)
+    
+    // Get 4 hex digits
+    const partial = hash.hex().substr(0, 4)
+
+    // Convert to integer
+    const index = parseInt(partial, 16)
+
+    // Get URL
+    return this.url[index % this.url.length]
   }
 
   // error is called with jqXHR
@@ -188,7 +214,7 @@ class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
       if (this.client) {
         params.client = this.client
       }
-      this.httpClient("GET", this.getUrl(), params, null, success, error)
+      this.httpClient("GET", this.getUrl(this.name + JSON.stringify(params)), params, null, success, error)
       return
     }
 
@@ -289,7 +315,7 @@ class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
 
     return this.httpClient(
       "GET",
-      this.getUrl(),
+      this.getUrl(this.name + JSON.stringify(params)),
       params,
       null,
       function (results: any) {

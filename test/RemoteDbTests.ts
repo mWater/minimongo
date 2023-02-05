@@ -288,7 +288,7 @@ describe("RemoteDb", function () {
     return this.col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () => assert.fail())
   })
 
-  return it("cycles through the provided array of URLs", function (done: any) {
+  it("cycles through the provided array of URLs on non-GET", function (done: any) {
     this.db = new RemoteDb(
       ["http://someserver.com/", "http://someotherserver.com/"],
       "clientid",
@@ -298,54 +298,19 @@ describe("RemoteDb", function () {
     )
     this.db.addCollection("scratch")
     this.col = this.db.scratch
-
+    this.callSuccessWith = true
     let success = (data: any) => {
-      assert.equal(this.httpCall.method, "GET")
-      assert.equal(this.httpCall.url, "http://someotherserver.com/scratch")
-      assert.deepEqual(
-        this.httpCall.params,
-        { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" },
-        JSON.stringify(this.httpCall.params)
-      )
-      assert(!this.httpCall.data)
+      assert.equal(this.httpCall.method, "DELETE")
+      assert.equal(this.httpCall.url, "http://someserver.com/scratch/1")
 
-      return assert.deepEqual(data, [{ x: 1 }])
+      success = (data: any) => {
+        assert.equal(this.httpCall.method, "DELETE")
+        assert.equal(this.httpCall.url, "http://someotherserver.com/scratch/1")
+        done()
+      }
+      this.col.remove("1", success, () => assert.fail())
     }
-    this.callSuccessWith = [{ x: 1 }]
 
-    this.col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () => assert.fail())
-
-    success = (data) => {
-      assert.equal(this.httpCall.method, "GET")
-      assert.equal(this.httpCall.url, "http://someserver.com/scratch")
-      assert.deepEqual(
-        this.httpCall.params,
-        { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" },
-        JSON.stringify(this.httpCall.params)
-      )
-      assert(!this.httpCall.data)
-
-      return assert.deepEqual(data, [{ x: 1 }])
-    }
-    this.callSuccessWith = [{ x: 1 }]
-
-    this.col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () => assert.fail())
-
-    success = (data) => {
-      assert.equal(this.httpCall.method, "GET")
-      assert.equal(this.httpCall.url, "http://someotherserver.com/scratch")
-      assert.deepEqual(
-        this.httpCall.params,
-        { selector: '{"a":1}', limit: 10, sort: '["b"]', client: "clientid" },
-        JSON.stringify(this.httpCall.params)
-      )
-      assert(!this.httpCall.data)
-
-      assert.deepEqual(data, [{ x: 1 }])
-      done()
-    }
-    this.callSuccessWith = [{ x: 1 }]
-
-    return this.col.find({ a: 1 }, { limit: 10, sort: ["b"] }).fetch(success, () => assert.fail())
+    this.col.remove("1", success, () => assert.fail())
   })
 })
