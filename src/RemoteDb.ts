@@ -302,6 +302,27 @@ class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
       })
     }
 
+    // TODO would require documentation change and major bump
+    // // Use simple GET if no options and selector is by _id only
+    // if (_.isEmpty(options) && _.isEqual(selector, { _id: selector._id })) {
+    //   return this.httpClient(
+    //     "GET",
+    //     this.getUrl(this.name + "/" + selector._id),
+    //     { client: this.client },
+    //     null,
+    //     function (result: any) {
+    //       success(result ?? null)
+    //     },
+    //     (jqXHR) => {
+    //       if (jqXHR.status === 404) {
+    //         return success(null)
+    //       } else {
+    //         return error(jqXHR)
+    //       }
+    //     }
+    //   )
+    // }
+
     // Create url
     const params: any = {}
     if (options.sort) {
@@ -315,7 +336,7 @@ class Collection<T extends Doc> implements MinimongoBaseCollection<T> {
 
     return this.httpClient(
       "GET",
-      this.getUrl(this.name + JSON.stringify(params)),
+      this.getUrl(this.name + "?" + JSON.stringify(params)),
       params,
       null,
       function (results: any) {
