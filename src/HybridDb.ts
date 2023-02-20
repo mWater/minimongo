@@ -50,7 +50,16 @@ export default class HybridDb implements MinimongoDb {
     }
   }
 
-  upload(success: any, error: any) {
+  /** Upload any changes to the remote database */
+  upload(success: () => void, error: (err: any) => void): void
+  upload(): Promise<void>
+  upload(success?: () => void, error?: (err: any) => void): void | Promise<void> {
+    if (success == null) {
+      return new Promise((resolve, reject) => {
+        return this.upload(resolve, reject)
+      })
+    }
+    
     const cols = Object.values(this.collections)
 
     function uploadCols(cols: HybridCollection<any>[], success: any, error: any) {

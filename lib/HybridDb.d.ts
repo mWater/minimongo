@@ -13,7 +13,9 @@ export default class HybridDb implements MinimongoDb {
     addCollection(name: string, success?: () => void, error?: (error: any) => void): void;
     addCollection(name: string, options?: HybridCollectionOptions, success?: any, error?: any): void;
     removeCollection(name: any, success: any, error: any): any;
-    upload(success: any, error: any): void;
+    /** Upload any changes to the remote database */
+    upload(success: () => void, error: (err: any) => void): void;
+    upload(): Promise<void>;
     getCollectionNames(): string[];
 }
 export interface HybridCollectionOptions {
