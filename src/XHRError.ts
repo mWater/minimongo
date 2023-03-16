@@ -10,7 +10,7 @@ export class XHRError extends Error {
   done: true
 
   constructor(xhr: { status: number; statusText: string; responseText?: string }) {
-    const message = `HTTP Request failed with status ${xhr.status} (${xhr.statusText})`
+    const message = `HTTP Request failed with status ${xhr.status} (${xhr.statusText} - ${xhr.responseText || ""})`
 
     super(message)
     Object.setPrototypeOf(this, XHRError.prototype)
