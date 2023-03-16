@@ -1,2 +1,1 @@
-/// <reference types="jquery" />
-export default function (method: any, url: any, params: any, data: any, success: any, error: any): JQuery.jqXHR<any>;
+export default function (method: string, url: string, params: any, data: any, success: (response: any) => void, error?: (err: any) => void): void;

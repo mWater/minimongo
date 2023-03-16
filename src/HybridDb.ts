@@ -465,7 +465,7 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
               error
             )
           },
-          (err: any) => {
+          (err) => {
             // If 410 error or 403, remove document
             if (err.status === 410 || err.status === 403) {
               return this.localCol.remove(
@@ -505,7 +505,7 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
           () => {
             return this.localCol.resolveRemove(remove, () => uploadRemoves(_.tail(removes), success, error), error)
           },
-          (err: any) => {
+          (err) => {
             // If 403 or 410, remove document
             if (err.status === 410 || err.status === 403) {
               return this.localCol.resolveRemove(

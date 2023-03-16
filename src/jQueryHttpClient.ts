@@ -1,7 +1,8 @@
 import $ from "jquery"
+import { XHRError } from "./XHRError"
 
 // Create default JSON http client
-export default function (method: any, url: any, params: any, data: any, success: any, error: any) {
+export default function (method: string, url: string, params: any, data: any, success: (response: any) => void, error?: (err: any) => void) {
   // Append
   let req
   const fullUrl = url + "?" + $.param(params)
@@ -28,9 +29,10 @@ export default function (method: any, url: any, params: any, data: any, success:
   }
 
   req.done((response: any, textStatus: any, jqXHR: any) => success(response || null))
-  return req.fail(function (jqXHR: any, textStatus: any, errorThrown: any) {
+  req.fail(function (jqXHR) {
     if (error) {
-      return error(jqXHR)
+      // Create an error object with status and message
+      error(new XHRError(jqXHR))
     }
   })
 }
