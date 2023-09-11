@@ -41,7 +41,7 @@ var _anyIfArrayPlus = function (x: any, f: any) {
 }
 
 var hasOperators = function (valueSelector: any) {
-  var theseAreOperators = undefined
+  var theseAreOperators: undefined | boolean = undefined
   for (var selKey in valueSelector) {
     var thisIsOperator = selKey.substr(0, 1) === "$"
     if (theseAreOperators === undefined) {
@@ -437,7 +437,7 @@ LocalCollection._f = {
       // Object
       // this could be much more efficient in the expected case ...
       var to_array = function (obj: any) {
-        var ret = []
+        var ret: string[] = []
         for (var key in obj) {
           ret.push(key)
           ret.push(obj[key])
