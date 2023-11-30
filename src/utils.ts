@@ -15,6 +15,9 @@ import { default as WebSQLDb } from "./WebSQLDb"
 import { default as LocalStorageDb } from "./LocalStorageDb"
 import { default as MemoryDb } from "./MemoryDb"
 import { default as HybridDb } from "./HybridDb"
+import { LineString, Point } from "@turf/helpers"
+import distance from "@turf/distance"
+import nearestPointOnLine from "@turf/nearest-point-on-line"
 
 // Test window.localStorage
 function isLocalStorageSupported() {
@@ -360,18 +363,13 @@ function processNearOperator(selector: any, list: any) {
         break
       }
 
-      list = _.filter(list, (doc: any) => doc[key] && doc[key].type === "Point")
+      // Filter to points and lines
+      list = _.filter(list, (doc: any) => doc[key] && (doc[key].type === "Point" || doc[key].type === "LineString"))
 
       // Get distances
       let distances = _.map(list, (doc: any) => ({
         doc,
-
-        distance: getDistanceFromLatLngInM(
-          geo.coordinates[1],
-          geo.coordinates[0],
-          doc[key].coordinates[1],
-          doc[key].coordinates[0]
-        )
+        distance: getDistance(geo, doc[key])
       }))
 
       // Filter non-points
@@ -390,6 +388,17 @@ function processNearOperator(selector: any, list: any) {
     }
   }
   return list
+}
+
+function getDistance(from: Point, to: Point | LineString) {
+  if (to.type === "Point") {
+    return distance(from, to, { units: "meters" })
+  }
+  if (to.type === "LineString") {
+    const nearest = nearestPointOnLine(to, from, { units: "meters" })
+    return nearest.properties.dist
+  }
+  throw new Error("Unsupported type")
 }
 
 function pointInPolygon(point: any, polygon: any) {

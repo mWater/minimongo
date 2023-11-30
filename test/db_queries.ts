@@ -194,23 +194,23 @@ export default function () {
             assert.equal(2, results.length)
             assert(
               ((needle = "1"),
-              (() => {
-                const result1 = []
-                for (result of results) {
-                  result1.push(result._id)
-                }
-                return result1
-              })().includes(needle))
+                (() => {
+                  const result1 = []
+                  for (result of results) {
+                    result1.push(result._id)
+                  }
+                  return result1
+                })().includes(needle))
             )
             assert(
               ((needle1 = "2"),
-              !(() => {
-                const result2 = []
-                for (result of results) {
-                  result2.push(result._id)
-                }
-                return result2
-              })().includes(needle1))
+                !(() => {
+                  const result2 = []
+                  for (result of results) {
+                    result2.push(result._id)
+                  }
+                  return result2
+                })().includes(needle1))
             )
             done()
           }, error)
@@ -229,23 +229,23 @@ export default function () {
       let result
       assert(
         ((needle = "1"),
-        (() => {
-          const result1 = []
-          for (result of results) {
-            result1.push(result._id)
-          }
-          return result1
-        })().includes(needle))
+          (() => {
+            const result1 = []
+            for (result of results) {
+              result1.push(result._id)
+            }
+            return result1
+          })().includes(needle))
       )
       assert(
         ((needle1 = "2"),
-        !(() => {
-          const result2 = []
-          for (result of results) {
-            result2.push(result._id)
-          }
-          return result2
-        })().includes(needle1))
+          !(() => {
+            const result2 = []
+            for (result of results) {
+              result2.push(result._id)
+            }
+            return result2
+          })().includes(needle1))
       )
     })
 
@@ -328,11 +328,11 @@ export default function () {
       this.col.upsert(doc, (item: any) => {
         assert.equal(item._id, "2")
         done()
-      }, () => { 
+      }, () => {
         assert.fail()
       })
     })
-    
+
     it("upsert returns doc (promise)", async function () {
       const doc: any = { _id: "2" }
       const item = await this.col.upsert(doc)
@@ -531,12 +531,19 @@ export default function () {
     coordinates: [lng, lat]
   })
 
+  const geoline = (lng1: number, lat1: number, lng2: number, lat2: number) => ({
+    type: "LineString",
+    coordinates: [[lng1, lat1], [lng2, lat2]]
+  })
+
   context("With geolocated rows", function () {
     beforeEach(function (done: any) {
-      this.col.upsert({ _id: "1", geo: geopoint(90, 45) }, () => {
-        this.col.upsert({ _id: "2", geo: geopoint(90, 46) }, () => {
-          this.col.upsert({ _id: "3", geo: geopoint(91, 45) }, () => {
-            this.col.upsert({ _id: "4", geo: geopoint(91, 46) }, () => done())
+      this.reset(() => {
+        this.col.upsert({ _id: "1", geo: geopoint(90, 45) }, () => {
+          this.col.upsert({ _id: "2", geo: geopoint(90, 46) }, () => {
+            this.col.upsert({ _id: "3", geo: geopoint(91, 45) }, () => {
+              this.col.upsert({ _id: "4", geo: geopoint(91, 46) }, () => done())
+            })
           })
         })
       })
@@ -667,6 +674,49 @@ export default function () {
     })
   })
 
+  context("With rows that are lines and points", function () {
+    beforeEach(function (done: any) {
+      this.reset(() => {
+        this.col.upsert({ _id: "1", geo: geopoint(1, 0) }, () => {
+          this.col.upsert({ _id: "2", geo: geoline(0, 1, 0, -1) }, () => {
+            this.col.upsert({ _id: "3", geo: geoline(10, 1, 10, -1) }, () => done())
+          })
+        })
+      })
+    })
+
+    it("finds near point", function (done: any) {
+      const selector = {
+        geo: {
+          $near: {
+            $geometry: geopoint(1, 0)
+          }
+        }
+      }
+
+      this.col.find(selector).fetch(function (results: any) {
+        assert.deepEqual(_.map(results, "_id"), ["1", "2", "3"])
+        done()
+      })
+    })
+
+    it("finds points near maxDistance to exclude #3", function (done: any) {
+      const selector = {
+        geo: {
+          $near: {
+            $geometry: geopoint(1, 0),
+            $maxDistance: 200000
+          }
+        }
+      }
+
+      this.col.find(selector).fetch(function (results: any) {
+        assert.deepEqual(_.map(results, "_id"), ["1", "2"])
+        done()
+      })
+    })
+  })
+
   context("With polygon rows", function () {
     const polygon = (coords: any) => ({
       type: "Polygon",
@@ -674,39 +724,41 @@ export default function () {
     })
 
     beforeEach(function (done: any) {
-      return this.col.upsert(
-        {
-          _id: "1",
-          geo: polygon([
-            [
-              [0, 0],
-              [1, 0],
-              [1, 1],
-              [0, 1],
-              [0, 0]
-            ]
-          ])
-        },
-        () => {
-          return this.col.upsert(
-            {
-              _id: "2",
-              geo: polygon([
-                [
-                  [10, 10],
-                  [11, 10],
-                  [11, 11],
-                  [10, 11],
-                  [10, 10]
-                ]
-              ])
-            },
-            () => {
-              done()
-            }
-          )
-        }
-      )
+      this.reset(() => {
+        this.col.upsert(
+          {
+            _id: "1",
+            geo: polygon([
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0]
+              ]
+            ])
+          },
+          () => {
+            return this.col.upsert(
+              {
+                _id: "2",
+                geo: polygon([
+                  [
+                    [10, 10],
+                    [11, 10],
+                    [11, 11],
+                    [10, 11],
+                    [10, 10]
+                  ]
+                ])
+              },
+              () => {
+                done()
+              }
+            )
+          }
+        )
+      })
     })
 
     it("finds polygons that intersect simple box", function (done: any) {
