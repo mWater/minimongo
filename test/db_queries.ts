@@ -367,7 +367,7 @@ export default function () {
       })
     })
 
-    return it("call upsert with upserted row", function (done: any) {
+    it("call upsert with upserted row", function (done: any) {
       return this.col.upsert({ _id: "1", a: "1" }, function (item: any) {
         assert.equal(item._id, "1")
         assert.equal(item.a, "1")
@@ -421,7 +421,7 @@ export default function () {
       })
     })
 
-    return it("finds sorts in Javascript order", function (done: any) {
+    it("finds sorts in Javascript order", function (done: any) {
       return this.col.find({}, { sort: ["a"] }).fetch(function (results: any) {
         assert.deepEqual(_.map(results, "_id"), ["2", "1"])
         done()
@@ -444,7 +444,7 @@ export default function () {
       return this.testFilter({ "c.arrint": { $in: [3] } }, ["2", "3"], done)
     })
 
-    return it("filters by list $in with multiple", function (done: any) {
+    it("filters by list $in with multiple", function (done: any) {
       return this.testFilter({ "c.arrint": { $in: [1, 3] } }, ["1", "2", "3"], done)
     })
   })
@@ -469,7 +469,7 @@ export default function () {
       })
     })
 
-    return it("filters by $elemMatch", function (done: any) {
+    it("filters by $elemMatch", function (done: any) {
       return this.testFilter({ c: { $elemMatch: { y: 1 } } }, ["1", "2"], () => {
         return this.testFilter({ c: { $elemMatch: { x: 1 } } }, ["1"], done)
       })
@@ -487,7 +487,7 @@ export default function () {
       })
     })
 
-    return it("filters by $elemMatch", function (done: any) {
+    it("filters by $elemMatch", function (done: any) {
       return this.testFilter({ c: { $elemMatch: { arrstr: { $in: ["b"] } } } }, ["1", "2"], () => {
         return this.testFilter({ c: { $elemMatch: { arrstr: { $in: ["d", "e"] } } } }, ["3"], done)
       })
@@ -521,7 +521,7 @@ export default function () {
       return this.testFilter({ textarr: "b" }, ["1", "2"], done)
     })
 
-    return it("filters by both item and complete array", function (done: any) {
+    it("filters by both item and complete array", function (done: any) {
       return this.testFilter({ textarr: { $in: ["a", ["b", "c"]] } }, ["1", "2"], done)
     })
   })
@@ -533,10 +533,10 @@ export default function () {
 
   context("With geolocated rows", function () {
     beforeEach(function (done: any) {
-      return this.col.upsert({ _id: "1", geo: geopoint(90, 45) }, () => {
-        return this.col.upsert({ _id: "2", geo: geopoint(90, 46) }, () => {
-          return this.col.upsert({ _id: "3", geo: geopoint(91, 45) }, () => {
-            return this.col.upsert({ _id: "4", geo: geopoint(91, 46) }, () => done())
+      this.col.upsert({ _id: "1", geo: geopoint(90, 45) }, () => {
+        this.col.upsert({ _id: "2", geo: geopoint(90, 46) }, () => {
+          this.col.upsert({ _id: "3", geo: geopoint(91, 45) }, () => {
+            this.col.upsert({ _id: "4", geo: geopoint(91, 46) }, () => done())
           })
         })
       })
@@ -551,7 +551,7 @@ export default function () {
         }
       }
 
-      return this.col.find(selector).fetch(function (results: any) {
+      this.col.find(selector).fetch(function (results: any) {
         assert.deepEqual(_.map(results, "_id"), ["1", "3", "2", "4"])
         done()
       })
@@ -639,7 +639,7 @@ export default function () {
       })
     })
 
-    return it("handles undefined", function (done: any) {
+    it("handles undefined", function (done: any) {
       const selector = {
         geo: {
           $geoIntersects: {
@@ -731,7 +731,7 @@ export default function () {
       })
     })
 
-    return it("finds polygons that intersect large box", function (done: any) {
+    it("finds polygons that intersect large box", function (done: any) {
       const selector = {
         geo: {
           $geoIntersects: {
@@ -827,7 +827,7 @@ export default function () {
       })
     })
 
-    return it("finds polygons that intersect large box", function (done: any) {
+    it("finds polygons that intersect large box", function (done: any) {
       const selector = {
         geo: {
           $geoIntersects: {
@@ -897,7 +897,7 @@ export default function () {
       })
     })
 
-    return it("finds that that doesn't intersect simple box", function (done: any) {
+    it("finds that that doesn't intersect simple box", function (done: any) {
       const selector = {
         geo: {
           $geoIntersects: {
