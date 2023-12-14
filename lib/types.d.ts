@@ -96,6 +96,6 @@ export interface Item<T> {
     doc: T;
     base?: T;
 }
-export declare type MinimongoCollection<T = any> = MinimongoBaseCollection<T> | MinimongoLocalCollection<T>;
+export type MinimongoCollection<T = any> = MinimongoBaseCollection<T> | MinimongoLocalCollection<T>;
 /** Client for making http requests */
-export declare type HttpClient = (method: "GET" | "PATCH" | "POST" | "DELETE", url: string, queryParams: any, data: any, success: (results: any) => void, error: (xhrError: XHRError) => void) => void;
+export type HttpClient = (method: "GET" | "PATCH" | "POST" | "DELETE", url: string, queryParams: any, data: any, success: (results: any) => void, error: (xhrError: XHRError) => void) => void;

@@ -14,7 +14,7 @@ import { Item, MinimongoLocalCollection } from "."
 
 export default class LocalStorageDb implements MinimongoDb {
   collections: { [collectionName: string]: MinimongoCollection<any> }
-  namespace: string
+  namespace: string | undefined
 
   constructor(options: any, success: any, error?: any) {
     this.collections = {}
@@ -77,7 +77,7 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
   items: { [id: string]: T }
   upserts: { [id: string]: Item<T> }
   removes: { [id: string]: T }
-  itemNamespace: string
+  itemNamespace: string | undefined
 
   constructor(name: string, namespace?: string) {
     this.name = name
@@ -271,14 +271,14 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
   _putItem(doc: T) {
     this.items[doc._id!] = doc
     if (this.namespace) {
-      window.localStorage[this.itemNamespace + doc._id] = JSON.stringify(doc)
+      window.localStorage[this.itemNamespace! + doc._id] = JSON.stringify(doc)
     }
   }
 
   _deleteItem(id: any) {
     delete this.items[id]
     if (this.namespace) {
-      window.localStorage.removeItem(this.itemNamespace + id)
+      window.localStorage.removeItem(this.itemNamespace! + id)
     }
   }
 
