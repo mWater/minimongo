@@ -1,6 +1,6 @@
 {
   "name": "minimongo",
-  "version": "6.18.0",
+  "version": "6.18.1",
   "description": "Client-side mongo database with server sync over http",
   "main": "lib/index.js",
   "scripts": {
