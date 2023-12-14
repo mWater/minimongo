@@ -449,11 +449,19 @@ function processGeoIntersectsOperator(selector: any, list: any) {
         } else if (["Polygon", "MultiPolygon"].includes(doc[key].type)) {
           return polygonIntersection(doc[key], geo)
         } else if (doc[key].type === "LineString") {
+          // Special case for empty line string (bug Dec 2023)
+          if (doc[key].coordinates.length === 0) {
+            return false
+          }
           return booleanCrosses(doc[key], geo) || booleanWithin(doc[key], geo)
         } else if (doc[key].type === "MultiLineString") {
           // Bypass deficiencies in turf.js by splitting it up
           for (let line of doc[key].coordinates) {
             const lineGeo = { type: "LineString", coordinates: line }
+            // Special case for empty line string (bug Dec 2023)
+            if (lineGeo.coordinates.length === 0) {
+              continue
+            }
             if (booleanCrosses(lineGeo, geo) || booleanWithin(lineGeo, geo)) {
               return true
             }
