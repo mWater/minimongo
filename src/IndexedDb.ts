@@ -427,7 +427,7 @@ class IndexedDbCollection<T> implements MinimongoLocalCollection<T> {
 
           // Only safely remove upsert if doc is the same
           if (record && record.state === "upserted") {
-            if (_.isEqual(record.doc, upserts[i].doc)) {
+            if (JSON.stringify(record.doc) == JSON.stringify(upserts[i].doc)) {
               record.state = "cached"
               puts.push(record)
             } else {

@@ -193,7 +193,7 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
         }
 
         // Only cache if different
-        if (!_.isEqual(doc, result)) {
+        if (JSON.stringify(doc) != JSON.stringify(result)) {
           toCache.push(doc)
         }
       }

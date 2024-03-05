@@ -592,7 +592,7 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
             (tx: any, results: any) => {
               if (results.rows.length > 0 && results.rows.item(0).state === "upserted") {
                 // Only safely remove upsert if doc is the same
-                if (_.isEqual(JSON.parse(results.rows.item(0).doc), upsert.doc)) {
+                if (JSON.stringify(JSON.parse(results.rows.item(0).doc)) == JSON.stringify(upsert.doc)) {
                   tx.executeSql(
                     'UPDATE docs SET state="cached" WHERE col = ? AND id = ?',
                     [this.name, upsert.doc._id],

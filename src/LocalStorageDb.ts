@@ -376,7 +376,7 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
     for (let upsert of upserts) {
       if (this.upserts[upsert.doc._id]) {
         // Only safely remove upsert if item is unchanged
-        if (_.isEqual(upsert.doc, this.upserts[upsert.doc._id].doc)) {
+        if (JSON.stringify(upsert.doc) == JSON.stringify(this.upserts[upsert.doc._id].doc)) {
           this._deleteUpsert(upsert.doc._id)
         } else {
           // Just update base

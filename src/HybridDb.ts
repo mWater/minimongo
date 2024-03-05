@@ -186,7 +186,7 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
         // Return first entry or null
         if (data.length > 0) {
           // Check that different from existing
-          if (!_.isEqual(localDoc, data[0])) {
+          if (JSON.stringify(localDoc) != JSON.stringify(data[0])) {
             return success(data[0])
           }
         } else {
@@ -271,7 +271,7 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
                 // Get local data again
                 function localSuccess2(localData2: any) {
                   // Check if different or not interim
-                  if (!options.interim || !_.isEqual(localData, localData2)) {
+                  if (!options.interim || JSON.stringify(localData) != JSON.stringify(localData2)) {
                     // Send again
                     return success(localData2)
                   }
@@ -313,7 +313,7 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
               }
 
               // Check if different or not interim
-              if (!options.interim || !_.isEqual(localData, data)) {
+              if (!options.interim || JSON.stringify(localData) != JSON.stringify(data)) {
                 // Send again
                 return success(data)
               }
@@ -436,6 +436,11 @@ export class HybridCollection<T extends Doc> implements MinimongoBaseCollection<
     const uploadUpserts = (upserts: Item<T>[], success: () => void, error: (err: any) => void): void => {
       const upsert = _.first(upserts)
       if (upsert) {
+        // Handle case if identical doc and base https://github.com/mWater/minimongo/issues/89
+        if (JSON.stringify(upsert.doc) === JSON.stringify(upsert.base)) {
+          return this.localCol.resolveUpserts([upsert], () => uploadUpserts(_.tail(upserts), success, error), error)          
+        }
+
         return this.remoteCol.upsert(
           upsert.doc,
           upsert.base,
