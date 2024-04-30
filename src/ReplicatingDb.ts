@@ -3,9 +3,7 @@ import * as utils from "./utils"
 import { compileSort } from "./selector"
 import {
   Doc,
-  MinimongoCollection,
   MinimongoCollectionFindOneOptions,
-  MinimongoDb,
   MinimongoLocalCollection,
   MinimongoLocalDb
 } from "./types"
@@ -16,10 +14,10 @@ import {
  */
 export default class ReplicatingDb implements MinimongoLocalDb {
   collections: { [collectionName: string]: Collection<any> }
-  masterDb: MinimongoDb
-  replicaDb: MinimongoDb
+  masterDb: MinimongoLocalDb
+  replicaDb: MinimongoLocalDb
 
-  constructor(masterDb: MinimongoDb, replicaDb: MinimongoDb) {
+  constructor(masterDb: MinimongoLocalDb, replicaDb: MinimongoLocalDb) {
     this.collections = {}
 
     this.masterDb = masterDb
