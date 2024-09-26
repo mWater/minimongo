@@ -6,8 +6,6 @@ import WebSQLDb from "../src/WebSQLDb"
 import db_queries from "./db_queries"
 import db_caching from "./db_caching"
 import _ from "lodash"
-import async from "async"
-import OldWebSQLDb from "./v2/WebSQLDb"
 
 function error(err: any) {
   console.log(err)
@@ -21,13 +19,13 @@ describe("WebSQLDb", function (this: any) {
     this.reset = (done: any) => {
       return new WebSQLDb({ namespace: "db.scratch" }, (db: any) => {
         this.db = db
-        return this.db.removeCollection("scratch", () => {
-          return this.db.addCollection("scratch", () => {
+        this.db.removeCollection("scratch", () => {
+          this.db.addCollection("scratch", () => {
             this.col = this.db.scratch
             done()
-          })
-        })
-      })
+          }, done)
+        }, done)
+      }, done)
     }
     return this.reset(done)
   })
@@ -45,10 +43,10 @@ describe("WebSQLDb storage", function () {
   beforeEach(function (done: any) {
     return new WebSQLDb({ namespace: "db.scratch" }, (db: any) => {
       this.db = db
-      return this.db.removeCollection("scratch", () => {
-        return this.db.addCollection("scratch", () => done())
-      })
-    })
+      this.db.removeCollection("scratch", () => {
+        this.db.addCollection("scratch", () => done(), done)
+      }, done)
+    }, done)
   })
 
   it("retains items", function (done: any) {
@@ -61,8 +59,8 @@ describe("WebSQLDb storage", function () {
               assert.equal(results[0].a, "Alice")
               done()
             })
-          )
-        )
+          , done)
+        , done)
     )
   })
 
@@ -75,15 +73,15 @@ describe("WebSQLDb storage", function () {
             db2.addCollection("scratch", () =>
               db2.scratch.find({}).fetch(function (results: any) {
                 assert.deepEqual(results, [{ _id: "1", a: "Bob" }])
-                return db2.scratch.pendingUpserts(function (upserts: any) {
+                db2.scratch.pendingUpserts(function (upserts: any) {
                   assert.equal(upserts.length, 1)
                   assert.deepEqual(upserts[0].doc, { _id: "1", a: "Bob" })
                   assert.deepEqual(upserts[0].base, { _id: "1", a: "Alice" })
                   done()
-                })
-              })
-            )
-          )
+                }, done)
+              }, done)
+            , done)
+          , done)
       )
     })
   })
@@ -98,9 +96,9 @@ describe("WebSQLDb storage", function () {
               db2.scratch.pendingRemoves(function (removes: any) {
                 assert.deepEqual(removes, ["1"])
                 done()
-              })
-            )
-          )
+              }, done)
+            , done)
+          , done)
       )
     })
   })

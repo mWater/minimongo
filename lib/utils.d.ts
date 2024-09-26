@@ -1,5 +1,5 @@
 import { compileDocumentSelector } from "./selector";
-import { MinimongoDb, MinimongoLocalCollection } from "./types";
+import { MinimongoLocalCollection, MinimongoLocalDb } from "./types";
 import { default as IndexedDb } from "./IndexedDb";
 import { default as WebSQLDb } from "./WebSQLDb";
 import { default as LocalStorageDb } from "./LocalStorageDb";
@@ -9,9 +9,11 @@ export declare function autoselectLocalDb(options: any, success: any, error: any
 export declare function migrateLocalDb(fromDb: any, toDb: any, success: any, error: any): void;
 /** Clone a local database collection's caches, pending upserts and removes from one database to another
  * Useful for making a replica */
-export declare function cloneLocalDb(fromDb: MinimongoDb, toDb: MinimongoDb, success: () => void, error: (err: any) => void): void;
+export declare function cloneLocalDb(fromDb: MinimongoLocalDb, toDb: MinimongoLocalDb): Promise<void>;
+export declare function cloneLocalDb(fromDb: MinimongoLocalDb, toDb: MinimongoLocalDb, success: () => void, error: (err: any) => void): void;
 /** Clone a local database collection's caches, pending upserts and removes from one database to another
  * Useful for making a replica */
+export declare function cloneLocalCollection(fromCol: MinimongoLocalCollection, toCol: MinimongoLocalCollection): Promise<void>;
 export declare function cloneLocalCollection(fromCol: MinimongoLocalCollection, toCol: MinimongoLocalCollection, success: () => void, error: (err: any) => void): void;
 export declare function processFind(items: any, selector: any, options: any): any[];
 /** Include/exclude fields in mongo-style */

@@ -23,11 +23,11 @@ export default class WebSQLDb implements MinimongoDb {
   constructor(options: any, success: any, error: any) {
     this.collections = {}
 
-    if (options.storage === "sqlite" && window["sqlitePlugin"]) {
+    if (options.storage === "sqlite" && (window as any)["sqlitePlugin"]) {
       // sqlite plugin does not support db.version
       // and since db operations can only be executed once the db is properly open
       // we add the schema version migration to the success callback
-      window["sqlitePlugin"].openDatabase(
+      (window as any)["sqlitePlugin"].openDatabase(
         { name: "minimongo_" + options.namespace, location: "default" },
         (sqliteDb: any) => {
           console.log("Database open successful")
@@ -79,7 +79,7 @@ PRIMARY KEY (col, id));`,
       try {
         // Create database
         // TODO escape name
-        this.db = window["openDatabase"](
+        this.db = (window as any)["openDatabase"](
           "minimongo_" + options.namespace,
           "",
           "Minimongo:" + options.namespace,
@@ -149,7 +149,7 @@ ALTER TABLE docs ADD COLUMN base TEXT;`,
 
   addCollection(name: any, success: any, error: any) {
     const collection = new Collection(name, this.db)
-    this[name] = collection
+    ;(this as any)[name] = collection
     this.collections[name] = collection
     if (success) {
       return success()
@@ -157,7 +157,7 @@ ALTER TABLE docs ADD COLUMN base TEXT;`,
   }
 
   removeCollection(name: any, success: any, error: any) {
-    delete this[name]
+    delete (this as any)[name]
     delete this.collections[name]
 
     // Remove all documents of collection

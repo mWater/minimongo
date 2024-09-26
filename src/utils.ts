@@ -127,120 +127,99 @@ export function migrateLocalDb(fromDb: any, toDb: any, success: any, error: any)
 /** Clone a local database collection's caches, pending upserts and removes from one database to another
  * Useful for making a replica */
 export function cloneLocalDb(
-  fromDb: MinimongoDb,
+  fromDb: MinimongoLocalDb,
+  toDb: MinimongoLocalDb
+): Promise<void>
+export function cloneLocalDb(
+  fromDb: MinimongoLocalDb,
   toDb: MinimongoLocalDb,
   success: () => void,
   error: (err: any) => void
-): void {
-  let name
-  for (name in fromDb.collections) {
-    // TODO Assumes synchronous addCollection
-    const col = fromDb.collections[name]
-    if (!toDb.collections[name]) {
-      toDb.addCollection(name)
-    }
+): void
+export function cloneLocalDb(
+  fromDb: MinimongoLocalDb,
+  toDb: MinimongoLocalDb,
+  success?: () => void,
+  error?: (err: any) => void
+): Promise<void> | void {
+  if (!success && !error) {
+    return new Promise<void>((resolve, reject) => {
+      cloneLocalDb(fromDb, toDb, resolve, reject)
+    })
   }
 
-  // First cache all data
-  return async.each(
-    _.values(fromDb.collections),
-    ((fromCol: any, cb: any) => {
-      const toCol = toDb.collections[fromCol.name]
-
-      // Get all items
-      return fromCol.find({}).fetch((items: any) => {
-        // Seed items
-        return toCol.seed(
-          items,
-          () => {
-            // Copy upserts
-            return fromCol.pendingUpserts((upserts: any) => {
-              return toCol.upsert(
-                _.map(upserts, "doc"),
-                _.map(upserts, "base"),
-                () => {
-                  // Copy removes
-                  return fromCol.pendingRemoves((removes: any) => {
-                    return async.eachSeries(
-                      removes,
-                      ((remove: any, cb2: any) => {
-                        return toCol.remove(
-                          remove,
-                          () => {
-                            return cb2()
-                          },
-                          cb2
-                        )
-                      }) as any,
-                      cb
-                    )
-                  }, cb)
-                },
-                cb
-              )
-            }, cb)
-          },
-          cb
-        )
-      }, cb)
-    }) as any,
-    (err: any) => {
-      if (err) {
-        return error(err)
+  async function clone() {
+    // Create collections in toDb for all collections in fromDb
+    for (const name in fromDb.collections) {
+      if (!toDb.collections[name]) {
+        await new Promise<void>((resolve, reject) => {
+           toDb.addCollection(name, resolve, reject)
+        })
       }
-
-      return success()
     }
-  )
+
+    // Clone each collection in parallel
+    await Promise.all(Object.values(fromDb.collections).map((fromCol) => {
+      return cloneLocalCollection(fromCol, toDb.collections[fromCol.name])
+    }))
+  }
+
+  clone().then(success).catch(error)
 }
 
 /** Clone a local database collection's caches, pending upserts and removes from one database to another
  * Useful for making a replica */
 export function cloneLocalCollection(
   fromCol: MinimongoLocalCollection,
+  toCol: MinimongoLocalCollection
+): Promise<void>
+export function cloneLocalCollection(
+  fromCol: MinimongoLocalCollection,
   toCol: MinimongoLocalCollection,
   success: () => void,
   error: (err: any) => void
-): void {
-  // Get all items
-  return fromCol.find({}).fetch((items: any) => {
-    // Seed items
-    return toCol.seed(
-      items,
-      () => {
-        // Copy upserts
-        return fromCol.pendingUpserts((upserts: any) => {
-          return toCol.upsert(
-            _.map(upserts, "doc"),
-            _.map(upserts, "base"),
-            () => {
-              // Copy removes
-              return fromCol.pendingRemoves((removes: any) => {
-                const iterator: any = (remove: any, cb2: any) => {
-                  return toCol.remove(
-                    remove,
-                    () => {
-                      return cb2()
-                    },
-                    cb2
-                  )
-                }
+): void
+export function cloneLocalCollection(
+  fromCol: MinimongoLocalCollection,
+  toCol: MinimongoLocalCollection,
+  success?: () => void,
+  error?: (err: any) => void
+): Promise<void> | void {
+  if (!success && !error) {
+    return new Promise<void>((resolve, reject) => {
+      cloneLocalCollection(fromCol, toCol, resolve, reject)
+    })
+  }
 
-                return async.eachSeries(removes, iterator, (err: any) => {
-                  if (err) {
-                    return error(err)
-                  }
-                  return success()
-                })
-              }, error)
-            },
-            error
-          )
-        }, error)
-      },
-      error
-    )
-  }, error)
+  async function clone() {
+    // Get all items
+    const items = await fromCol.find({}).fetch()
+
+    // Seed items
+    await new Promise<void>((resolve, reject) => {
+      toCol.seed(items, resolve, reject)
+    })
+
+    // Copy upserts
+    const upserts = await new Promise<any[]>((resolve, reject) => {
+      fromCol.pendingUpserts(resolve, reject)
+    })
+    
+    // Upsert items
+    await toCol.upsert(upserts.map((item) => item.doc), upserts.map((item) => item.base))
+
+    // Copy removes
+    const removes = await new Promise<string[]>((resolve, reject) => {
+      fromCol.pendingRemoves(resolve, reject)
+    })
+
+    // Remove items
+    for (let remove of removes) {
+      await toCol.remove(remove)
+    }
+  }
+
+  clone().then(success).catch(error)
 }
 
 // Processes a find with sorting and filtering and limiting
