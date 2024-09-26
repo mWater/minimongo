@@ -8,7 +8,7 @@ import { default as booleanPointInPolygon } from "@turf/boolean-point-in-polygon
 import { default as intersect } from "@turf/intersect"
 import { default as booleanCrosses } from "@turf/boolean-crosses"
 import { default as booleanWithin } from "@turf/boolean-within"
-import { MinimongoCollection, MinimongoDb, MinimongoLocalCollection } from "./types"
+import { MinimongoDb, MinimongoLocalCollection, MinimongoLocalDb } from "./types"
 
 import { default as IndexedDb } from "./IndexedDb"
 import { default as WebSQLDb } from "./WebSQLDb"
@@ -47,8 +47,8 @@ export function autoselectLocalDb(options: any, success: any, error: any) {
   }
 
   // Always use WebSQL in cordova
-  if (window["cordova"]) {
-    if (window["device"]?.platform === "iOS" && window["sqlitePlugin"]) {
+  if ((window as any)["cordova"]) {
+    if ((window as any)["device"]?.platform === "iOS" && (window as any)["sqlitePlugin"]) {
       console.log("Selecting WebSQLDb(sqlite) for Cordova")
       options.storage = "sqlite"
       return new WebSQLDb(options, success, error)
@@ -71,7 +71,7 @@ export function autoselectLocalDb(options: any, success: any, error: any) {
 
   // Use WebSQL in Android, Chrome,  Opera, Blackberry if supports it
   if (browser.android || browser.chrome || browser.opera || browser.blackberry) {
-    if (typeof window["openDatabase"] === "function") {
+    if (typeof (window as any)["openDatabase"] === "function") {
       console.log("Selecting WebSQLDb for browser")
       return new WebSQLDb(options, success, (err: any) => {
         console.log("Failed to create WebSQLDb: " + (err ? err.message : undefined))
@@ -128,7 +128,7 @@ export function migrateLocalDb(fromDb: any, toDb: any, success: any, error: any)
  * Useful for making a replica */
 export function cloneLocalDb(
   fromDb: MinimongoDb,
-  toDb: MinimongoDb,
+  toDb: MinimongoLocalDb,
   success: () => void,
   error: (err: any) => void
 ): void {
@@ -136,7 +136,7 @@ export function cloneLocalDb(
   for (name in fromDb.collections) {
     // TODO Assumes synchronous addCollection
     const col = fromDb.collections[name]
-    if (!toDb[name]) {
+    if (!toDb.collections[name]) {
       toDb.addCollection(name)
     }
   }
@@ -145,7 +145,7 @@ export function cloneLocalDb(
   return async.each(
     _.values(fromDb.collections),
     ((fromCol: any, cb: any) => {
-      const toCol = toDb[fromCol.name]
+      const toCol = toDb.collections[fromCol.name]
 
       // Get all items
       return fromCol.find({}).fetch((items: any) => {
@@ -281,7 +281,7 @@ export function filterFields(items: any[], fields: any = {}): any[] {
   // For each item
   return _.map(items, function (item: any) {
     let field, obj, path, pathElem
-    const newItem = {}
+    const newItem: any = {}
 
     if (_.first(_.values(fields)) === 1) {
       // Include fields

@@ -12,17 +12,23 @@ describe("autoselected Local Db", function () {
   before(function (done: any) {
     utils.autoselectLocalDb({ namespace: "db.scratch" }, (db: any) => {
       this.db = db
-      return this.db.addCollection("scratch", () => done())
+      this.db.addCollection("scratch", () => done())
+    }, (err: any) => {
+      assert.fail(err)
+      done()
     })
 
-    return (this.reset = (done: any) => {
-      return this.db.removeCollection("scratch", () => {
-        return this.db.addCollection("scratch", () => {
+    this.reset = (done: any) => {
+      this.db.removeCollection("scratch", () => {
+        this.db.addCollection("scratch", () => {
           this.col = this.db.scratch
           done()
         })
+      }, (err: any) => {
+        assert.fail(err)
+        done()
       })
-    })
+    }
   })
 
   describe("passes queries", function (this: any) {
@@ -50,7 +56,13 @@ describe("migrated Local Db", function () {
           assert.deepEqual(upserts, [{ doc: { _id: "1", x: 1 }, base: null }])
           this.from.a.pendingUpserts((upserts2: any) => assert.equal(upserts2.length, 0))
           done()
+        }, (err: any) => {
+          assert.fail(err)
+          done()
         })
+      }, (err: any) => {
+        assert.fail(err)
+        done()
       })
     })
   })
@@ -61,7 +73,13 @@ describe("migrated Local Db", function () {
         return this.to.a.pendingRemoves(function (removes: any) {
           assert.deepEqual(removes, ["1"])
           done()
+        }, (err: any) => {
+          assert.fail(err)
+          done()
         })
+      }, (err: any) => {
+        assert.fail(err)
+        done()
       })
     })
   })
@@ -72,7 +90,13 @@ describe("migrated Local Db", function () {
         return this.to.a.pendingUpserts(function (upserts: any) {
           assert.equal(upserts.length, 0)
           done()
+        }, (err: any) => {
+          assert.fail(err)
+          done()
         })
+      }, (err: any) => {
+        assert.fail(err)
+        done()
       })
     })
   })
@@ -82,6 +106,9 @@ describe("migrated Local Db", function () {
     return this.from.b.upsert({ _id: "1", x: 1 }, () => {
       return utils.migrateLocalDb(this.from, this.to, () => {
         assert(!this.to.b)
+        done()
+      }, (err: any) => {
+        assert.fail(err)
         done()
       })
     })
@@ -103,7 +130,13 @@ describe("cloneLocalDb", function () {
           assert.deepEqual(upserts, [{ doc: { _id: "1", x: 1 }, base: null }])
           this.from.a.pendingUpserts((upserts2: any) => assert.equal(upserts2.length, 1))
           done()
+        }, (err: any) => {
+          assert.fail(err)
+          done()
         })
+      }, (err: any) => {
+        assert.fail(err)
+        done()
       })
     })
   })
@@ -115,7 +148,13 @@ describe("cloneLocalDb", function () {
           assert.deepEqual(upserts, [{ doc: { _id: "1", x: 1 }, base: { _id: "1", x: -1 } }])
           this.from.a.pendingUpserts((upserts2: any) => assert.equal(upserts2.length, 1))
           done()
+        }, (err: any) => {
+          assert.fail(err)
+          done()
         })
+      }, (err: any) => {
+        assert.fail(err)
+        done()
       })
     })
   })
@@ -129,12 +168,18 @@ describe("cloneLocalDb", function () {
             assert.deepEqual(removes, ["1"])
             done()
           })
+        }, (err: any) => {
+          assert.fail(err)
+          done()
         })
+      }, (err: any) => {
+        assert.fail(err)
+        done()
       })
     })
   })
 
-  return it("clones cached", function (done: any) {
+  it("clones cached", function (done: any) {
     return this.from.a.cacheOne({ _id: "1", x: 1 }, () => {
       return utils.cloneLocalDb(this.from, this.to, () => {
         return this.to.a.pendingUpserts((upserts: any) => {
@@ -143,7 +188,13 @@ describe("cloneLocalDb", function () {
             assert.deepEqual(items[0], { _id: "1", x: 1 })
             done()
           })
+        }, (err: any) => {
+          assert.fail(err)
+          done()
         })
+      }, (err: any) => {
+        assert.fail(err)
+        done()
       })
     })
   })
