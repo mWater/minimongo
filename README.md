@@ -1,8 +1,8 @@
 # Minimongo
 
-A client-side MongoDB implementation which supports basic queries, including some geospatial ones.
+A client-side in-memory MongoDB clone with multiple storage backends and hybrid remote/local synchronization.
 
-Uses code from Meteor.js minimongo package, reworked to support more geospatial queries and made npm+browserify friendly. It was forked in January 2014.
+Uses code from Meteor.js minimongo package, reworked to support more geospatial queries and made npm friendly. It was forked in January 2014.
 
 It is either IndexedDb backed (IndexedDb), WebSQL backed (WebSQLDb), Local storage backed (LocalStorageDb) or in memory only (MemoryDb).
 
@@ -10,12 +10,173 @@ Autoselection is possible with `utils.autoselectLocalDb(options, success, error)
 
 [sqlite plugin](https://github.com/xpbrew/cordova-sqlite-storage) is also supported when available, activate sqlite plugin with option {storage: 'sqlite'} in utils.autoselectLocalDb
 
-## Usage
+## Features
 
-Minimongo is designed to be used with [browserify](http://browserify.org/) or Webpack
+- **MongoDB-like API** with familiar CRUD operations and query syntax
+- **Multiple Storage Engines**:
+  - Memory (default)
+  - LocalStorage (persistent browser storage)
+  - IndexedDB (asynchronous browser storage)
+  - WebSQL (legacy SQL-based storage)
+- **Hybrid Database** that combines local and remote data sources
+- **Replication** between database instances
+- **Extended JSON (EJSON)** support with custom types
+- **Geospatial Queries** ($near, $geoIntersects)
+- **Partial MongoDB Query Features**:
+  - Logical operators: $and, $or, $nor
+  - Comparison operators: $lt, $lte, $gt, $gte
+  - Element operators: $exists, $type
+  - Array operators: $in, $nin, $all, $elemMatch
+  - Regex support
+  - Sorting and limiting
+
+## Installation
+```bash
+npm install minimongo
+```
+
+## Core Components
+
+### Local Databases
+```javascript
+import { MemoryDb, IndexedDb } from 'minimongo';
+
+const memoryDb = new MemoryDb();
+const indexedDb = new IndexedDb({namespace: 'mydb'}, successCallback, errorCallback);
+```
+
+**Supported Operations:**
+- `find(selector, options)`
+- `findOne(selector, options)`
+- `upsert(docs, bases, success, error)`
+- `remove(id, success, error)`
+- `cache(docs, selector, options, success, error)`
+- `pendingUpserts()` / `pendingRemoves()`
+
+### Hybrid Database
+Combines local database with remote source:
+```javascript
+import { HybridDb } from 'minimongo';
+
+const hybridDb = new HybridDb(localDb, remoteDb);
+hybridDb.addCollection('items');
+```
+
+**Key Features:**
+- Queries local database first
+- Automatically syncs with remote source
+- Handles pending upserts/removes
+- Batched uploads of changes
+- Conflict resolution using base documents
+
+### Remote Database
+```javascript
+import { RemoteDb } from 'minimongo';
+
+const remoteDb = new RemoteDb('/api/collections', 'mydb', {
+  httpClient: jQueryHttpClient,
+  useQuickFind: true
+});
+```
+
+**Supported Protocols:**
+- Regular REST operations
+- Quickfind protocol for efficient data syncing
+- Custom HTTP client support
+
+### Replicating Database
+```javascript
+import { ReplicatingDb } from 'minimongo';
+
+const replicatingDb = new ReplicatingDb(masterDb, replicaDb);
+```
+
+**Features:**
+- All operations applied to both databases
+- Atomic transaction support
+- Cache synchronization
+
+## Query Language
+Supports MongoDB-style selectors with some limitations:
 
 ```javascript
+collection.find({
+  name: { $regex: /^A/ },
+  age: { $gt: 18 },
+  location: {
+    $near: {
+      $geometry: { type: "Point", coordinates: [-73.9667, 40.78] },
+      $maxDistance: 1000
+    }
+  }
+}, {
+  sort: { age: -1 },
+  limit: 10
+}).fetch();
+```
 
+## Data Synchronization
+
+### Hybrid Sync Process
+1. Check local pending changes
+2. Query local database
+3. Simultaneously query remote database
+4. Merge results (local data + remote updates)
+5. Cache remote results locally
+6. Return combined results
+
+### Conflict Resolution
+Uses base document versioning:
+```javascript
+collection.upsert(
+  { _id: '1', name: 'updated' },
+  { _id: '1', name: 'original' }, // base document
+  successCallback
+);
+```
+
+## Geospatial Support
+- $near queries for proximity searches
+- $geoIntersects for polygon intersections
+- Turf.js integration for spatial operations
+
+## Extended JSON (EJSON)
+Custom type handling for:
+- Dates
+- Binary data (Uint8Array)
+- Custom objects with clone/equals/toJSONValue methods
+
+## Performance Features
+- Query compilation to JavaScript functions
+- IndexedDB bulk operations
+- LocalStorage batch updates
+- Quickfind protocol for efficient diffs
+
+## Browser Support
+- Modern browsers (Chrome, Firefox, Safari, Edge)
+- IE11 with polyfills
+- Mobile browsers (iOS Safari, Chrome for Android)
+
+## Limitations
+- No aggregation pipeline
+- Limited $where clause support
+- Partial update operator support
+- No transactions across collections
+
+## Contribution
+```bash
+git clone https://github.com/mWater/minimongo.git
+cd minimongo
+npm install
+npm test
+```
+
+## License
+MIT License - Based on Meteor's minimongo implementation
+
+## Usage
+
+```javascript
 // Require minimongo
 var minimongo = require("minimongo");
 
@@ -112,7 +273,7 @@ Removed rows are still stored locally until they are resolved. This is so they c
 
 To resolve all removes, first get a list of all ids to be removed, then resolve them one by one:
 
-```
+```javascript
 const idsToRemove = await new Promise((resolve, reject) => collection.pendingRemoves(resolve, reject))
 
 for (const id of idsToRemove) {
@@ -129,7 +290,6 @@ Keeps two local databases in sync. Finds go only to master.
 To make a database backed by IndexedDb:
 
 ```javascript
-
 // Require minimongo
 var minimongo = require("minimongo");
 
@@ -152,7 +312,6 @@ db = new IndexedDb({namespace: "mydb"}, function() {
 		});
 	});
 }, function() { alert("some error!"); });
-
 ```
 
 ### Caching
@@ -163,7 +322,7 @@ The field `_rev`, if present is used to prevent overwriting with older versions.
 
 ### HybridDb
 
-Combines results from the local database with remote data. Multiple options can be specified at the collection level and then overriden at the find/findOne level:
+Combines results from the local database with remote data. Multiple options can be specified at the collection level and then overridden at the find/findOne level:
 
 **interim**: (default true) true to return interim results from the local database before the (slower) remote database has returned. If the remote database gives different results, the callback will be called a second time. This approach allows fast responses but with subsequent correction if the server has differing information.
 
@@ -175,36 +334,35 @@ Combines results from the local database with remote data. Multiple options can 
 
 **useLocalOnRemoteError**: (default true) true to use local results if the remote find fails. Only applies if interim is false.
 
-
 To keep a local database and a remote database in sync, create a HybridDb:
 
-```
+```javascript
 hybridDb = new HybridDb(localDb, remoteDb)
 ```
 
-Be sure to add the same collections to all three databases (local, hybrid and remote).
+Be sure to add the same collections to all three databases (local, hybrid, and remote).
 
 Then query the hybridDb (`find` and `findOne`) to have it get results and correctly combine them with any pending local results. If you are not interested in caching results, add `{ cacheFind: false, cacheFindOne: false }` to the options of `find` or `findOne` or to the `addCollection` options.
 
 When upserts and removes are done on the HybridDb, they are queued up in the LocalDb until `hybridDb.upload(success, error)` is called.
 
-`upload` will go through each collection and send any upserts or removes to the remoteDb. You must call this to have the results go to the server! Calling periodically (e.g every 5 seconds) is safe as long as you wait for one upload call to complete before calling again.
+`upload` will go through each collection and send any upserts or removes to the remoteDb. You must call this to have the results go to the server! Calling periodically (e.g., every 5 seconds) is safe as long as you wait for one upload call to complete before calling again.
 
 `findOne` will not return an interim `null` result, but will only return interim results when one is present.
 
 ### RemoteDb
 
-Uses AJAX-JSON calls to an API to query a real Mongo database. API is simple and contains only query, upsert, patch and remove commands.
+Uses AJAX-JSON calls to an API to query a real Mongo database. API is simple and contains only query, upsert, patch, and remove commands.
 
-If the `client` field is passed to the constructor, it is appended as a query parameters (e.g. `?client=1234`) to each request made.
+If the `client` field is passed to the constructor, it is appended as a query parameter (e.g., `?client=1234`) to each request made.
 
 Example code:
 
-```
+```javascript
 remoteDb = new minimongo.RemoteDb("http://someserver.com/api/", "myclientid123")
 ```
 
-This would create a remote db that would make the following call to the api for a find to collection abc:
+This would create a remote db that would make the following call to the API for a find to collection abc:
 
 `GET http://someserver.com/api/abc?client=myclientid123`
 
@@ -216,72 +374,73 @@ The API that RemoteDb should support four HTTP methods for each collection:
 
 Performs a query, returning an array of results. GET query parameters are:
 
-**selector** (optional) : JSON of query, in MongoDB format. e.g. `{"a": 1}` to find records with field `a` having value `1`
-**fields** (optional) : JSON object indicating which fields to return in MongoDB format. e.g. `{"a": 1}` to return only field `a` and `_id`
-**sort** (optional) : JSON of MongoDB sort field. e.g. `["a"]` to sort ascending by `a`, or `[["a","desc"]]` to sort descending by `a`
-**limit** (optional) : Maximum records to return e.g. `100`
+- **selector** (optional): JSON of query, in MongoDB format. e.g., `{"a": 1}` to find records with field `a` having value `1`
+- **fields** (optional): JSON object indicating which fields to return in MongoDB format. e.g., `{"a": 1}` to return only field `a` and `_id`
+- **sort** (optional): JSON of MongoDB sort field. e.g., `["a"]` to sort ascending by `a`, or `[["a","desc"]]` to sort descending by `a`
+- **limit** (optional): Maximum records to return e.g., `100`
 
 Possible HTTP response codes:
 
-**200** : normal response
-**401** : client was invalid
+- **200**: normal response
+- **401**: client was invalid
 
 #### POST `/<collection>/find` (optionally implemented)
 
 Performs a query, returning an array of results. POST body parameters are:
 
-**selector** (optional) : JSON of query, in MongoDB format. e.g. `{"a": 1}` to find records with field `a` having value `1`
-**fields** (optional) : JSON object indicating which fields to return in MongoDB format. e.g. `{"a": 1}` to return only field `a` and `_id`
-**sort** (optional) : JSON of MongoDB sort field. e.g. `["a"]` to sort ascending by `a`, or `[["a","desc"]]` to sort descending by `a`
-**limit** (optional) : Maximum records to return e.g. `100`
+- **selector** (optional): JSON of query, in MongoDB format. e.g., `{"a": 1}` to find records with field `a` having value `1`
+- **fields** (optional): JSON object indicating which fields to return in MongoDB format. e.g., `{"a": 1}` to return only field `a` and `_id`
+- **sort** (optional): JSON of MongoDB sort field. e.g., `["a"]` to sort ascending by `a`, or `[["a","desc"]]` to sort descending by `a`
+- **limit** (optional): Maximum records to return e.g., `100`
 
 Possible HTTP response codes:
 
-**200** : normal response
-**401** : client was invalid
+- **200**: normal response
+- **401**: client was invalid
 
 #### POST `/<collection>`
 
 Performs a single upsert, returning the upserted row. POST value is the document to upsert. Possible HTTP response codes:
 
-**200** : document was upserted. Returns the upserted object (see notes below on merging)
-**400** : document did not pass validation
-**401** : client was invalid or not present
-**403** : permission denied to upsert
-**409** : another client was upserting same document. Try again.
-**410** : document was already removed and cannot be upserted
+- **200**: document was upserted. Returns the upserted object (see notes below on merging)
+- **400**: document did not pass validation
+- **401**: client was invalid or not present
+- **403**: permission denied to upsert
+- **409**: another client was upserting the same document. Try again.
+- **410**: document was already removed and cannot be upserted
 
 On `403` or `410`, the change is automatically discarded in the HybridDb.
 
-If array is POSTed, upsert each one and return array of upserted documents
+If an array is POSTed, upsert each one and return an array of upserted documents.
 
 #### PATCH `/<collection>`
 
 Performs a patch, returning the upserted row. PATCH value is the following structure:
 
-```
+```javascript
 {
-	doc: <the document in its new form. Can also be array of documents>
-	base: <base document on which the changes were made. Can also be array of base documents, which match length of doc array>
+	doc: <the document in its new form. Can also be an array of documents>,
+	base: <base document on which the changes were made. Can also be an array of base documents, which match the length of the doc array>
 }
 ```
 
-For example, to change `{ x:1, y:1 }` to set x to be 2, PATCH would send
-```
+For example, to change `{ x:1, y:1 }` to set x to be 2, PATCH would send:
+
+```javascript
 {
-	doc: { x:2, y: 1 }
+	doc: { x:2, y: 1 },
 	base: { x:1, y: 1 }
 }
 ```
 
 Possible HTTP response codes:
 
-**200** : document was upserted. Returns the upserted object
-**400** : document did not pass validation
-**401** : client was invalid or not present
-**403** : permission denied to upsert
-**409** : another client was upserting same document. Try again.
-**410** : document was already removed and cannot be upserted
+- **200**: document was upserted. Returns the upserted object
+- **400**: document did not pass validation
+- **401**: client was invalid or not present
+- **403**: permission denied to upsert
+- **409**: another client was upserting the same document. Try again.
+- **410**: document was already removed and cannot be upserted
 
 On `403` or `410`, the change is automatically discarded in the HybridDb.
 
@@ -293,10 +452,10 @@ Removes to the local collection are converted into a series of _ids to be remove
 
 Removes a document. _id of the document to remove
 
-**200** : document was removed
-**401** : client was invalid or not present
-**403** : permission denied to remove
-**410** : document was already removed and cannot be removed again
+- **200**: document was removed
+- **401**: client was invalid or not present
+- **403**: permission denied to remove
+- **410**: document was already removed and cannot be removed again
 
 On `403` or `410`, the change is automatically discarded in the HybridDb.
 
@@ -310,8 +469,7 @@ It can also be used with a simple server that just overwrites documents complete
 
 To test, run `testem` in the main directory.
 
-To test a RemoteDb implementation, use `test/LiveRemoteDbTests.ts`. Server must have a collection called scratch with fields as specified at top of tests file.
-
+To test a RemoteDb implementation, use `test/LiveRemoteDbTests.ts`. The server must have a collection called scratch with fields as specified at the top of the tests file.
 
 ### Quickfind
 
