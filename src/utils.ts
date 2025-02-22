@@ -1,8 +1,6 @@
 // Utilities for db handling
 import _ from "lodash"
 
-import async from "async"
-import bowser from "bowser"
 import { compileDocumentSelector, compileSort } from "./selector"
 import { default as booleanPointInPolygon } from "@turf/boolean-point-in-polygon"
 import { default as intersect } from "@turf/intersect"
@@ -38,69 +36,31 @@ export { compileDocumentSelector }
 
 // Select appropriate local database, prefering IndexedDb, then WebSQLDb, then LocalStorageDb, then MemoryDb
 export function autoselectLocalDb(options: any, success: any, error: any) {
-  // Get browser capabilities
-  const { browser } = bowser
-
   // Browsers with no localStorage support don't deserve anything better than a MemoryDb
   if (!isLocalStorageSupported()) {
     return new MemoryDb(options, success)
   }
 
-  // Always use WebSQL in cordova
+  // Always use WebSQL plugin in cordova iOS only
   if ((window as any)["cordova"]) {
     if ((window as any)["device"]?.platform === "iOS" && (window as any)["sqlitePlugin"]) {
       console.log("Selecting WebSQLDb(sqlite) for Cordova")
       options.storage = "sqlite"
       return new WebSQLDb(options, success, error)
-    } else {
-      console.log("Selecting else WebSQLDb for Cordova")
-      // WebSQLDb must success in Cordova
-      return new WebSQLDb(options, success, error)
     }
   }
 
-  // Use IndexedDb for ios, Safari
-  if (browser.ios || browser.safari) {
-    // Fallback to IndexedDb
-    return new IndexedDb(options, success, (err: any) => {
-      console.log("Failed to create IndexedDb: " + (err ? err.message : undefined))
-      // Create memory db instead
-      return new MemoryDb(options, success)
-    })
-  }
-
-  // Use WebSQL in Android, Chrome,  Opera, Blackberry if supports it
-  if (browser.android || browser.chrome || browser.opera || browser.blackberry) {
-    if (typeof (window as any)["openDatabase"] === "function") {
-      console.log("Selecting WebSQLDb for browser")
-      return new WebSQLDb(options, success, (err: any) => {
-        console.log("Failed to create WebSQLDb: " + (err ? err.message : undefined))
-
-        // Fallback to IndexedDb
-        return new IndexedDb(options, success, (err: any) => {
-          console.log("Failed to create IndexedDb: " + (err ? err.message : undefined))
-          // Create memory db instead
-          return new MemoryDb(options, success)
-        })
-      })
-    } else {
-      // Fallback to IndexedDb
-      console.log("Selecting IndexedDb for browser as WebSQL not supported")
-      return new IndexedDb(options, success, (err: any) => {
-        console.log("Failed to create IndexedDb: " + (err ? err.message : undefined))
-        // Create memory db instead
-        return new MemoryDb(options, success)
-      })
-    }
-  }
-
-  // Use IndexedDb on Firefox >= 16
-  if (browser.firefox && browser.version >= 16) {
+  // Always use IndexedDb in browser if supported
+  if (window.indexedDB) {
     console.log("Selecting IndexedDb for browser")
     return new IndexedDb(options, success, (err: any) => {
       console.log("Failed to create IndexedDb: " + (err ? err.message : undefined))
-      // Create memory db instead
-      return new MemoryDb(options, success)
+      // Create LocalStorageDb instead
+      return new LocalStorageDb(options, success, (err: any) => {
+        console.log("Failed to create LocalStorageDb: " + (err ? err.message : undefined))
+        // Create MemoryDb instead
+        return new MemoryDb(options, success)
+      })
     })
   }
 
