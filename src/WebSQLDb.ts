@@ -14,6 +14,9 @@ import {
 // Do nothing callback for success
 function doNothing() {}
 
+// Batch size for fetching documents
+const BATCH_SIZE = 5000
+
 // WebSQLDb adapter for minimongo DB
 // Supports sqlite plugin, if available and specified in option as {storage: 'sqlite'}
 export default class WebSQLDb implements MinimongoDb {
@@ -219,32 +222,52 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
   }
 
   _findFetch(selector: any, options: any, success: any, error: any) {
-    // If promise case
-    if (success == null) {
+    if (!success) {
       return new Promise((resolve, reject) => {
         this._findFetch(selector, options, resolve, reject)
       })
     }
-
     // Android 2.x requires error callback
     error = error || function () {}
 
-    // Get all docs from collection
+    const docs: any[] = []
+    let offset = 0
+
     this.db.readTransaction((tx: any) => {
-      return tx.executeSql(
-        "SELECT * FROM docs WHERE col = ?",
-        [this.name],
-        function (tx: any, results: any) {
-          const docs = []
-          for (let i = 0; i < results.rows.length; i++) {
-            const row = results.rows.item(i)
-            if (row.state !== "removed") {
-              docs.push(JSON.parse(row.doc))
-            }
+      // 1) get total count
+      tx.executeSql(
+        "SELECT COUNT(*) AS count FROM docs WHERE col = ? AND state <> ?",
+        [this.name, "removed"],
+        (tx: any, r: any) => {
+          const total = r.rows.item(0).count;
+
+          // 2) recursive batch fetch — *all* inside the same tx
+          const fetchBatch = () => {
+            tx.executeSql(
+              "SELECT * FROM docs WHERE col = ? AND state <> ? ORDER BY id LIMIT ? OFFSET ?",
+              [this.name, "removed", BATCH_SIZE, offset],
+              (tx: any, rs: any) => {
+                for (let i = 0; i < rs.rows.length; i++) {
+                  docs.push(JSON.parse(rs.rows.item(i).doc))
+                }
+                offset += rs.rows.length
+                if (offset < total) {
+                  // next page, still in same tx
+                  fetchBatch() 
+                } else {
+                  // 3) all done
+                  try {
+                    success(processFind(docs, selector, options))
+                  } catch (e) {
+                    error(e)
+                  }
+                }
+              },
+              (tx: any, err: any) => error(err)
+            )
           }
-          if (success != null) {
-            success(processFind(docs, selector, options))
-          }
+
+          fetchBatch()
         },
         (tx: any, err: any) => error(err)
       )
@@ -762,44 +785,63 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
     error = error || function () {}
 
     return this.db.transaction((tx: any) => {
-      return tx.executeSql(
-        "SELECT * FROM docs WHERE col = ? AND state = ?",
+      const toRemove: any[] = []
+      let offset = 0
+
+      // Get total count of cached docs
+      tx.executeSql(
+        "SELECT COUNT(*) AS count FROM docs WHERE col = ? AND state = ?",
         [this.name, "cached"],
-        (tx: any, results: any) => {
-          // Determine which to remove
-          const toRemove = []
-          for (let i = 0; i < results.rows.length; i++) {
-            const row = results.rows.item(i)
-            const doc = JSON.parse(row.doc)
-            if (compiledSelector(doc)) {
-              toRemove.push(doc._id)
-            }
+        (tx: any, rs: any) => {
+          const total = rs.rows.item(0).count
+
+          // Recursive batch fetch
+          const fetchBatch = () => {
+            tx.executeSql(
+              "SELECT * FROM docs WHERE col = ? AND state = ? ORDER BY id LIMIT ? OFFSET ?",
+              [this.name, "cached", BATCH_SIZE, offset],
+              (tx: any, rs2: any) => {
+                for (let i = 0; i < rs2.rows.length; i++) {
+                  const row = rs2.rows.item(i)
+                  const doc = JSON.parse(row.doc)
+                  if (compiledSelector(doc)) {
+                    toRemove.push(doc._id)
+                  }
+                }
+                offset += rs2.rows.length
+                if (offset < total) {
+                  fetchBatch()
+                } else {
+                  // Perform deletions
+                  async.eachSeries(
+                    toRemove,
+                    ((id: any, callback: any) => {
+                      return tx.executeSql(
+                        'DELETE FROM docs WHERE state="cached" AND col = ? AND id = ?',
+                        [this.name, id],
+                        () => callback(),
+                        (tx: any, err: any) => error(err)
+                      )
+                    }) as any,
+                    (err: any) => {
+                      if (err) {
+                        if (error) {
+                          return error(err)
+                        }
+                      } else {
+                        if (success) {
+                          return success()
+                        }
+                      }
+                    }
+                  )
+                }
+              },
+              (tx: any, err: any) => error(err)
+            )
           }
 
-          // Add all non-local that are not upserted or removed
-          return async.eachSeries(
-            toRemove,
-            ((id: any, callback: any) => {
-              // Only safely remove if removed state
-              return tx.executeSql(
-                'DELETE FROM docs WHERE state="cached" AND col = ? AND id = ?',
-                [this.name, id],
-                () => callback(),
-                (tx: any, err: any) => error(err)
-              )
-            }) as any,
-            (err: any) => {
-              if (err) {
-                if (error) {
-                  return error(err)
-                }
-              } else {
-                if (success) {
-                  return success()
-                }
-              }
-            }
-          )
+          fetchBatch()
         },
         (tx: any, err: any) => error(err)
       )
