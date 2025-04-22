@@ -204,7 +204,7 @@ export function processFind(items: any, selector: any, options: any) {
 
   // Apply fields if present
   if (options && options.fields) {
-    filtered = exports.filterFields(filtered, options.fields)
+    filtered = filterFields(filtered, options.fields)
   }
 
   return filtered
@@ -446,7 +446,7 @@ export function regularizeUpsert<T>(
   // Set _id
   for (let item of items) {
     if (!item.doc._id) {
-      item.doc._id = exports.createUid()
+      item.doc._id = createUid()
     }
     if (item.base && !item.base._id) {
       throw new Error("Base needs _id")

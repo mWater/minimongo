@@ -122,16 +122,16 @@ ALTER TABLE docs ADD COLUMN base TEXT;`,
     // Check if at v2 version
     const checkV2 = () => {
       if (this.db.version === "1.0") {
-        return this.db.changeVersion("1.0", "2.0", migrateToV2, error, () => {
+        this.db.changeVersion("1.0", "2.0", migrateToV2, error, () => {
           if (success) {
-            return success(this)
+            success(this)
           }
         })
       } else if (this.db.version !== "2.0") {
-        return error("Unknown db version " + this.db.version)
+        error("Unknown db version " + this.db.version)
       } else {
         if (success) {
-          return success(this)
+          success(this)
         }
       }
     }
@@ -161,7 +161,7 @@ ALTER TABLE docs ADD COLUMN base TEXT;`,
     delete this.collections[name]
 
     // Remove all documents of collection
-    return this.db.transaction(
+    this.db.transaction(
       (tx: any) => tx.executeSql("DELETE FROM docs WHERE col = ?", [name], success, (tx: any, err: any) => error(err)),
       error
     )
@@ -211,9 +211,9 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
       })
     }
 
-    return this.find(selector, options).fetch(function (results: any) {
+    this.find(selector, options).fetch(function (results: any) {
       if (success != null) {
-        return success(results.length > 0 ? results[0] : null)
+        success(results.length > 0 ? results[0] : null)
       }
     }, error)
   }
@@ -230,20 +230,20 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
     error = error || function () {}
 
     // Get all docs from collection
-    return this.db.readTransaction((tx: any) => {
+    this.db.readTransaction((tx: any) => {
       return tx.executeSql(
         "SELECT * FROM docs WHERE col = ?",
         [this.name],
         function (tx: any, results: any) {
           const docs = []
-          for (let i = 0, end = results.rows.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
+          for (let i = 0; i < results.rows.length; i++) {
             const row = results.rows.item(i)
             if (row.state !== "removed") {
               docs.push(JSON.parse(row.doc))
             }
           }
           if (success != null) {
-            return success(processFind(docs, selector, options))
+            success(processFind(docs, selector, options))
           }
         },
         (tx: any, err: any) => error(err)
@@ -342,7 +342,7 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
       error,
       function () {
         if (success) {
-          return success(docs)
+          success(docs)
         }
       }
     )
@@ -768,7 +768,7 @@ class Collection<T extends Doc> implements MinimongoLocalCollection<T> {
         (tx: any, results: any) => {
           // Determine which to remove
           const toRemove = []
-          for (let i = 0, end = results.rows.length, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
+          for (let i = 0; i < results.rows.length; i++) {
             const row = results.rows.item(i)
             const doc = JSON.parse(row.doc)
             if (compiledSelector(doc)) {
