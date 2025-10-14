@@ -703,6 +703,18 @@ describe("HybridDb", function () {
         })
       })
 
+      it("findOne falls back to local if remote fails", function (done: any) {
+        this.rc.find = (selector: any, options: any) => ({
+          fetch(success: any, error: any) {
+            return error()
+          }
+        })
+        this.hc.findOne({ _id: "1" }, { cacheFind: false, interim: false }, function (data: any) {
+          assert.deepEqual(data, { _id: "1", a: 1 })
+          done()
+        })
+      })
+
       it("find errors if useLocalOnRemoteError:false if remote fails", function (done: any) {
         this.rc.find = (selector: any, options: any) => {
           return {

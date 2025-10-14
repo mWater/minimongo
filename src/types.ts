@@ -1,14 +1,25 @@
 import { XHRError } from "./XHRError"
 
 export interface MinimongoCollectionFindOptions {
+  /** Fields to include in the result (MongoDb format) */ 
   fields?: any
+
+  /** Sort order (MongoDb format) */
   sort?: any
+
+  /** Limit the number of results */
   limit?: number
+
+  /** Skip the first n results */
   skip?: number
+
+  /** Cache find results in local db */
   cacheFind?: boolean
+
   /** Return interim results from local db while waiting for remote db. Return again if different. Only applicable to HybridDb
    * or a ReplicatingDb on top of a HybridDb. */
   interim?: boolean
+
   /** Set to ms to timeout in for remote calls */
   timeout?: number
 
@@ -26,19 +37,39 @@ export interface MinimongoCollectionFindOptions {
 
   /** Only for RemoteDb.find, Must be an mwater-expression */
   whereExpr?: any
+  
   /** Only for RemoteDb.find. expr must be an mwater-expression */
   orderByExprs?: { expr: any; dir: "asc" | "desc" }[]
 }
 
 export interface MinimongoCollectionFindOneOptions {
+  /** Fields to include in the result (MongoDb format) */
   fields?: any
+
+  /** Sort order (MongoDb format) */
   sort?: any
+
+  /** Limit the number of results */
   limit?: number
+
+  /** Skip the first n results */
   skip?: number
+
+  /** Return interim results from local db while waiting for remote db. Return again if different. Only applicable to HybridDb
+   * or a ReplicatingDb on top of a HybridDb. */
   interim?: boolean
+
+  /** Cache findOne results in local db */
   cacheFindOne?: boolean
+
+  /** Set to ms to timeout in for remote calls */
   timeout?: number
+
+  /** true to return `findOne` results if any matching result is found in the local database. Useful for documents that change rarely. */
   shortcut?: boolean
+
+  /** Use local results if the remote find fails. Only applies if interim is false. */
+  useLocalOnRemoteError?: boolean
 }
 
 export interface MinimongoDb {
